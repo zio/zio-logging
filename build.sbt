@@ -35,7 +35,6 @@ lazy val core = project
     )
   )
 
-
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
