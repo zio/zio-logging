@@ -21,7 +21,7 @@ object AbstractLogging {
     def span[R1 <: R, E, A, V](key: ContextKey[V], value: V)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
       for {
         oldValue <- loggingContext.get(key)
-        a        <- loggingContext.add(key, value).bracket_(loggingContext.add(key, oldValue))(zio)
+        a        <- loggingContext.add(key, value).bracket_(loggingContext.set(key, oldValue))(zio)
       } yield a
   }
 
