@@ -54,7 +54,7 @@ object AbstractLogging {
     def apply[V](
       identifier: String,
       initial: V,
-      combine: (V, V) => V = (_: V, newValue: V) => newValue  // by default replace
+      combine: (V, V) => V = (_: V, newValue: V) => newValue // by default replace
     )(implicit classTag: ClassTag[V]): ContextKey[V] =
       new ContextKey(identifier, initial, combine, classTag)
   }
