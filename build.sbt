@@ -26,11 +26,17 @@ inThisBuild(
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
-lazy val zioLogging = project
-  .in(file("."))
+lazy val core = project
+  .in(file("core"))
   .settings(
     name := "zio-logging",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC12-1"
+      "dev.zio" %% "zio" % "1.0.0-RC16"
     )
   )
+
+
+lazy val root = project
+  .in(file("."))
+  .settings(skip in publish := true)
+  .aggregate(core)
