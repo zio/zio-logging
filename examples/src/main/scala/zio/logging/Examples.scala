@@ -12,8 +12,10 @@ object Examples extends zio.App {
       val stringFormat = "[correlation-id = %s] %s"
       new Logging with LoggingContext with LoggingFormat[String] {
         self =>
-        override def logging: AbstractLogging.Service[Any]       = new Slf4jLogger()
+        override def logging: AbstractLogging.Service[Any] = new Slf4jLogger()
+
         override def loggingContext: LoggingContext.Service[Any] = ctxMap
+
         override def format(message: String): ZIO[Any, Nothing, String] =
           loggerContext
             .get(correlationId)

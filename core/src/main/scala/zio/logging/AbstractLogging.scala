@@ -10,7 +10,7 @@ object AbstractLogging {
 
   trait Service[-R] {
 
-    def trace[Message](message: => Message): ZIO[R with LoggingFormat[Message] , Nothing, Unit]
+    def trace[Message](message: => Message): ZIO[R with LoggingFormat[Message], Nothing, Unit]
     def debug[Message](message: => Message): ZIO[R with LoggingFormat[Message], Nothing, Unit]
     def info[Message](message: => Message): ZIO[R with LoggingFormat[Message], Nothing, Unit]
     def warning[Message](message: => Message): ZIO[R with LoggingFormat[Message], Nothing, Unit]

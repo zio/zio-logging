@@ -62,19 +62,19 @@ class Slf4jLogger extends AbstractLogging.Service[Any] {
     for {
       l <- logger(() => message)
       _ <- ZIO.when(l.isErrorEnabled())(
-        ZIO
-          .accessM[LoggingFormat[Message]](_.format(message))
-          .flatMap(msg => ZIO.effectTotal(l.error(msg)))
-      )
+            ZIO
+              .accessM[LoggingFormat[Message]](_.format(message))
+              .flatMap(msg => ZIO.effectTotal(l.error(msg)))
+          )
     } yield ()
 
   override def error[Message](message: => Message, cause: Cause[Any]): ZIO[LoggingFormat[Message], Nothing, Unit] =
     for {
       l <- logger(() => message)
       _ <- ZIO.when(l.isErrorEnabled())(
-        ZIO
-          .accessM[LoggingFormat[Message]](_.format(message))
-          .flatMap(msg => ZIO.effectTotal(l.error(msg + " cause: " + cause.prettyPrint)))
-      )
+            ZIO
+              .accessM[LoggingFormat[Message]](_.format(message))
+              .flatMap(msg => ZIO.effectTotal(l.error(msg + " cause: " + cause.prettyPrint)))
+          )
     } yield ()
 }
