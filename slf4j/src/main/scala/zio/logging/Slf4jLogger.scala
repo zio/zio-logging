@@ -1,12 +1,12 @@
 package zio.logging
 
-import org.slf4j.{LoggerFactory, MDC}
+import org.slf4j.{ LoggerFactory, MDC }
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
-import zio.internal.stacktracer.ZTraceElement.{NoLocation, SourceLocation}
+import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
-import zio.{Cause, FiberRef, UIO, ZIO}
+import zio.{ Cause, FiberRef, UIO, ZIO }
 
 class Slf4jLogger private (val map: FiberRef[Map[String, String]]) extends AbstractLogging.Service[Any, String] {
 
@@ -43,12 +43,15 @@ class Slf4jLogger private (val map: FiberRef[Map[String, String]]) extends Abstr
           }
     } yield ()
 
-
   def addToContext(key: String, value: String): ZIO[Any, Nothing, Unit] =
-    map.update { oldMap => oldMap.updated(key, value) }.unit
+    map.update { oldMap =>
+      oldMap.updated(key, value)
+    }.unit
 
   def removeFromContext(key: String): ZIO[Any, Nothing, Unit] =
-    map.update { oldMap => oldMap - key }.unit
+    map.update { oldMap =>
+      oldMap - key
+    }.unit
 
   override def trace(message: => String): ZIO[Any, Nothing, Unit] =
     for {
@@ -94,8 +97,8 @@ class Slf4jLogger private (val map: FiberRef[Map[String, String]]) extends Abstr
     for {
       l <- logger(() => message)
       _ <- ZIO.when(l.isErrorEnabled())(
-        withMDC(ZIO.effectTotal(l.error(message + " cause: " + cause.prettyPrint)))
-      )
+            withMDC(ZIO.effectTotal(l.error(message + " cause: " + cause.prettyPrint)))
+          )
     } yield ()
 }
 

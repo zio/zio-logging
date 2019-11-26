@@ -1,6 +1,6 @@
 package zio.logging
 
-import zio.{Cause, ZIO}
+import zio.{ Cause, ZIO }
 
 trait AbstractLogging[Message] {
   def logging: AbstractLogging.Service[Any, Message]

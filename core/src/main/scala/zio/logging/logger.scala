@@ -1,8 +1,8 @@
 package zio.logging
 
-import zio.{Cause, ZIO}
+import zio.{ Cause, ZIO }
 
-object logger extends Logging.Service [Logging]{
+object logger extends Logging.Service[Logging] {
 
   override def removeFromContext(key: String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.logging.removeFromContext(key))
