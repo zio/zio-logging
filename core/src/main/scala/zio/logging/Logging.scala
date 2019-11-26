@@ -1,7 +1,7 @@
 package zio.logging
 
-trait Logging extends AbstractLogging[String]
+trait Logging extends AbstractLogging
 
 object Logging {
-  type Service[-R] = AbstractLogging.Service[R, String]
+  type Service[-R] = AbstractLogging.Service[R]
 }
