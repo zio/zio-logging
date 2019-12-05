@@ -31,7 +31,7 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(core)
+  .aggregate(core, slf4j, examples)
 
 lazy val core = project
   .in(file("core"))
@@ -39,5 +39,25 @@ lazy val core = project
     name := "zio-logging",
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio" % "1.0.0-RC17"
+    )
+  )
+
+lazy val slf4j = project
+  .in(file("slf4j"))
+  .dependsOn(core)
+  .settings(
+    name := "zio-logging-slf4j",
+    libraryDependencies ++= Seq(
+      "org.slf4j" % "slf4j-api" % "1.7.29"
+    )
+  )
+
+lazy val examples = project
+  .in(file("examples"))
+  .dependsOn(slf4j)
+  .settings(
+    name := "zio-logging-examples",
+    libraryDependencies ++= Seq(
+      "ch.qos.logback" % "logback-classic" % "1.2.3"
     )
   )

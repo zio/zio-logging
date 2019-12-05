@@ -2,13 +2,10 @@ package zio.logging
 
 import zio._
 
-final class ContextMap private (private val map: FiberRef[ContextMap.CMap]) {
+final class ContextMap private (private val map: FiberRef[ContextMap.CMap]) extends LoggingContext.Service[Any] {
 
   def get[V](key: ContextKey[V]): UIO[V] =
     map.get.map(ContextMap.get(_)(key)._2)
-
-  def add[V](key: ContextKey[V], value: V): UIO[Unit] =
-    map.update(ContextMap.add(_)(key, value)).unit
 
   def set[V](key: ContextKey[V], value: V): UIO[Unit] =
     map.update(ContextMap.set(_)(key, value)).unit
@@ -30,6 +27,8 @@ final class ContextMap private (private val map: FiberRef[ContextMap.CMap]) {
             )(zio)
     } yield b
 
+  override def span[R1 <: Any, E, A, V](key: ContextKey[V], value: V)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
+    locally(key, value)(zio)
 }
 
 object ContextMap {
