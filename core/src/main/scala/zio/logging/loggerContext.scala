@@ -6,9 +6,6 @@ object loggerContext extends LoggingContext.Service[LoggingContext] {
   override def get[V](key: ContextKey[V]): ZIO[LoggingContext, Nothing, V] =
     ZIO.accessM[LoggingContext](_.loggingContext.get(key))
 
-  override def add[V](key: ContextKey[V], value: V): ZIO[LoggingContext, Nothing, Unit] =
-    ZIO.accessM[LoggingContext](_.loggingContext.add(key, value))
-
   override def set[V](key: ContextKey[V], value: V): ZIO[LoggingContext, Nothing, Unit] =
     ZIO.accessM[LoggingContext](_.loggingContext.set(key, value))
 

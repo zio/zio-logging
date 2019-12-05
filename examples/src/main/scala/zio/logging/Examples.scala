@@ -3,7 +3,7 @@ package zio.logging
 import zio._
 
 object Examples extends zio.App {
-  val correlationId = ContextKey[Option[String]]("correlationId", None)
+  val correlationId = ContextKey[String]("correlationId", "undefined-correlation-id")
 
   val env =
     for {
@@ -19,17 +19,17 @@ object Examples extends zio.App {
         override def format(message: String): ZIO[Any, Nothing, String] =
           loggerContext
             .get(correlationId)
-            .map(correlationId => stringFormat.format(correlationId.getOrElse("undefined"), message))
+            .map(correlationId => stringFormat.format(correlationId, message))
             .provide(self)
       }
     }
 
   override def run(args: List[String]) =
     (for {
-      fiber <- loggerContext.add(correlationId, Some("1234")).fork
+      fiber <- loggerContext.set(correlationId, "1234").fork
       _     <- logger.info("info message without correlation id")
       _     <- fiber.join
-      _     <- loggerContext.add(correlationId, Some("1234111"))
+      _     <- loggerContext.set(correlationId, "1234111")
       _     <- logger.info("info message with correlation id")
       _     <- logger.info("another info message with correlation id").fork
     } yield 1).provideSomeM(env)
