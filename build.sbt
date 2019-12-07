@@ -58,6 +58,7 @@ lazy val examples = project
   .dependsOn(slf4j)
   .settings(
     name := "zio-logging-examples",
+    skip in publish := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.2.3"
     )
