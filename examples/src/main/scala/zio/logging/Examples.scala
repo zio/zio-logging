@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio._
-import zio.logging.slf4j.{ logger, Slf4jLogger }
+import zio.logging.slf4j._
 
 object Examples extends zio.App {
   val correlationId = ContextKey[String]("correlationId", "undefined-correlation-id")
