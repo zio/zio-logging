@@ -8,11 +8,18 @@ object BuildHelper {
     crossScalaVersions := Seq(Scala212, Scala213),
     scalaVersion in ThisBuild := Scala212,
     scalacOptions := CommonOpts ++ extraOptions(scalaVersion.value),
+    libraryDependencies ++= Seq(
+      ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided)
+        .cross(CrossVersion.full),
+      compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full))
+    ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
   final private val Scala212 = "2.12.10"
   final private val Scala213 = "2.13.1"
+
+  final private val SilencerVersion = "1.4.4"
 
   final private val CommonOpts =
     Seq(
@@ -41,7 +48,8 @@ object BuildHelper {
       "-Wunused:privates",
       "-Wunused:params",
       "-Wvalue-discard",
-      "-Wdead-code"
+      "-Wdead-code",
+      "-P:silencer:globalFilters=[import scala.collection.compat._]"
     )
 
   final private val OptsTo212 =

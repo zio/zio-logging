@@ -41,7 +41,8 @@ lazy val core = project
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC17"
+      "dev.zio"                %% "zio"                     % "1.0.0-RC17",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
     )
   )
 
