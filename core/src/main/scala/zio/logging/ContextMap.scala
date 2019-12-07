@@ -2,6 +2,8 @@ package zio.logging
 
 import zio._
 
+import scala.collection.compat._
+
 final class ContextMap private (private val map: FiberRef[ContextMap.CMap]) extends LoggingContext.Service[Any] {
 
   def get[V](key: ContextKey[V]): UIO[V] =
@@ -16,12 +18,12 @@ final class ContextMap private (private val map: FiberRef[ContextMap.CMap]) exte
   def locally[R, E, A, V](key: ContextKey[V], value: V)(zio: ZIO[R, E, A]): ZIO[R, E, A] =
     for {
       oldValue <- map.get
-      newValue = ContextMap.add(oldValue)(key, value).mapValues(old => (Nil, old._2))
+      newValue = ContextMap.add(oldValue)(key, value).view.mapValues(old => (Nil, old._2)).toMap
       b <- map
             .set(newValue)
             .bracket_(
               for {
-                changes <- map.get.map(_.mapValues(_._1))
+                changes <- map.get.map(_.view.mapValues(_._1).toMap)
                 _       <- map.set(ContextMap.merge(oldValue, changes))
               } yield ()
             )(zio)
@@ -78,6 +80,9 @@ object ContextMap {
     }
 
   val empty = FiberRef
-    .make(Map.empty[ContextKey[Any], (List[Action[Any]], Any)], (c1: CMap, c2: CMap) => merge(c1, c2.mapValues(_._1)))
+    .make(
+      Map.empty[ContextKey[Any], (List[Action[Any]], Any)],
+      (c1: CMap, c2: CMap) => merge(c1, c2.view.mapValues(_._1).toMap)
+    )
     .map(fiber => new ContextMap(fiber))
 }

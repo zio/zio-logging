@@ -1,3 +1,5 @@
+import BuildHelper._
+
 inThisBuild(
   List(
     organization := "dev.zio",
@@ -36,18 +38,19 @@ lazy val root = project
 
 lazy val core = project
   .in(file("core"))
+  .settings(stdSettings("zio-logging"))
   .settings(
-    name := "zio-logging",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC17"
+      "dev.zio"                %% "zio"                     % "1.0.0-RC17",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
     )
   )
 
 lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(core)
+  .settings(stdSettings("zio-logging-slf4j"))
   .settings(
-    name := "zio-logging-slf4j",
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % "1.7.29"
     )
@@ -56,8 +59,8 @@ lazy val slf4j = project
 lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
+  .settings(stdSettings("zio-logging-examples"))
   .settings(
-    name := "zio-logging-examples",
     skip in publish := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.2.3"
