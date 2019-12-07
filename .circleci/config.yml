@@ -9,6 +9,10 @@ jdk_8: &jdk_8
 jdk_11: &jdk_11
   JDK_VERSION: 11
 
+tags_filter: &tags_filter
+  tags:
+    only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
 machine_ubuntu: &machine_ubuntu
   machine:
     image: ubuntu-1604:201903-01
@@ -27,6 +31,14 @@ load_cache: &load_cache
   - restore_cache:
       key: sbt-logging-cache
 
+clean_cache: &clean_cache
+  - run:
+      name: Clean unwanted files from cache
+      command: |
+        rm -fv $HOME/.ivy2/.sbt.ivy.lock
+        find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+        find $HOME/.sbt        -name "*.lock"               -print -delete
+
 save_cache: &save_cache
   - save_cache:
       key: sbt-logging-cache
@@ -35,15 +47,6 @@ save_cache: &save_cache
         - "~/.sbt"
         - "~/.m2"
 
-compile: &compile
-  steps:
-    - checkout
-    - <<: *load_cache
-    - run:
-        name: Compile code
-        command: ./sbt ++${SCALA_VERSION}! test:compile
-    - <<: *save_cache
-
 lint: &lint
   steps:
     - checkout
@@ -51,6 +54,7 @@ lint: &lint
     - run:
         name: Lint code
         command: ./sbt ++${SCALA_VERSION}! check
+    - <<: *clean_cache
     - <<: *save_cache
 
 test: &test
@@ -61,6 +65,7 @@ test: &test
     - run:
         name: Run tests
         command: ./sbt ++${SCALA_VERSION}! test
+    - <<: *clean_cache
     - <<: *save_cache
 
 release: &release
@@ -88,7 +93,7 @@ jobs:
     <<: *lint
     <<: *machine_ubuntu
     environment:
-      - <<: *scala_212
+      - <<: *scala_213
       - <<: *jdk_8
 
   test_212_jdk8:
@@ -105,11 +110,18 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_11
 
+  test_213_jdk8:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
+
   release:
     <<: *release
     <<: *machine_ubuntu
     environment:
-      - <<: *scala_212
+      - <<: *scala_213
       - <<: *jdk_8
 
 workflows:
@@ -118,24 +130,29 @@ workflows:
     jobs:
       - lint:
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
       - test_212_jdk8:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
       - test_212_jdk11:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
+      - test_213_jdk8:
+          requires:
+            - lint
+          filters:
+            <<: *tags_filter
       - release:
           context: Sonatype
+          requires:
+            - test_212_jdk8
+            - test_212_jdk11
+            - test_213_jdk8
           filters:
+            <<: *tags_filter
             branches:
               ignore: /.*/
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
