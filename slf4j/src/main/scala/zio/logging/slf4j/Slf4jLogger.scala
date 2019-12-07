@@ -6,10 +6,10 @@ import zio.internal.stacktracer.Tracer
 import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
-import zio.logging.AbstractLogging
+import zio.logging.Logging
 import zio.{ Cause, ZIO }
 
-trait Slf4jLogger extends AbstractLogging.Service[Any, String] {
+trait Slf4jLogger extends Logging.Service[Any, String] {
 
   // this is copy from PlatformLive.
   private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
@@ -77,12 +77,12 @@ trait Slf4jLogger extends AbstractLogging.Service[Any, String] {
 }
 
 object Slf4jLogger {
-  trait Live extends AbstractLogging[String] {
+  trait Live extends Logging[String] {
     self =>
 
     def formatMessage(msg: String): ZIO[Any, Nothing, String]
 
-    def logging: AbstractLogging.Service[Any, String] = new Slf4jLogger {
+    def logging: Logging.Service[Any, String] = new Slf4jLogger {
       override def formatMessage(msg: String): ZIO[Any, Nothing, String] =
         self.formatMessage(msg)
     }

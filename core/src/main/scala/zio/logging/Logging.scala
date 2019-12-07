@@ -2,11 +2,11 @@ package zio.logging
 
 import zio.{ Cause, ZIO }
 
-trait AbstractLogging[Message] {
-  def logging: AbstractLogging.Service[Any, Message]
+trait Logging[Message] {
+  def logging: Logging.Service[Any, Message]
 }
 
-object AbstractLogging {
+object Logging {
 
   trait Service[-R, Message] {
 
