@@ -1,6 +1,7 @@
 package zio.logging
 
 import zio._
+import zio.logging.slf4j._
 
 object Examples extends zio.App {
   val correlationId = ContextKey[String]("correlationId", "undefined-correlation-id")
@@ -10,17 +11,16 @@ object Examples extends zio.App {
       ctxMap <- ContextMap.empty
     } yield {
       val stringFormat = "[correlation-id = %s] %s"
-      new Logging with LoggingContext with LoggingFormat[String] {
+      new Slf4jLogger.Live with LoggingContext {
         self =>
-        override def logging: AbstractLogging.Service[Any] = new Slf4jLogger()
-
-        override def loggingContext: LoggingContext.Service[Any] = ctxMap
-
-        override def format(message: String): ZIO[Any, Nothing, String] =
+        override def formatMessage(message: String): ZIO[Any, Nothing, String] =
           loggerContext
             .get(correlationId)
             .map(correlationId => stringFormat.format(correlationId, message))
             .provide(self)
+
+        override def loggingContext: LoggingContext.Service[Any] = ctxMap
+
       }
     }
 
