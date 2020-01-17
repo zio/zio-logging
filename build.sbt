@@ -42,7 +42,7 @@ lazy val core = project
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %% "zio"                     % "1.0.0-RC17",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3"
     )
   )
 
@@ -52,7 +52,7 @@ lazy val slf4j = project
   .settings(stdSettings("zio-logging-slf4j"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "1.7.29"
+      "org.slf4j" % "slf4j-api" % "1.7.30"
     )
   )
 
