@@ -52,7 +52,7 @@ lazy val slf4j = project
   .settings(stdSettings("zio-logging-slf4j"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "1.7.29"
+      "org.slf4j" % "slf4j-api" % "1.7.30"
     )
   )
 
