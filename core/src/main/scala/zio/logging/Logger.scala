@@ -41,7 +41,8 @@ object Logger {
         }
       }
 
-  val noopLogger = make(LogLevel.Off, (_, _) => ZIO.unit)
+  val noopLogger =
+    make(LogLevel.Off, (_, _) => ZIO.unit)
 
   def consoleLogger(logLevel: LogLevel, format: (LogContext, => String) => String) =
     ZIO.accessM[Clock with Console](env =>
@@ -60,6 +61,4 @@ object Logger {
           } yield ()).provide(env)
       )
     )
-
-
 }

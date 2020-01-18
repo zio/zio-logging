@@ -28,6 +28,8 @@ inThisBuild(
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
+val ZioVersion = "1.0.0-RC17"
+
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
@@ -41,9 +43,12 @@ lazy val core = project
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %% "zio"                     % "1.0.0-RC17",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3"
-    )
+      "dev.zio"                %% "zio"                     % ZioVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3",
+      "dev.zio"                %% "zio-test"                % ZioVersion % Test,
+      "dev.zio"                %% "zio-test-sbt"            % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
 lazy val slf4j = project

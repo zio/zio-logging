@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio._
-import zio.logging.slf4j._
+import zio.logging.slf4j.Slf4jLogger
 
 object Examples extends zio.App {
   val correlationId = LogAnnotation[String](
@@ -23,12 +23,12 @@ object Examples extends zio.App {
 
   override def run(args: List[String]) =
     (for {
-        fiber <- logger.locallyAnnotate(correlationId, "1234")(ZIO.unit).fork
-        _ <- logger.log("info message without correlation id")
+        fiber <- locallyAnnotate(correlationId, "1234")(ZIO.unit).fork
+        _ <- log("info message without correlation id")
         _ <- fiber.join
-        _ <- logger.locallyAnnotate(correlationId, "1234111") {
-          logger.log("info message with correlation id") *>
-            logger.log("another info message with correlation id").fork
+        _ <- locallyAnnotate(correlationId, "1234111") {
+          log("info message with correlation id") *>
+            log("another info message with correlation id").fork
         }
       } yield 1).provideSomeM(env)
 }

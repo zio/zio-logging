@@ -1,9 +1,6 @@
-package zio.logging.slf4j
+package zio
 
-import zio.ZIO
-import zio.logging.{LogAnnotation, LogLevel, Logger}
-
-object logger {
+package object logging {
   def log(line: => String): ZIO[Logger, Nothing, Unit] =
     ZIO.accessM[Logger](_.log(line))
 
