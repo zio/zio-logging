@@ -1,7 +1,8 @@
 package zio.logging
-import zio.{UIO, ZIO}
+import zio.{ UIO, ZIO }
 
 trait LoggerLike[-A] { self =>
+
   /**
    * Produces a new logger by adapting a different input type to the input
    * type of this logger.
@@ -60,4 +61,3 @@ trait LoggerLike[-A] { self =>
       def logContext: UIO[LogContext] = self.logContext
     }
 }
-

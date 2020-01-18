@@ -4,10 +4,11 @@ package zio.logging
  * A `LogContext` stores context associated with logging operations.
  */
 final case class LogContext private (private val map: Map[LogAnnotation[_], Any]) { self =>
+
   /**
    * Merges this context with the specified context.
    */
-  def ++ (that: LogContext): LogContext = self merge that
+  def ++(that: LogContext): LogContext = self merge that
 
   /**
    * Annotates the context with the specified annotation and value, returning
@@ -39,9 +40,9 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
 }
 
 object LogContext {
+
   /**
    * An empty context.
    */
   val empty: LogContext = new LogContext(Map())
 }
-

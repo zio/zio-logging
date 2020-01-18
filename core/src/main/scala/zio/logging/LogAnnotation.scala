@@ -6,7 +6,8 @@ import scala.reflect.ClassTag
  * A `LogAnnotation` describes a particular type of annotation applied to log
  * lines.
  */
-final case class LogAnnotation[A: ClassTag](name: String, neutral: A, combine: (A, A) => A, render: A => String) { self =>
+final case class LogAnnotation[A: ClassTag](name: String, neutral: A, combine: (A, A) => A, render: A => String) {
+  self =>
   def id: (String, ClassTag[A]) = (name, classTag)
 
   /**
@@ -17,12 +18,13 @@ final case class LogAnnotation[A: ClassTag](name: String, neutral: A, combine: (
   override def hashCode: Int = id.hashCode
 
   override def equals(that: Any): Boolean = that match {
-    case that : LogAnnotation[_] => self.id == that.id
-    case _ => false
+    case that: LogAnnotation[_] => self.id == that.id
+    case _                      => false
   }
 }
 
 object LogAnnotation {
+
   /**
    * The `Level` annotation keeps track of log levels.
    */

@@ -43,7 +43,7 @@ object LoggerSpec
               )
           )
         },
-        testM("log with log level"){
+        testM("log with log level") {
           TestLogger.apply.flatMap(logger =>
             logger.log(LogLevel.Debug)("test") *>
               assertM(
@@ -59,7 +59,7 @@ object LoggerSpec
               )
           )
         },
-        testM("log annotations"){
+        testM("log annotations") {
           val exampleAnnotation = LogAnnotation[String](
             name = "annotation-name",
             neutral = "unknown-annotation-value",
@@ -76,7 +76,7 @@ object LoggerSpec
                     (
                       LogContext.empty
                         .annotate(LogAnnotation.Level, LogLevel.Info)
-                        .annotate(exampleAnnotation,"value1"),
+                        .annotate(exampleAnnotation, "value1"),
                       "line1"
                     )
                   )
@@ -84,10 +84,9 @@ object LoggerSpec
               )
           )
         },
-        testM("named logger"){
+        testM("named logger") {
           TestLogger.apply.flatMap(logger =>
-            logger.locallyAnnotate(LogAnnotation.Name, List("first"))(
-              logger.named("second").log("line1")) *>
+            logger.locallyAnnotate(LogAnnotation.Name, List("first"))(logger.named("second").log("line1")) *>
               assertM(
                 logger.lines,
                 equalTo(
@@ -101,7 +100,6 @@ object LoggerSpec
                   )
                 )
               )
-
           )
         }
       )

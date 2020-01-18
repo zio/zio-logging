@@ -16,19 +16,17 @@ object Examples extends zio.App {
   val env =
     Slf4jLogger.make(
       LogLevel.Debug,
-      (context, message) =>
-        logFormat.format(context.get(correlationId), message)
+      (context, message) => logFormat.format(context.get(correlationId), message)
     )
-
 
   override def run(args: List[String]) =
     (for {
-        fiber <- locallyAnnotate(correlationId, "1234")(ZIO.unit).fork
-        _ <- log("info message without correlation id")
-        _ <- fiber.join
-        _ <- locallyAnnotate(correlationId, "1234111") {
-          log("info message with correlation id") *>
-            log("another info message with correlation id").fork
-        }
-      } yield 1).provideSomeM(env)
+      fiber <- locallyAnnotate(correlationId, "1234")(ZIO.unit).fork
+      _     <- log("info message without correlation id")
+      _     <- fiber.join
+      _ <- locallyAnnotate(correlationId, "1234111") {
+            log("info message with correlation id") *>
+              log("another info message with correlation id").fork
+          }
+    } yield 1).provideSomeM(env)
 }

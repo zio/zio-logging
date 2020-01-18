@@ -50,13 +50,13 @@ object Logger {
         logLevel,
         (context, line) =>
           (for {
-            date       <- currentDateTime
-            level      = context.get(LogAnnotation.Level)
+            date  <- currentDateTime
+            level = context.get(LogAnnotation.Level)
             loggerName = context.get(LogAnnotation.Name) match {
               case Nil => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
-              case _ => LogAnnotation.Name.render(context.get(LogAnnotation.Name))
+              case _   => LogAnnotation.Name.render(context.get(LogAnnotation.Name))
             }
-            _          <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
+            _ <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
 
           } yield ()).provide(env)
       )
