@@ -1,28 +1,15 @@
 package zio.logging.slf4j
 
-import zio.logging.Logging
-import zio.{ Cause, ZIO }
+import zio.ZIO
+import zio.logging.{LogAnnotation, LogLevel, Logger}
 
-object logger extends Logging.Service[Logging[String], String] {
+object logger {
+  def log(line: => String): ZIO[Logger, Nothing, Unit] =
+    ZIO.accessM[Logger](_.log(line))
 
-  override def trace(message: => String): ZIO[Logging[String], Nothing, Unit] =
-    ZIO.accessM[Logging[String]](_.logging.trace(message))
+  def log(level: LogLevel)(line: => String): ZIO[Logger, Nothing, Unit] =
+    ZIO.accessM[Logger](_.log(level)(line))
 
-  override def debug(message: => String): ZIO[Logging[String], Nothing, Unit] =
-    ZIO.accessM[Logging[String]](_.logging.debug(message))
-
-  override def info(message: => String): ZIO[Logging[String], Nothing, Unit] =
-    ZIO.accessM[Logging[String]](_.logging.info(message))
-
-  override def warning(message: => String): ZIO[Logging[String], Nothing, Unit] =
-    ZIO.accessM[Logging[String]](_.logging.warning(message))
-
-  override def error(message: => String): ZIO[Logging[String], Nothing, Unit] =
-    ZIO.accessM[Logging[String]](_.logging.error(message))
-
-  override def error(
-    message: => String,
-    cause: Cause[Any]
-  ): ZIO[Logging[String], Nothing, Unit] =
-    ZIO.accessM[Logging[String]](_.logging.error(message, cause))
+  def locallyAnnotate[A, R <: Logger, E, A1](annotation: LogAnnotation[A], value: A)(zio: ZIO[R, E, A1]) =
+    ZIO.accessM[Logger with R](_.locallyAnnotate[A, R, E, A1](annotation, value)(zio))
 }

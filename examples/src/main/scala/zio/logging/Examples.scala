@@ -4,33 +4,32 @@ import zio._
 import zio.logging.slf4j._
 
 object Examples extends zio.App {
-  val correlationId = ContextKey[String]("correlationId", "undefined-correlation-id")
+  val correlationId = LogAnnotation[String](
+    name = "correlationId",
+    neutral = "undefined-correlation-id",
+    combine = (_, newValue) => newValue,
+    render = identity
+  )
+
+  val logFormat = "[correlation-id = %s] %s"
 
   val env =
-    for {
-      ctxMap <- ContextMap.empty
-    } yield {
-      val stringFormat = "[correlation-id = %s] %s"
-      new Slf4jLogger.Live with LoggingContext {
-        self =>
-        override def formatMessage(message: String): ZIO[Any, Nothing, String] =
-          loggerContext
-            .get(correlationId)
-            .map(correlationId => stringFormat.format(correlationId, message))
-            .provide(self)
+    Slf4jLogger.make(
+      (context, message) =>
+        logFormat.format(context.get(correlationId), message)
+    )
 
-        override def loggingContext: LoggingContext.Service[Any] = ctxMap
-
-      }
-    }
 
   override def run(args: List[String]) =
-    (for {
-      fiber <- loggerContext.set(correlationId, "1234").fork
-      _     <- logger.info("info message without correlation id")
-      _     <- fiber.join
-      _     <- loggerContext.set(correlationId, "1234111")
-      _     <- logger.info("info message with correlation id")
-      _     <- logger.info("another info message with correlation id").fork
-    } yield 1).provideSomeM(env)
+    logger.locallyAnnotate(LogAnnotation.Level, LogLevel.Info) {
+      for {
+        fiber <- logger.locallyAnnotate(correlationId, "1234")(ZIO.unit).fork
+        _ <- logger.log("info message without correlation id")
+        _ <- fiber.join
+        _ <- logger.locallyAnnotate(correlationId, "1234111") {
+          logger.log("info message with correlation id") *>
+            logger.log("another info message with correlation id").fork
+        }
+      } yield 1
+    }.provideSomeM(env)
 }

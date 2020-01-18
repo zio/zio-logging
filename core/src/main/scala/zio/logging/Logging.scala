@@ -1,6 +1,6 @@
 package zio.logging
 
-import zio.{ Cause, ZIO }
+import zio.ZIO
 
 trait Logging[Message] {
   def logging: Logging.Service[Any, Message]
@@ -9,13 +9,9 @@ trait Logging[Message] {
 object Logging {
 
   trait Service[-R, Message] {
-
-    def trace(message: => Message): ZIO[R, Nothing, Unit]
-    def debug(message: => Message): ZIO[R, Nothing, Unit]
-    def info(message: => Message): ZIO[R, Nothing, Unit]
-    def warning(message: => Message): ZIO[R, Nothing, Unit]
-    def error(message: => Message): ZIO[R, Nothing, Unit]
-    def error(message: => Message, cause: Cause[Any]): ZIO[R, Nothing, Unit]
+    def log(line: => Message): ZIO[R, Nothing, Unit]
+    def log(level: LogLevel)(line: => Message): ZIO[R, Nothing, Unit]
+    def locallyAnnotate[A, R1 <: R, E, A1](annotation: LogAnnotation[A], value: A)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1]
   }
 
 }

@@ -63,6 +63,7 @@ lazy val examples = project
   .settings(
     skip in publish := true,
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
+      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "dev.zio"                %% "zio-macros-core"         % "0.6.2"
     )
   )
