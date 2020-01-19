@@ -6,7 +6,7 @@ import zio.logging.slf4j.Slf4jLogger
 object Examples extends zio.App {
   val correlationId = LogAnnotation[String](
     name = "correlationId",
-    neutral = "undefined-correlation-id",
+    initialValue = "undefined-correlation-id",
     combine = (_, newValue) => newValue,
     render = identity
   )

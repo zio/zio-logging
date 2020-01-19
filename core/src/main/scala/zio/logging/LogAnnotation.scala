@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
  * A `LogAnnotation` describes a particular type of annotation applied to log
  * lines.
  */
-final case class LogAnnotation[A: ClassTag](name: String, neutral: A, combine: (A, A) => A, render: A => String) {
+final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combine: (A, A) => A, render: A => String) {
   self =>
   def id: (String, ClassTag[A]) = (name, classTag)
 
@@ -28,7 +28,7 @@ object LogAnnotation {
   /**
    * The `Level` annotation keeps track of log levels.
    */
-  val Level = LogAnnotation[LogLevel]("level", LogLevel.Trace, (_, r) => r, _.render)
+  val Level = LogAnnotation[LogLevel]("level", LogLevel.Info, (_, r) => r, _.render)
 
   /**
    * The `Name` annotation keeps track of logger names.

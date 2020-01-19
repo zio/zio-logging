@@ -62,7 +62,7 @@ object LoggerSpec
         testM("log annotations") {
           val exampleAnnotation = LogAnnotation[String](
             name = "annotation-name",
-            neutral = "unknown-annotation-value",
+            initialValue = "unknown-annotation-value",
             combine = (oldValue, newValue) => oldValue + " " + newValue,
             render = identity
           )

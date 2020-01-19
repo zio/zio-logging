@@ -24,7 +24,7 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
    * Retrieves the specified annotation from the context.
    */
   def get[A](annotation: LogAnnotation[A]): A =
-    map.get(annotation).fold(annotation.neutral)(_.asInstanceOf[A])
+    map.get(annotation).fold(annotation.initialValue)(_.asInstanceOf[A])
 
   /**
    * Merges this context with the specified context.
