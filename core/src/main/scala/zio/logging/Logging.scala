@@ -13,9 +13,9 @@ trait Logging[-R] {
 
 object Logging {
 
-  def make[R](logLevel: LogLevel, logger: (LogContext, => String) => URIO[R, Unit]) =
+  def make[R](logger: (LogContext, => String) => URIO[R, Unit]) =
     Logger
-      .make(logLevel, logger)
+      .make(logger)
       .map(l =>
         new Logging[R] {
           override def logger: Logger[R] = l
@@ -23,24 +23,21 @@ object Logging {
       )
 
   val ignore: UIO[Logging[Any]] =
-    make(LogLevel.Off, (_, _) => ZIO.unit)
+    make((_, _) => ZIO.unit)
 
   def console(
-    logLevel: LogLevel,
     format: (LogContext, => String) => String
   ): URIO[Console with Clock, Logging[Console with Clock]] =
-    make(
-      logLevel,
-      (context, line) =>
-        for {
-          date  <- currentDateTime
-          level = context.get(LogAnnotation.Level)
-          loggerName = context.get(LogAnnotation.Name) match {
-            case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
-            case names => LogAnnotation.Name.render(names)
-          }
-          _ <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
-        } yield ()
+    make((context, line) =>
+      for {
+        date  <- currentDateTime
+        level = context.get(LogAnnotation.Level)
+        loggerName = context.get(LogAnnotation.Name) match {
+          case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
+          case names => LogAnnotation.Name.render(names)
+        }
+        _ <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
+      } yield ()
     )
 
   def log(line: => String): ZIO[Logging[Any], Nothing, Unit] =

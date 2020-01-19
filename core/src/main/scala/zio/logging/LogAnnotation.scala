@@ -28,7 +28,7 @@ object LogAnnotation {
   /**
    * The `Level` annotation keeps track of log levels.
    */
-  val Level = LogAnnotation[LogLevel]("level", LogLevel.Off, (_, r) => r, _.render)
+  val Level = LogAnnotation[LogLevel]("level", LogLevel.Trace, (_, r) => r, _.render)
 
   /**
    * The `Name` annotation keeps track of logger names.

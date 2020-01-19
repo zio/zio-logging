@@ -14,10 +14,7 @@ object Examples extends zio.App {
   val logFormat = "[correlation-id = %s] %s"
 
   val env =
-    Slf4jLogger.make(
-      LogLevel.Debug,
-      (context, message) => logFormat.format(context.get(correlationId), message)
-    )
+    Slf4jLogger.make((context, message) => logFormat.format(context.get(correlationId), message))
 
   override def run(args: List[String]) =
     (for {

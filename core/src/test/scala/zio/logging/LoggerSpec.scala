@@ -21,7 +21,7 @@ object LoggerSpec
         def apply: UIO[TestLogger] =
           for {
             data   <- Ref.make(Vector.empty[(LogContext, String)])
-            logger <- Logger.make(LogLevel.Info, (context, message) => data.update(_ :+ ((context, message))).unit)
+            logger <- Logger.make((context, message) => data.update(_ :+ ((context, message))).unit)
           } yield new TestLogger(data, logger)
 
       }
@@ -35,7 +35,7 @@ object LoggerSpec
                 equalTo(
                   Vector(
                     (
-                      LogContext.empty.annotate(LogAnnotation.Level, LogLevel.Info),
+                      LogContext.empty,
                       "test"
                     )
                   )
@@ -75,7 +75,6 @@ object LoggerSpec
                   Vector(
                     (
                       LogContext.empty
-                        .annotate(LogAnnotation.Level, LogLevel.Info)
                         .annotate(exampleAnnotation, "value1"),
                       "line1"
                     )
@@ -93,7 +92,6 @@ object LoggerSpec
                   Vector(
                     (
                       LogContext.empty
-                        .annotate(LogAnnotation.Level, LogLevel.Info)
                         .annotate(LogAnnotation.Name, List("first", "second")),
                       "line1"
                     )

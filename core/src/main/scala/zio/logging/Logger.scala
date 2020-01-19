@@ -24,9 +24,9 @@ object Logger {
   /**
    * Constructs a logger provided the specified sink.
    */
-  def make[R](logLevel: LogLevel, logger: (LogContext, => String) => URIO[R, Unit]): URIO[R, Logger[R]] =
+  def make[R](logger: (LogContext, => String) => URIO[R, Unit]): URIO[R, Logger[R]] =
     FiberRef
-      .make(LogContext.empty.annotate(LogAnnotation.Level, logLevel))
+      .make(LogContext.empty)
       .map { ref =>
         new Logger[R] {
           def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
