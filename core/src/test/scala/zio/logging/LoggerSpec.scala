@@ -7,7 +7,7 @@ import zio.{ Ref, UIO, ZIO }
 object LoggerSpec
     extends DefaultRunnableSpec({
 
-      case class TestLogger(ref: Ref[Vector[(LogContext, String)]], logger: Logger) extends Logger {
+      case class TestLogger(ref: Ref[Vector[(LogContext, String)]], logger: Logger[Any]) extends Logger[Any] {
         override def locally[R, E, A1](f: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] =
           logger.locally(f)(zio)
         override def log(line: => String): UIO[Unit] =

@@ -26,7 +26,7 @@ object Examples extends zio.App {
       _     <- fiber.join
       _ <- locallyAnnotate(correlationId, "1234111") {
             log("info message with correlation id") *>
-              log("another info message with correlation id").fork
+              log(LogLevel.Error)("another info message with correlation id").fork
           }
     } yield 1).provideSomeM(env)
 }

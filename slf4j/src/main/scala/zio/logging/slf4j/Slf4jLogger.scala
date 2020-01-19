@@ -6,18 +6,22 @@ import zio.{ UIO, ZIO }
 
 object Slf4jLogger {
 
-  private def logger(lambda: => AnyRef) =
+  private def logger(name: String) =
     ZIO.effectTotal(
       LoggerFactory.getLogger(
-        Logger.classNameForLambda(lambda).getOrElse("ZIO.defaultLogger")
+        name
       )
     )
 
-  def make(level: LogLevel, logFormat: (LogContext, => String) => String): UIO[Logger] =
-    Logger.make(
+  def make(level: LogLevel, logFormat: (LogContext, => String) => String): UIO[Logging[Any]] =
+    Logging.make(
       level,
-      (context, line) =>
-        logger(line).map(slf4jLogger =>
+      (context, line) => {
+        val loggerName = context.get(LogAnnotation.Name) match {
+          case Nil   => Logger.classNameForLambda(line).getOrElse("ZIO.defaultLogger")
+          case names => LogAnnotation.Name.render(names)
+        }
+        logger(loggerName).map(slf4jLogger =>
           context.get(LogAnnotation.Level).level match {
             case LogLevel.Off.level   => ()
             case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line))
@@ -27,5 +31,6 @@ object Slf4jLogger {
             case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line))
           }
         )
+      }
     )
 }

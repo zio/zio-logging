@@ -1,18 +1,32 @@
 package zio.logging
-import zio.{ UIO, ZIO }
+import zio.{ UIO, URIO, ZIO }
 
-trait LoggerLike[-A] { self =>
+trait LoggerLike[-A, -R] { self =>
 
   /**
    * Produces a new logger by adapting a different input type to the input
    * type of this logger.
    */
-  final def contramap[A1](f: A1 => A): LoggerLike[A1] =
-    new LoggerLike[A1] {
-      def locally[R, E, A2](f: LogContext => LogContext)(zio: ZIO[R, E, A2]): ZIO[R, E, A2] =
+  final def contramap[A1](f: A1 => A): LoggerLike[A1, R] =
+    new LoggerLike[A1, R] {
+      def locally[R1, E, A2](f: LogContext => LogContext)(zio: ZIO[R1, E, A2]): ZIO[R1, E, A2] =
         self.locally(f)(zio)
 
-      def log(line: => A1): UIO[Unit] = self.log(f(line))
+      def log(line: => A1): URIO[R, Unit] = self.log(f(line))
+
+      def logContext: UIO[LogContext] = self.logContext
+    }
+
+  /**
+   * Derives a new logger from this one, by applying the specified decorator
+   * to the logger context.
+   */
+  def derive(f: LogContext => LogContext): LoggerLike[A, R] =
+    new LoggerLike[A, R] {
+      def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+        self.locally(f)(zio)
+
+      def log(line: => A): URIO[R, Unit] = locally(f)(self.log(line))
 
       def logContext: UIO[LogContext] = self.logContext
     }
@@ -20,7 +34,7 @@ trait LoggerLike[-A] { self =>
   /**
    * Modifies the log context in the scope of the specified effect.
    */
-  def locally[R, E, A1](f: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[R, E, A1]
+  def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1]
 
   /**
    * Modifies the annotate in the scope of the specified effect.
@@ -31,7 +45,7 @@ trait LoggerLike[-A] { self =>
   /**
    * Logs the specified element using an inherited log level.
    */
-  def log(line: => A): UIO[Unit]
+  def log(line: => A): URIO[R, Unit]
 
   /**
    * Retrieves the log context.
@@ -42,20 +56,20 @@ trait LoggerLike[-A] { self =>
    * Logs the specified element at the specified level. Implementations may
    * override this for greater efficiency.
    */
-  def log(level: LogLevel)(line: => A): UIO[Unit] =
+  def log(level: LogLevel)(line: => A): URIO[R, Unit] =
     locally(_.annotate(LogAnnotation.Level, level))(log(line))
 
   /**
    * Produces a named logger.
    */
-  def named(name: String): LoggerLike[A] =
-    new LoggerLike[A] {
+  def named(name: String): LoggerLike[A, R] =
+    new LoggerLike[A, R] {
       private val named = name :: Nil
 
-      def locally[R, E, A1](f: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] =
+      def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
         self.locally(f)(zio)
 
-      def log(line: => A): UIO[Unit] =
+      def log(line: => A): URIO[R, Unit] =
         locally(_.annotate(LogAnnotation.Name, named))(self.log(line))
 
       def logContext: UIO[LogContext] = self.logContext
