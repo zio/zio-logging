@@ -1,13 +1,16 @@
 package zio.logging
 
+import java.time.OffsetDateTime
+
 import zio.test.Assertion._
 import zio.test._
+import zio.test.environment.TestClock
 import zio.{ Ref, UIO, ZIO }
 
 object LoggerSpec
     extends DefaultRunnableSpec({
 
-      case class TestLogger(ref: Ref[Vector[(LogContext, String)]], logger: Logger[Any]) extends Logger[Any] {
+      case class TestLogger(ref: Ref[Vector[(LogContext, String)]], logger: Logger) extends Logger {
         override def locally[R, E, A1](f: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] =
           logger.locally(f)(zio)
         override def log(line: => String): UIO[Unit] =
@@ -98,6 +101,36 @@ object LoggerSpec
                   )
                 )
               )
+          )
+        },
+        testM("locallyM") {
+          val timely = LogAnnotation[OffsetDateTime](
+            "time",
+            OffsetDateTime.MIN,
+            (_, newVal) => newVal,
+            _.toString
+          )
+          import zio.clock._
+          TestLogger.apply.flatMap(logger =>
+            logger.locallyM { ctx =>
+              currentDateTime.map(now => ctx.annotate(timely, now))
+            }(logger.log("line1")) *>
+              ZIO
+                .accessM[TestClock](_.clock.currentDateTime)
+                .flatMap(now =>
+                  assertM(
+                    logger.lines,
+                    equalTo(
+                      Vector(
+                        (
+                          LogContext.empty
+                            .annotate(timely, now),
+                          "line1"
+                        )
+                      )
+                    )
+                  )
+                )
           )
         }
       )

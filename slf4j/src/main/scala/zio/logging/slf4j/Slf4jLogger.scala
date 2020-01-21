@@ -1,10 +1,23 @@
 package zio.logging.slf4j
 
 import org.slf4j.LoggerFactory
+import zio.internal.Tracing
+import zio.internal.stacktracer.Tracer
+import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
+import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
+import zio.internal.tracing.TracingConfig
 import zio.logging._
 import zio.{ UIO, ZIO }
 
 object Slf4jLogger {
+
+  private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
+
+  private def classNameForLambda(lambda: => AnyRef) =
+    tracing.tracer.traceLocation(() => lambda) match {
+      case SourceLocation(_, clazz, _, _) => Some(clazz)
+      case NoLocation(_)                  => None
+    }
 
   private def logger(name: String) =
     ZIO.effectTotal(
@@ -13,10 +26,10 @@ object Slf4jLogger {
       )
     )
 
-  def make(logFormat: (LogContext, => String) => String): UIO[Logging[Any]] =
+  def make(logFormat: (LogContext, => String) => String): UIO[Logging] =
     Logging.make { (context, line) =>
       val loggerName = context.get(LogAnnotation.Name) match {
-        case Nil   => Logger.classNameForLambda(line).getOrElse("ZIO.defaultLogger")
+        case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
         case names => LogAnnotation.Name.render(names)
       }
       logger(loggerName).map(slf4jLogger =>

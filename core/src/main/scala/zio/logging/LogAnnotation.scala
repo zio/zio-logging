@@ -21,6 +21,8 @@ final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combi
     case that: LogAnnotation[_] => self.id == that.id
     case _                      => false
   }
+
+  override def toString: String = "LogAnnotation(" + name + ")"
 }
 
 object LogAnnotation {
@@ -34,4 +36,14 @@ object LogAnnotation {
    * The `Name` annotation keeps track of logger names.
    */
   val Name = LogAnnotation[List[String]]("name", Nil, _ ++ _, _.mkString("."))
+
+  /**
+   * The `CorrelationId` annotation keeps track of correlation id.
+   */
+  val CorrelationId = LogAnnotation[Option[java.util.UUID]](
+    name = "correlation-id",
+    initialValue = None,
+    combine = (_, r) => r,
+    render = _.map(_.toString).getOrElse("undefined-correlation-id")
+  )
 }
