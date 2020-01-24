@@ -61,6 +61,23 @@ lazy val slf4j = project
     )
   )
 
+lazy val docs = project
+  .in(file("zio-logging-docs"))
+  .settings(
+    skip in publish := true,
+    moduleName := "docs",
+    unusedCompileDependenciesFilter -= moduleFilter("org.scalameta", "mdoc"),
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    scalacOptions ~= { _.filterNot(_.startsWith("-Ywarn")) },
+    scalacOptions ~= { _.filterNot(_.startsWith("-Xlint")) },
+    libraryDependencies ++= Seq(
+      ("com.github.ghik" % "silencer-lib" % "1.4.4" % Provided).cross(CrossVersion.full)
+    )
+  )
+  .dependsOn(core, slf4j)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin)
+
 lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
