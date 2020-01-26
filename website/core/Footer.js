@@ -39,9 +39,9 @@ class Footer extends React.Component {
             <h5>GitHub</h5>
             <a
               className="github-button"
-              href="https://github.com/zio/zio-keeper"
+              href="https://github.com/zio/zio-logging"
               data-icon="octicon-star"
-              data-count-href="/zio/zio-keeper/stargazers"
+              data-count-href="/zio/zio-logging/stargazers"
               data-show-count="true"
               data-count-aria-label="# stargazers on GitHub"
               aria-label="Star this project on GitHub">

@@ -62,7 +62,7 @@ lazy val slf4j = project
   )
 
 lazy val docs = project
-  .in(file("zio-logging-docs"))
+  .in(file("docs"))
   .settings(
     skip in publish := true,
     moduleName := "docs",
