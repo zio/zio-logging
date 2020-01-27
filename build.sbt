@@ -36,7 +36,7 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(core, slf4j, examples)
+  .aggregate(core, slf4j, examples, docs)
 
 lazy val core = project
   .in(file("core"))
@@ -60,6 +60,23 @@ lazy val slf4j = project
       "org.slf4j" % "slf4j-api" % "1.7.30"
     )
   )
+
+lazy val docs = project
+  .in(file("zio-logging-docs"))
+  .settings(
+    skip in publish := true,
+    moduleName := "docs",
+    unusedCompileDependenciesFilter -= moduleFilter("org.scalameta", "mdoc"),
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    scalacOptions ~= { _.filterNot(_.startsWith("-Ywarn")) },
+    scalacOptions ~= { _.filterNot(_.startsWith("-Xlint")) },
+    libraryDependencies ++= Seq(
+      ("com.github.ghik" % "silencer-lib" % "1.4.4" % Provided).cross(CrossVersion.full)
+    )
+  )
+  .dependsOn(core, slf4j)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin)
 
 lazy val examples = project
   .in(file("examples"))

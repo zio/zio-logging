@@ -49,6 +49,41 @@ save_cache: &save_cache
         - "~/.ivy2/cache"
         - "~/.sbt"
         - "~/.m2"
+        - "~/.cache"
+        - "~/website/node_modules"
+
+install_yarn: &install_yarn
+  - run:
+      name: Install Yarn
+      command: |
+        curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+        sudo bash -c 'echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list'
+        sudo apt update && sudo apt install yarn -y
+        yarn policies set-version
+        yarn -v
+
+install_nodejs: &install_nodejs
+  - run:
+      name: Install node.js
+      command: |
+        export NVM_DIR="/opt/circleci/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install
+        nvm use
+        node -v
+
+mdoc: &mdoc
+  steps:
+    - checkout
+    - <<: *load_cache
+    - run:
+        name: Generate documentation
+        command: |
+          ./sbt core/doc slf4j/doc
+          ./sbt ++${SCALA_VERSION}! mdoc
+    - <<: *clean_cache
+    - <<: *save_cache
+          
 
 lint: &lint
   steps:
@@ -70,6 +105,34 @@ test: &test
         command: ./sbt ++${SCALA_VERSION}! test
     - <<: *clean_cache
     - <<: *save_cache
+
+microsite: &microsite
+  steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "27:05:d9:75:68:ca:e8:62:4e:7f:32:0a:fc:93:73:ef"
+      - checkout
+      - <<: *load_cache
+      - <<: *install_nodejs
+      - <<: *install_yarn
+      - run:
+          name: Publishing website
+          command: |
+            git config --global user.email "${GH_NAME}@users.noreply.github.com"
+            git config --global user.name "${GH_NAME}"
+            export GIT_USER=${GH_NAME}
+            export TRAVIS_BUILD_NUMBER="${CIRCLE_BUILD_NUM}"
+            export TRAVIS_COMMIT="${CIRCLE_SHA1}"
+            sudo chown -R $USER:$USER /tmp
+            export NVM_DIR="/opt/circleci/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install
+            nvm use
+            node -v
+            ./sbt docs/docusaurusCreateSite
+            ./sbt docs/docusaurusPublishGhpages
+      - <<: *clean_cache
+      - <<: *save_cache
 
 release: &release
   steps:
@@ -99,6 +162,13 @@ jobs:
       - <<: *scala_213
       - <<: *jdk_8
 
+  mdoc:
+    <<: *mdoc
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_8    
+
   test_212_jdk8:
     <<: *test
     <<: *machine_ubuntu
@@ -120,6 +190,12 @@ jobs:
       - <<: *scala_213
       - <<: *jdk_8
 
+  microsite:
+    <<: *microsite
+    <<: *machine_ubuntu
+    environment:
+      - <<: *jdk_8
+
   release:
     <<: *release
     <<: *machine_ubuntu
@@ -132,6 +208,11 @@ workflows:
   build:
     jobs:
       - lint:
+          filters:
+            <<: *tags_filter
+      - mdoc:
+          requires:
+            - lint
           filters:
             <<: *tags_filter
       - test_212_jdk8:
@@ -149,12 +230,22 @@ workflows:
             - lint
           filters:
             <<: *tags_filter
-      - release:
-          context: Sonatype
+      - microsite:
+          context: Website
           requires:
+            - mdoc
             - test_212_jdk8
             - test_212_jdk11
             - test_213_jdk8
+          filters:
+            <<: *tags_filter
+            branches:
+              only: 
+                - master
+      - release:
+          context: Sonatype
+          requires:
+            - microsite
           filters:
             <<: *tags_filter
             branches:
