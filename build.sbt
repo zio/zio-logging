@@ -36,7 +36,7 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(core, slf4j, examples)
+  .aggregate(core, slf4j, examples, docs)
 
 lazy val core = project
   .in(file("core"))
@@ -62,7 +62,7 @@ lazy val slf4j = project
   )
 
 lazy val docs = project
-  .in(file("docs"))
+  .in(file("zio-logging-docs"))
   .settings(
     skip in publish := true,
     moduleName := "docs",
