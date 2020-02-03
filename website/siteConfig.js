@@ -22,7 +22,7 @@ const users = [
 
 const siteConfig = {
   title: 'ZIO logging',
-  tagline: 'Purely-functional, type-safe library for building distributed systems',
+  tagline: 'An environmental effect for adding logging into any ZIO application.',
   url: 'https://zio.github.io',
   baseUrl: '/zio-logging/', // Base URL for your project */
 
