@@ -93,16 +93,16 @@ class Index extends React.Component {
       <Block layout="threeColumn">
         {[
           {
-            content: 'Design complex systems by composing the available building blocks',
+            content: 'Compose loggers with contraMap',
             title: 'Composable',
           },
           {
-            content: 'Build apps with automated failure recovery',
-            title: 'Resilient',
+            content: 'Built on top of ZIO',
+            title: 'Type-safe',
           },
           {
-            content: 'Benefit from security guarantees built into the library core',
-            title: 'Secure',
+            content: 'Benefit from ZIO Test to mock your logger',
+            title: 'Testable',
           },
         ]}
       </Block>
@@ -112,6 +112,7 @@ class Index extends React.Component {
       <div>
         <HomeSplash siteConfig={siteConfig} language={language} />
         <div className="mainContainer">
+          <Features />
         </div>
       </div>
     );
