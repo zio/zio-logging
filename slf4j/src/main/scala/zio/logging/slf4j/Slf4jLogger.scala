@@ -38,6 +38,7 @@ object Slf4jLogger {
           case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line))
           case LogLevel.Trace.level => slf4jLogger.trace(logFormat(context, line))
           case LogLevel.Info.level  => slf4jLogger.info(logFormat(context, line))
+          case LogLevel.Warn.level  => slf4jLogger.warn(logFormat(context, line))
           case LogLevel.Error.level => slf4jLogger.error(logFormat(context, line))
           case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line))
         }
