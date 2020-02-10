@@ -3,6 +3,7 @@ package zio.logging
 import zio.clock.{ currentDateTime, Clock }
 import zio.console.{ putStrLn, Console }
 import zio.{ UIO, URIO, ZIO }
+import zio.Cause
 
 trait Logging {
 
@@ -35,6 +36,12 @@ object Logging {
         _          <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
       } yield ()
     )
+
+  def error(cause: Cause[Any]): ZIO[Logging, Nothing, Unit] = 
+    log(LogLevel.Error)(cause.prettyPrint)
+
+  def throwable(t: Throwable): ZIO[Logging, Nothing, Unit] = 
+    log(LogLevel.Error)(t.getStackTrace().mkString("\n"))
 
   def log(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.logger.log(line))
