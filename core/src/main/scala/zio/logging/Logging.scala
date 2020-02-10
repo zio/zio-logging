@@ -37,10 +37,10 @@ object Logging {
       } yield ()
     )
 
-  def error(cause: Cause[Any]): ZIO[Logging, Nothing, Unit] = 
+  def error(cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Error)(cause.prettyPrint)
 
-  def throwable(t: Throwable): ZIO[Logging, Nothing, Unit] = 
+  def throwable(t: Throwable): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Error)(t.getStackTrace().mkString("\n"))
 
   def log(line: => String): ZIO[Logging, Nothing, Unit] =
