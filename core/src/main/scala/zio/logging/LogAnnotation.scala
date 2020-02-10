@@ -8,6 +8,9 @@ import scala.reflect.ClassTag
  */
 final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combine: (A, A) => A, render: A => String) {
   self =>
+
+  def apply(value: A): LogContext => LogContext = _.annotate(self, combine(initialValue, value))
+
   def id: (String, ClassTag[A]) = (name, classTag)
 
   /**

@@ -145,7 +145,7 @@ object LogLevelAndLoggerName extends zio.App {
     )
 
   override def run(args: List[String]) =
-   locallyAnnotate(LogAnnotation.Name, List("logger-name-here")) { 
+   locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
     log(LogLevel.Debug)("Hello from ZIO logger")
    }.as(0).provideSomeM(env)
 }
