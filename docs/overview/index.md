@@ -145,7 +145,7 @@ object LogLevelAndLoggerName extends zio.App {
     )
 
   override def run(args: List[String]) =
-   locallyAnnotate(LogAnnotation.Name, List("logger-name-here")) { 
+   locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
     log(LogLevel.Debug)("Hello from ZIO logger")
    }.as(0).provideSomeM(env)
 }
@@ -181,7 +181,7 @@ object Slf4jAndCorrelationId extends zio.App {
   override def run(args: List[String]) =
     (for {
       _     <- log("info message without correlation id")
-      _ <- locallyAnnotate(LogAnnotation.CorrelationId, generateCorrelationId) {
+      _ <- logLocally(LogAnnotation.CorrelationId(generateCorrelationId)) {
             log("info message with correlation id") *>
               log(LogLevel.Error)("another info message with correlation id").fork
           }
