@@ -18,10 +18,10 @@ object Examples extends zio.App {
 
   override def run(args: List[String]) =
     (for {
-      fiber <- locallyAnnotate(correlationId, "1234")(ZIO.unit).fork
+      fiber <- logLocally(correlationId("1234"))(ZIO.unit).fork
       _     <- log("info message without correlation id")
       _     <- fiber.join
-      _ <- locallyAnnotate(correlationId, "1234111") {
+      _ <- logLocally(correlationId("1234111")) {
             log("info message with correlation id") *>
               log(LogLevel.Error)("another info message with correlation id").fork
           }

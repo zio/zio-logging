@@ -86,6 +86,33 @@ object LoggerSpec
               )
           )
         },
+        testM("log annotations apply method") {
+          val exampleAnnotation = LogAnnotation[String](
+            name = "annotation-name",
+            initialValue = "unknown-annotation-value",
+            combine = (oldValue, newValue) => oldValue + " " + newValue,
+            render = identity
+          )
+
+          TestLogger.apply.flatMap(logger =>
+            logger.locally(exampleAnnotation("value1"))(logger.log("line1")) *>
+              assertM(
+                logger.lines,
+                equalTo(
+                  Vector(
+                    (
+                      LogContext.empty
+                        .annotate(
+                          exampleAnnotation,
+                          exampleAnnotation.combine(exampleAnnotation.initialValue, "value1")
+                        ),
+                      "line1"
+                    )
+                  )
+                )
+              )
+          )
+        },
         testM("named logger") {
           TestLogger.apply.flatMap(logger =>
             logger.locallyAnnotate(LogAnnotation.Name, List("first"))(logger.named("second").log("line1")) *>
