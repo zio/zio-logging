@@ -181,7 +181,7 @@ object Slf4jAndCorrelationId extends zio.App {
   override def run(args: List[String]) =
     (for {
       _     <- log("info message without correlation id")
-      _ <- locallyAnnotate(LogAnnotation.CorrelationId, generateCorrelationId) {
+      _ <- logLocally(LogAnnotation.CorrelationId(generateCorrelationId)) {
             log("info message with correlation id") *>
               log(LogLevel.Error)("another info message with correlation id").fork
           }
