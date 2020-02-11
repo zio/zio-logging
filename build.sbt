@@ -44,7 +44,7 @@ lazy val core = project
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
       "dev.zio"                %% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % ZioVersion % Test
     ),
