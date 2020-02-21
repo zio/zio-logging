@@ -72,7 +72,7 @@ lazy val docs = project
     scalacOptions ~= { _.filterNot(_.startsWith("-Ywarn")) },
     scalacOptions ~= { _.filterNot(_.startsWith("-Xlint")) },
     libraryDependencies ++= Seq(
-      ("com.github.ghik" % "silencer-lib" % "1.4.4" % Provided).cross(CrossVersion.full)
+      ("com.github.ghik" % "silencer-lib" % "1.5.0" % Provided).cross(CrossVersion.full)
     )
   )
   .dependsOn(core, slf4j)
