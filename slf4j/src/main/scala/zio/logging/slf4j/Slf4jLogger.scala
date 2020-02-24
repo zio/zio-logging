@@ -26,6 +26,11 @@ object Slf4jLogger {
       )
     )
 
+  def makeWithName(name: String)(logFormat: (LogContext, => String) => String): UIO[Logging] =
+    make { (context, line) =>
+      logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line)
+    }
+
   def make(logFormat: (LogContext, => String) => String): UIO[Logging] =
     Logging.make { (context, line) =>
       val loggerName = context.get(LogAnnotation.Name) match {
