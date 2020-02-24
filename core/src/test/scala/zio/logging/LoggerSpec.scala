@@ -139,9 +139,7 @@ object LoggerSpec
           )
           import zio.clock._
           TestLogger.apply.flatMap(logger =>
-            logger.locallyM { ctx =>
-              currentDateTime.map(now => ctx.annotate(timely, now))
-            }(logger.log("line1")) *>
+            logger.locallyM(ctx => currentDateTime.map(now => ctx.annotate(timely, now)))(logger.log("line1")) *>
               ZIO
                 .accessM[TestClock](_.clock.currentDateTime)
                 .flatMap(now =>
