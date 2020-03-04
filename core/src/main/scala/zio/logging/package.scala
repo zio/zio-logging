@@ -1,6 +1,8 @@
 package zio
 
 package object logging {
+  type Logging = Has[Logger]
+
   def log(line: => String): ZIO[Logging, Nothing, Unit] =
     Logging.log(line)
 

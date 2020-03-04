@@ -4,11 +4,10 @@ import java.time.OffsetDateTime
 
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestClock
-import zio.{ Ref, UIO, ZIO }
+import zio.{Ref, UIO, ZIO}
 
 object LoggerSpec
-    extends DefaultRunnableSpec({
+    extends DefaultRunnableSpec {
 
       case class TestLogger(ref: Ref[Vector[(LogContext, String)]], logger: Logger) extends Logger {
         override def locally[R, E, A1](f: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] =
@@ -29,12 +28,12 @@ object LoggerSpec
 
       }
 
-      suite("logger")(
+      def spec = suite("logger")(
         testM("simple log") {
           TestLogger.apply.flatMap(logger =>
             logger.log("test") *>
               assertM(
-                logger.lines,
+                logger.lines)(
                 equalTo(
                   Vector(
                     (
@@ -50,7 +49,7 @@ object LoggerSpec
           TestLogger.apply.flatMap(logger =>
             logger.log(LogLevel.Debug)("test") *>
               assertM(
-                logger.lines,
+                logger.lines)(
                 equalTo(
                   Vector(
                     (
@@ -73,7 +72,7 @@ object LoggerSpec
           TestLogger.apply.flatMap(logger =>
             logger.locallyAnnotate(exampleAnnotation, "value1")(logger.log("line1")) *>
               assertM(
-                logger.lines,
+                logger.lines)(
                 equalTo(
                   Vector(
                     (
@@ -97,7 +96,7 @@ object LoggerSpec
           TestLogger.apply.flatMap(logger =>
             logger.locally(exampleAnnotation("value1"))(logger.log("line1")) *>
               assertM(
-                logger.lines,
+                logger.lines)(
                 equalTo(
                   Vector(
                     (
@@ -117,7 +116,7 @@ object LoggerSpec
           TestLogger.apply.flatMap(logger =>
             logger.locallyAnnotate(LogAnnotation.Name, List("first"))(logger.named("second").log("line1")) *>
               assertM(
-                logger.lines,
+                logger.lines)(
                 equalTo(
                   Vector(
                     (
@@ -141,10 +140,9 @@ object LoggerSpec
           TestLogger.apply.flatMap(logger =>
             logger.locallyM(ctx => currentDateTime.map(now => ctx.annotate(timely, now)))(logger.log("line1")) *>
               ZIO
-                .accessM[TestClock](_.clock.currentDateTime)
+                .accessM[Clock](_.get.currentDateTime)
                 .flatMap(now =>
-                  assertM(
-                    logger.lines,
+                  assertM(logger.lines)(
                     equalTo(
                       Vector(
                         (
@@ -159,4 +157,4 @@ object LoggerSpec
           )
         }
       )
-    })
+    }
