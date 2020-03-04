@@ -33,33 +33,27 @@ object LoggerSpec
         testM("simple log") {
           TestLogger.apply.flatMap(logger =>
             logger.log("test") *>
-              assertM(
-                logger.lines,
-                equalTo(
+              assertM(logger.lines)(equalTo(
                   Vector(
                     (
                       LogContext.empty,
                       "test"
                     )
                   )
-                )
-              )
+                ))
           )
         },
         testM("log with log level") {
           TestLogger.apply.flatMap(logger =>
             logger.log(LogLevel.Debug)("test") *>
-              assertM(
-                logger.lines,
-                equalTo(
+              assertM(logger.lines)(equalTo(
                   Vector(
                     (
                       LogContext.empty.annotate(LogAnnotation.Level, LogLevel.Debug),
                       "test"
                     )
                   )
-                )
-              )
+                ))
           )
         },
         testM("log annotations") {
@@ -72,9 +66,7 @@ object LoggerSpec
 
           TestLogger.apply.flatMap(logger =>
             logger.locallyAnnotate(exampleAnnotation, "value1")(logger.log("line1")) *>
-              assertM(
-                logger.lines,
-                equalTo(
+              assertM(logger.lines)(equalTo(
                   Vector(
                     (
                       LogContext.empty
@@ -82,8 +74,7 @@ object LoggerSpec
                       "line1"
                     )
                   )
-                )
-              )
+                ))
           )
         },
         testM("log annotations apply method") {
@@ -96,9 +87,7 @@ object LoggerSpec
 
           TestLogger.apply.flatMap(logger =>
             logger.locally(exampleAnnotation("value1"))(logger.log("line1")) *>
-              assertM(
-                logger.lines,
-                equalTo(
+              assertM(logger.lines)(equalTo(
                   Vector(
                     (
                       LogContext.empty
@@ -109,16 +98,13 @@ object LoggerSpec
                       "line1"
                     )
                   )
-                )
-              )
+                ))
           )
         },
         testM("named logger") {
           TestLogger.apply.flatMap(logger =>
             logger.locallyAnnotate(LogAnnotation.Name, List("first"))(logger.named("second").log("line1")) *>
-              assertM(
-                logger.lines,
-                equalTo(
+              assertM(logger.lines)(equalTo(
                   Vector(
                     (
                       LogContext.empty
@@ -126,8 +112,7 @@ object LoggerSpec
                       "line1"
                     )
                   )
-                )
-              )
+                ))
           )
         },
         testM("locallyM") {
@@ -143,9 +128,7 @@ object LoggerSpec
               ZIO
                 .accessM[TestClock](_.clock.currentDateTime)
                 .flatMap(now =>
-                  assertM(
-                    logger.lines,
-                    equalTo(
+                  assertM(logger.lines)(equalTo(
                       Vector(
                         (
                           LogContext.empty
@@ -153,8 +136,7 @@ object LoggerSpec
                           "line1"
                         )
                       )
-                    )
-                  )
+                    ))
                 )
           )
         }
