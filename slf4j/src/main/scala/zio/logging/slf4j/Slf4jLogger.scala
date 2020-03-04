@@ -3,11 +3,11 @@ package zio.logging.slf4j
 import org.slf4j.LoggerFactory
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
-import zio.internal.stacktracer.ZTraceElement.{NoLocation, SourceLocation}
+import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
 import zio.logging._
-import zio.{ZIO, ZLayer}
+import zio.{ ZIO, ZLayer }
 
 object Slf4jLogger {
 

@@ -1,9 +1,8 @@
 package zio.logging
 
-import zio.clock.{Clock, currentDateTime}
-import zio.console.{Console, putStrLn}
-import zio.{Cause, URIO, ZIO, ZLayer}
-
+import zio.clock.{ currentDateTime, Clock }
+import zio.console.{ putStrLn, Console }
+import zio.{ Cause, URIO, ZIO, ZLayer }
 
 object Logging {
 
@@ -44,7 +43,6 @@ object Logging {
       Logger
         .make(logger)
     )
-
 
   def throwable(t: Throwable): ZIO[Logging, Nothing, Unit] =
     error(Cause.die(t))
