@@ -4,7 +4,6 @@ import zio.clock.{ currentDateTime, Clock }
 import zio.console.{ putStrLn, Console }
 import zio.{ Cause, URIO, ZIO, ZLayer }
 
-
 object Logging {
   trait Service {
     def logger: Logger
@@ -45,11 +44,12 @@ object Logging {
   def make[R](logger: (LogContext, => String) => URIO[R, Unit]): ZLayer[R, Nothing, Logging] =
     ZLayer.fromEffect(
       Logger
-        .make(logger).map( l =>
-        new Service {
-          override def logger: Logger = l
-        }
-      )
+        .make(logger)
+        .map(l =>
+          new Service {
+            override def logger: Logger = l
+          }
+        )
     )
 
   def throwable(t: Throwable): ZIO[Logging, Nothing, Unit] =

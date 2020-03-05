@@ -6,25 +6,26 @@ import zio._
 import zio.test.Assertion._
 import zio.test._
 
-object TestLogger {
-  type TestLogging = Has[TestLogger.Service]
-  trait Service extends Logging.Service {
-    def lines: UIO[Vector[(LogContext, String)]]
-  }
-  def make: ZLayer.NoDeps[Nothing, TestLogging] =
-    ZLayer.fromEffect(for {
-      data    <- Ref.make(Vector.empty[(LogContext, String)])
-      logger0 <- Logger.make((context, message) => data.update(_ :+ ((context, message))).unit)
-    } yield new Service {
-      override def lines: UIO[Vector[(LogContext, String)]] = data.get
-
-      override def logger: Logger = logger0
-    })
-
-  def lines = ZIO.accessM[TestLogging](_.get.lines)
-}
-
 object LoggerSpec extends DefaultRunnableSpec {
+
+  object TestLogger {
+    type TestLogging = Has[TestLogger.Service]
+    trait Service extends Logging.Service {
+      def lines: UIO[Vector[(LogContext, String)]]
+    }
+    def make: ZLayer.NoDeps[Nothing, TestLogging with Logging] =
+      ZLayer.fromEffectMany(for {
+        data    <- Ref.make(Vector.empty[(LogContext, String)])
+        logger0 <- Logger.make((context, message) => data.update(_ :+ ((context, message))).unit)
+        test = new TestLogger.Service {
+          override def lines: UIO[Vector[(LogContext, String)]] = data.get
+
+          override def logger: Logger = logger0
+        }
+      } yield Has.allOf[Logging.Service, TestLogger.Service](test, test))
+
+    def lines = ZIO.accessM[TestLogging](_.get.lines)
+  }
 
   def spec =
     suite("logger")(
