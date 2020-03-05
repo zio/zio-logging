@@ -63,10 +63,10 @@
         </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Summary</h1></header><article><div><span><p>ZIO Logging is a functional, type-safe library for logging.</p>
 <h2><a class="anchor" aria-hidden="true" id="installation"></a><a href="#installation" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Installation</h2>
 <p><code>ZIO-Logging</code> is available via maven repo so import in <code>build.sbt</code> is sufficient:</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging"</span> % <span class="hljs-string">"0.2.0"</span>
+<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging"</span> % <span class="hljs-string">"0.2.3"</span>
 </code></pre>
 <p>If you need <code>slf4j</code> integration use <code>zio-logging-slf4j</code> instead</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-slf4j"</span> % <span class="hljs-string">"0.2.0"</span>
+<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-slf4j"</span> % <span class="hljs-string">"0.2.3"</span>
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="logger-interface"></a><a href="#logger-interface" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Interface</h2>
 <pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">LoggerLike</span>[-<span class="hljs-type">A</span>] </span>{ self =&gt;
@@ -120,19 +120,19 @@
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">named</span></span>(name: <span class="hljs-type">String</span>): <span class="hljs-type">LoggerLike</span>[<span class="hljs-type">A</span>] 
 }
 </code></pre>
-<p>Liabrary provides package object that exposes basic methods:</p>
+<p>Library provides package object that exposes basic methods:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">package</span> <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">logging</span> </span>{
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">log</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] 
 
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">log</span></span>(level: <span class="hljs-type">LogLevel</span>)(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] 
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">locallyAnnotate</span></span>[<span class="hljs-type">A</span>, <span class="hljs-type">R</span> &lt;: <span class="hljs-type">Logging</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>](annotation: <span class="hljs-type">LogAnnotation</span>[<span class="hljs-type">A</span>], value: <span class="hljs-type">A</span>)(
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">locally</span></span>[<span class="hljs-type">R1</span> &lt;: <span class="hljs-type">Logging</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>](f: <span class="hljs-type">LogContext</span> =&gt; <span class="hljs-type">LogContext</span>)(zio: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R1</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]): <span class="hljs-type">ZIO</span>[<span class="hljs-type">R1</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]
     zio: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]
   ): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span> <span class="hljs-keyword">with</span> <span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>] 
 }
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="logger-context"></a><a href="#logger-context" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Context</h3>
-<p>Loggger Contex is mechanism that we use to carry informations like logger name or correlation id across different Fibers. Implementation uses <code>FiberRef</code> from <code>ZIO</code>.</p>
+<p>Logger Context is mechanism that we use to carry information like logger name or correlation id across different Fibers. Implementation uses <code>FiberRef</code> from <code>ZIO</code>.</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
 locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-type">Name</span>, <span class="hljs-string">"my-logger"</span> :: <span class="hljs-type">Nil</span>) {
   log(<span class="hljs-string">"log entry"</span>) <span class="hljs-comment">// value of LogAnnotation.Name is only visible in this block</span>
@@ -153,7 +153,7 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
     )
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-    log(<span class="hljs-string">"Hello from ZIO logger"</span>).as(<span class="hljs-number">0</span>).provideSomeM(env)
+    env &gt;&gt;&gt; log(<span class="hljs-string">"Hello from ZIO logger"</span>).as(<span class="hljs-number">0</span>)
 }
 
 </code></pre>
@@ -171,9 +171,9 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
     )
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-   locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"logger-name-here"</span> :: <span class="hljs-type">Nil</span>)) { 
+   env &gt;&gt;&gt; locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"logger-name-here"</span> :: <span class="hljs-type">Nil</span>)) { 
     log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Debug</span>)(<span class="hljs-string">"Hello from ZIO logger"</span>)
-   }.as(<span class="hljs-number">0</span>).provideSomeM(env)
+   }.as(<span class="hljs-number">0</span>)
 }
 </code></pre>
 <p>Expected console output:</p>
@@ -200,13 +200,13 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
     <span class="hljs-type">Some</span>(java.util.<span class="hljs-type">UUID</span>.randomUUID())
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-    (<span class="hljs-keyword">for</span> {
+    env &gt;&gt;&gt; <span class="hljs-keyword">for</span> {
       _     &lt;- log(<span class="hljs-string">"info message without correlation id"</span>)
       _ &lt;- logLocally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">CorrelationId</span>(generateCorrelationId)) {
             log(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
               log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(<span class="hljs-string">"another info message with correlation id"</span>).fork
           }
-    } <span class="hljs-keyword">yield</span> <span class="hljs-number">0</span>).provideSomeM(env)
+    } <span class="hljs-keyword">yield</span> <span class="hljs-number">0</span>
 }
 
 </code></pre>
@@ -215,4 +215,4 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
 <span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.434</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-1</span><span class="hljs-number">-78428773</span>] INFO  Slf4jAndCorrelationId$ [correlation-id = <span class="hljs-number">9</span>da4b9be<span class="hljs-number">-9e27</span><span class="hljs-number">-4</span>af6-b687-d96851ab15f1] info message with correlation id
 <span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.440</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-2</span><span class="hljs-number">-78428773</span>] ERROR Slf4jAndCorrelationId$ [correlation-id = <span class="hljs-number">9</span>da4b9be<span class="hljs-number">-9e27</span><span class="hljs-number">-4</span>af6-b687-d96851ab15f1] another info message with correlation id
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2/11/2020 by przemyslaw wierzbicki</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/5/2020 by Dejan Mijić</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
