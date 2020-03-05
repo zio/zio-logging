@@ -2,20 +2,16 @@ package zio.logging
 
 import zio.clock.{ currentDateTime, Clock }
 import zio.console.{ putStrLn, Console }
-import zio.{ UIO, URIO, ZIO }
-import zio.Cause
-
-trait Logging {
-
-  def logger: Logger
-
-}
+import zio.{ Cause, URIO, ZIO, ZLayer }
 
 object Logging {
+  trait Service {
+    def logger: Logger
+  }
 
   def console(
     format: (LogContext, => String) => String
-  ): URIO[Console with Clock, Logging] =
+  ): ZLayer[Console with Clock, Nothing, Logging] =
     make((context, line) =>
       for {
         date       <- currentDateTime
@@ -27,32 +23,34 @@ object Logging {
   def error(cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Error)(cause.prettyPrint)
 
-  val ignore: UIO[Logging] =
+  val ignore: ZLayer.NoDeps[Nothing, Logging] =
     make((_, _) => ZIO.unit)
 
   def locally[R1 <: Logging, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
-    ZIO.accessM[R1](_.logger.locally(f)(zio))
+    ZIO.accessM(_.get.logger.locally(f)(zio))
 
   def log(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.logger.log(line))
+    ZIO.accessM[Logging](_.get.logger.log(line))
 
   def log(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.logger.log(level)(line))
+    ZIO.accessM[Logging](_.get.logger.log(level)(line))
 
   def logger: URIO[Logging, Logger] =
-    ZIO.access[Logging](_.logger)
+    ZIO.access[Logging](_.get.logger)
 
   def logContext: URIO[Logging, LogContext] =
-    ZIO.accessM[Logging](_.logger.logContext)
+    ZIO.accessM[Logging](_.get.logger.logContext)
 
-  def make[R](logger: (LogContext, => String) => URIO[R, Unit]): URIO[R, Logging] =
-    Logger
-      .make(logger)
-      .map(l =>
-        new Logging {
-          override def logger: Logger = l
-        }
-      )
+  def make[R](logger: (LogContext, => String) => URIO[R, Unit]): ZLayer[R, Nothing, Logging] =
+    ZLayer.fromEffect(
+      Logger
+        .make(logger)
+        .map(l =>
+          new Service {
+            override def logger: Logger = l
+          }
+        )
+    )
 
   def throwable(t: Throwable): ZIO[Logging, Nothing, Unit] =
     error(Cause.die(t))

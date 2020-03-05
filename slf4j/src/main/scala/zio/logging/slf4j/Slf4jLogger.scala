@@ -7,7 +7,7 @@ import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
 import zio.logging._
-import zio.{ UIO, ZIO }
+import zio.{ ZIO, ZLayer }
 
 object Slf4jLogger {
 
@@ -26,10 +26,10 @@ object Slf4jLogger {
       )
     )
 
-  def makeWithName(name: String)(logFormat: (LogContext, => String) => String): UIO[Logging] =
+  def makeWithName(name: String)(logFormat: (LogContext, => String) => String): ZLayer[Any, Nothing, Logging] =
     make((context, line) => logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line))
 
-  def make(logFormat: (LogContext, => String) => String): UIO[Logging] =
+  def make(logFormat: (LogContext, => String) => String): ZLayer[Any, Nothing, Logging] =
     Logging.make { (context, line) =>
       val loggerName = context.get(LogAnnotation.Name) match {
         case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")

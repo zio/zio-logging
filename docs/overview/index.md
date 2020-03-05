@@ -10,13 +10,13 @@ ZIO Logging is a functional, type-safe library for logging.
 `ZIO-Logging` is available via maven repo so import in `build.sbt` is sufficient:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging" % "0.2.0"
+libraryDependencies += "dev.zio" %% "zio-logging" % "0.2.3"
 ```
 
 If you need `slf4j` integration use `zio-logging-slf4j` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "0.2.0"
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "0.2.3"
 ```
 
 
@@ -76,7 +76,7 @@ trait LoggerLike[-A] { self =>
 }
 ```
 
-Liabrary provides package object that exposes basic methods:
+Library provides package object that exposes basic methods:
 
 ```scala
 package object logging {
@@ -84,14 +84,14 @@ package object logging {
 
   def log(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] 
 
-  def locallyAnnotate[A, R <: Logging, E, A1](annotation: LogAnnotation[A], value: A)(
+  def locally[R1 <: Logging, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1]
     zio: ZIO[R, E, A1]
   ): ZIO[Logging with R, E, A1] 
 }
 ```
 
 ### Logger Context
-Loggger Contex is mechanism that we use to carry informations like logger name or correlation id across different Fibers. Implementation uses `FiberRef` from `ZIO`. 
+Logger Context is mechanism that we use to carry information like logger name or correlation id across different Fibers. Implementation uses `FiberRef` from `ZIO`. 
 
 ```scala
 import zio.logging._
@@ -121,7 +121,7 @@ object Simple extends zio.App {
     )
 
   override def run(args: List[String]) =
-    log("Hello from ZIO logger").as(0).provideSomeM(env)
+    env >>> log("Hello from ZIO logger").as(0)
 }
 
 ```
@@ -145,9 +145,9 @@ object LogLevelAndLoggerName extends zio.App {
     )
 
   override def run(args: List[String]) =
-   locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
+   env >>> locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
     log(LogLevel.Debug)("Hello from ZIO logger")
-   }.as(0).provideSomeM(env)
+   }.as(0)
 }
 ```
 
@@ -179,13 +179,13 @@ object Slf4jAndCorrelationId extends zio.App {
     Some(java.util.UUID.randomUUID())
 
   override def run(args: List[String]) =
-    (for {
+    env >>> for {
       _     <- log("info message without correlation id")
       _ <- logLocally(LogAnnotation.CorrelationId(generateCorrelationId)) {
             log("info message with correlation id") *>
               log(LogLevel.Error)("another info message with correlation id").fork
           }
-    } yield 0).provideSomeM(env)
+    } yield 0
 }
 
 ```
