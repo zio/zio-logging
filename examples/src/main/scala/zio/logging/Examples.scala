@@ -25,5 +25,5 @@ object Examples extends zio.App {
             log("info message with correlation id") *>
               log(LogLevel.Error)("another info message with correlation id").fork
           }
-    } yield 1).provideSomeLayer(env)
+    } yield 1).provideLayer(env)
 }
