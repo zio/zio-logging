@@ -179,13 +179,15 @@ object Slf4jAndCorrelationId extends zio.App {
     Some(java.util.UUID.randomUUID())
 
   override def run(args: List[String]) =
-    env >>> for {
-      _     <- log("info message without correlation id")
-      _ <- logLocally(LogAnnotation.CorrelationId(generateCorrelationId)) {
-            log("info message with correlation id") *>
-              log(LogLevel.Error)("another info message with correlation id").fork
-          }
-    } yield 0
+      (for {
+        fiber <- logLocally(correlationId("1234"))(ZIO.unit).fork
+        _     <- log("info message without correlation id")
+        _     <- fiber.join
+        _ <- logLocally(correlationId("1234111")) {
+              log("info message with correlation id") *>
+                log(LogLevel.Error)("another info message with correlation id").fork
+            }
+      } yield 1).provideLayer(env)
 }
 
 ```
