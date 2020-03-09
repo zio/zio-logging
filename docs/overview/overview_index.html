@@ -200,13 +200,15 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
     <span class="hljs-type">Some</span>(java.util.<span class="hljs-type">UUID</span>.randomUUID())
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-    env &gt;&gt;&gt; <span class="hljs-keyword">for</span> {
-      _     &lt;- log(<span class="hljs-string">"info message without correlation id"</span>)
-      _ &lt;- logLocally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">CorrelationId</span>(generateCorrelationId)) {
-            log(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
-              log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(<span class="hljs-string">"another info message with correlation id"</span>).fork
-          }
-    } <span class="hljs-keyword">yield</span> <span class="hljs-number">0</span>
+      (<span class="hljs-keyword">for</span> {
+        fiber &lt;- logLocally(correlationId(<span class="hljs-string">"1234"</span>))(<span class="hljs-type">ZIO</span>.unit).fork
+        _     &lt;- log(<span class="hljs-string">"info message without correlation id"</span>)
+        _     &lt;- fiber.join
+        _ &lt;- logLocally(correlationId(<span class="hljs-string">"1234111"</span>)) {
+              log(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
+                log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(<span class="hljs-string">"another info message with correlation id"</span>).fork
+            }
+      } <span class="hljs-keyword">yield</span> <span class="hljs-number">1</span>).provideLayer(env)
 }
 
 </code></pre>
@@ -215,4 +217,4 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
 <span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.434</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-1</span><span class="hljs-number">-78428773</span>] INFO  Slf4jAndCorrelationId$ [correlation-id = <span class="hljs-number">9</span>da4b9be<span class="hljs-number">-9e27</span><span class="hljs-number">-4</span>af6-b687-d96851ab15f1] info message with correlation id
 <span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.440</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-2</span><span class="hljs-number">-78428773</span>] ERROR Slf4jAndCorrelationId$ [correlation-id = <span class="hljs-number">9</span>da4b9be<span class="hljs-number">-9e27</span><span class="hljs-number">-4</span>af6-b687-d96851ab15f1] another info message with correlation id
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/5/2020 by Dejan Mijić</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/9/2020 by Pierangelo Cecchetto</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
