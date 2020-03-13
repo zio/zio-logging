@@ -13,7 +13,7 @@ object LoggerSpec extends DefaultRunnableSpec {
     trait Service extends Logging.Service {
       def lines: UIO[Vector[(LogContext, String)]]
     }
-    def make: ZLayer.NoDeps[Nothing, TestLogging with Logging] =
+    def make: Layer[Nothing, TestLogging with Logging] =
       ZLayer.fromEffectMany(for {
         data    <- Ref.make(Vector.empty[(LogContext, String)])
         logger0 <- Logger.make((context, message) => data.update(_ :+ ((context, message))).unit)
@@ -127,7 +127,7 @@ object LoggerSpec extends DefaultRunnableSpec {
         )
         import zio.clock._
         Logging.logger.flatMap(logger =>
-          logger.locallyM(ctx => currentDateTime.map(now => ctx.annotate(timely, now)))(logger.log("line1")) *>
+          logger.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(logger.log("line1")) *>
             ZIO
               .accessM[Clock](_.get.currentDateTime)
               .flatMap(now =>
