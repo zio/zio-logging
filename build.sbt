@@ -28,7 +28,7 @@ inThisBuild(
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val ZioVersion = "1.0.0-RC18"
+val ZioVersion = "1.0.0-RC18-2"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")

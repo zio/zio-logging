@@ -2,7 +2,7 @@ package zio.logging
 
 import zio.clock.{ currentDateTime, Clock }
 import zio.console.{ putStrLn, Console }
-import zio.{ Cause, URIO, ZIO, ZLayer }
+import zio.{ Cause, Layer, URIO, ZIO, ZLayer }
 
 object Logging {
   trait Service {
@@ -14,7 +14,7 @@ object Logging {
   ): ZLayer[Console with Clock, Nothing, Logging] =
     make((context, line) =>
       for {
-        date       <- currentDateTime
+        date       <- currentDateTime.orDie
         level      = context.get(LogAnnotation.Level)
         loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
         _          <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
@@ -23,7 +23,7 @@ object Logging {
   def error(cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Error)(cause.prettyPrint)
 
-  val ignore: ZLayer.NoDeps[Nothing, Logging] =
+  val ignore: Layer[Nothing, Logging] =
     make((_, _) => ZIO.unit)
 
   def locally[R1 <: Logging, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
