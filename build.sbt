@@ -34,6 +34,7 @@ inThisBuild(
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 val ZioVersion = "1.0.0-RC18-2"
+val scalaJavaTimeVersion="2.0.0-RC5"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check",
@@ -81,6 +82,14 @@ lazy val jsconsole = project
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(coreJS)
   .settings(stdSettings("zio-logging-jsconsole"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test,
+      "dev.zio" %%% "zio-test" % ZioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
 
 lazy val jshttp = project
   .in(file("jshttp"))
