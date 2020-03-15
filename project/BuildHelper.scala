@@ -11,7 +11,9 @@ object BuildHelper {
     libraryDependencies ++= Seq(
       ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided)
         .cross(CrossVersion.full),
-      compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full))
+      compilerPlugin(
+        ("com.github.ghik" % "silencer-plugin" % SilencerVersion)
+          .cross(CrossVersion.full))
     ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )

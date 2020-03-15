@@ -1,13 +1,17 @@
-import sbtcrossproject.CrossPlugin.autoImport.{ crossProject, CrossType }
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import BuildHelper._
 
 inThisBuild(
   List(
     organization := "dev.zio",
     homepage := Some(url("https://zio.github.io/zio-logging/")),
-    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    licenses := List(
+      "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
-      Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
+      Developer("jdegoes",
+                "John De Goes",
+                "john@degoes.net",
+                url("http://degoes.net")),
       Developer(
         "pshemass",
         "Przemyslaw Wierzbicki",
@@ -32,12 +36,13 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 val ZioVersion = "1.0.0-RC18-2"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
-addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
+addCommandAlias("check",
+                "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(coreJVM, coreJS, slf4j, jsconsole, examples, docs)
+  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
@@ -45,16 +50,17 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %%% "zio"                     % ZioVersion,
+      "dev.zio" %%% "zio" % ZioVersion,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.4",
-      "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
-      "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio" %%% "zio-test" % ZioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  ) .jvmSettings(
-  fork in Test := true,
-  fork in run := true
-)
+  )
+  .jvmSettings(
+    fork in Test := true,
+    fork in run := true
+  )
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0-RC5" % Test
@@ -76,6 +82,16 @@ lazy val jsconsole = project
   .dependsOn(coreJS)
   .settings(stdSettings("zio-logging-jsconsole"))
 
+lazy val jshttp = project
+  .in(file("jshttp"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(coreJS)
+  .settings(stdSettings("zio-logging-jshttp"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "1.0.0"
+    )
+  )
 
 lazy val docs = project
   .in(file("zio-logging-docs"))
@@ -88,7 +104,8 @@ lazy val docs = project
     scalacOptions ~= { _.filterNot(_.startsWith("-Ywarn")) },
     scalacOptions ~= { _.filterNot(_.startsWith("-Xlint")) },
     libraryDependencies ++= Seq(
-      ("com.github.ghik" % "silencer-lib" % "1.6.0" % Provided).cross(CrossVersion.full)
+      ("com.github.ghik" % "silencer-lib" % "1.6.0" % Provided).cross(
+        CrossVersion.full)
     )
   )
   .dependsOn(coreJVM, slf4j)
