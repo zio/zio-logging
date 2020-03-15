@@ -11,7 +11,7 @@ Key features:
 - Type safe, purely-functional
 - Context as first-class citizen implemented on top of `FiberRef`
 - Composability between `Logger` via `contramap`
-- ZIO Console and SLF4j backends
+- ZIO Console, SLF4j, JS-Console and JS HTTP endpoint backends
 
 
 To learn more about ZIO Logging, check out the following references:

@@ -19,6 +19,17 @@ If you need `slf4j` integration use `zio-logging-slf4j` instead
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "0.2.3"
 ```
 
+If you need  `scala.js console` integration use `zio-logging-slf4j` instead 
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % "0.2.3"
+```
+
+If you need  `scala.js http` log publishing integration use `zio-logging-slf4j` instead 
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "0.2.3"
+```
 
 
 ## Logger Interface
@@ -200,5 +211,77 @@ Expected Console Output:
 18:47:32.440 [zio-default-async-2-78428773] ERROR Slf4jAndCorrelationId$ [correlation-id = 9da4b9be-9e27-4af6-b687-d96851ab15f1] another info message with correlation id
 ```
 
+### Scala.JS Console
+
+Scala.Js console works as the JVM Console using the standard JS console for output.
+
+```scala
+import zio.logging._
+import zio.logging.js._
+...
+
+    Logging.log("test") *>
+      Logging.log(LogLevel.Trace)("test Trace") *>
+      Logging.log(LogLevel.Debug)("test Debug") *>
+      Logging.log(LogLevel.Info)("test Info") *>
+      Logging.log(LogLevel.Warn)("test Warn") *>
+      Logging.log(LogLevel.Error)("test Error") *>
+      Logging.log(LogLevel.Fatal)("test Fatal") *>
+      Logging.log(LogLevel.Off)("test Off")
+```
+
+
+Expected Console Output:
+```
+1970-01-01T00:00Z INFO  test
+Trace: 1970-01-01T00:00Z TRACE  test Trace
+    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:14731:82
+    at $c_sjsr_AnonFunction0.apply__O (/Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:54402:23)
+    at $c_Lzio_internal_FiberContext.evaluateNow__Lzio_ZIO__V (/Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:59390:42)
+    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:58797:13
+    at $c_Lzio_internal_FiberContext$$Lambda$2.run__V (/Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:34590:16)
+    at $c_sjs_concurrent_QueueExecutionContext$PromisesExecutionContext.scala$scalajs$concurrent$QueueExecutionContext$PromisesExecutionContext$$$anonfun$execute$2__sr_BoxedUnit__jl_Runnable__sjs_js_$bar (/Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:63008:16)
+    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala-2.12/zio-logging-jsconsole-test-fastopt.js:63025:24
+    at processTicksAndRejections (internal/process/task_queues.js:97:5)
+1970-01-01T00:00Z DEBUG  test Debug
+1970-01-01T00:00Z INFO  test Info
+1970-01-01T00:00Z WARN  test Warn
+1970-01-01T00:00Z ERROR  test Error
+1970-01-01T00:00Z FATAL  test Fatal
+```
+
+### Scala.JS HTTP Ajax pusher
+
+This scala.js implementation allows to send logs to a remote server. It's very useful to control the navigation and action inside a SPA.
+
+All events are sent to a backend via Ajax POST.
+
+The Json format of the event is the following
+
+```
+{
+     "date": "2020-03-15T21:58:31.085+01:00",
+     "clientId": "446352f6-11be-4af9-99cb-2c0c1bab8721",
+     "level": "info",
+     "name": "index_page",
+     "msg": "index page loaded",
+     "cause": ""
+}
+```
+
+**clientId** is an identifier of the connection. Default is a UUID random generated
+
+To create a logger, the **url** for the POST is mandatory. 
+
+
+```scala
+import zio.logging._
+import zio.logging.js._
+...
+
+val loggerLayer=HTTPLogger.make("http://localhost:9000/event/collect")((context, message) => message)
+
+
+```
 
 

@@ -31,7 +31,7 @@ object HTTPLogger {
   type MessageFormatter = (OffsetDateTime, String,LogLevel,String,String,Throwable) => js.Object
 
   val defaultFormatter: MessageFormatter = (date, clientId,level,name,msg,cause) => js.Dynamic.literal(
-    data = date.toString,
+    date = date.toString,
     clientId = clientId,
     level = level match {
       case LogLevel.Fatal => "fatal"
