@@ -29,6 +29,9 @@ object Logging {
   def locally[R1 <: Logging, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
     ZIO.accessM(_.get.logger.locally(f)(zio))
 
+  def locallyM[R1 <: Logging, E, A1](f: LogContext => URIO[R1, LogContext])(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+    ZIO.accessM(_.get.logger.locallyM(f)(zio))
+
   def log(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.logger.log(line))
 
