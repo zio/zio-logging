@@ -220,7 +220,7 @@ jobs:
       - <<: *scala_213
       - <<: *jdk_8
 
-    microsite:
+  microsite:
     <<: *microsite
     <<: *machine_ubuntu
     environment:
