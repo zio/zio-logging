@@ -1,7 +1,7 @@
 package zio.logging.js
 
 import zio.ZIO
-import zio.logging.{LogLevel, Logging}
+import zio.logging.{ LogLevel, Logging }
 import zio.test.Assertion.equalTo
 import zio.test._
 

@@ -4,9 +4,9 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import org.scalajs.dom.ext.Ajax
-import zio.{ZIO, ZLayer}
-import zio.clock.{Clock, currentDateTime}
-import zio.logging.{LogAnnotation, LogContext, LogLevel, Logging}
+import zio.{ ZIO, ZLayer }
+import zio.clock.{ currentDateTime, Clock }
+import zio.logging.{ LogAnnotation, LogContext, LogLevel, Logging }
 
 import scala.scalajs.js
 import scala.scalajs.js.JSON
@@ -14,9 +14,7 @@ import scala.scalajs.js.JSON
 object HTTPLogger {
 
   private def sendMessage(url: String, msg: js.Object) =
-    Ajax.post(url,
-              JSON.stringify(msg),
-              headers = Map("Content-Type" -> "application/json"))
+    Ajax.post(url, JSON.stringify(msg), headers = Map("Content-Type" -> "application/json"))
 
   /**
    * Parameters:
@@ -28,43 +26,45 @@ object HTTPLogger {
    *   <li>cause (may be null)</li>
    * </ul>
    */
-  type MessageFormatter = (OffsetDateTime, String,LogLevel,String,String,Throwable) => js.Object
+  type MessageFormatter = (OffsetDateTime, String, LogLevel, String, String, Throwable) => js.Object
 
-  val defaultFormatter: MessageFormatter = (date, clientId,level,name,msg,cause) => js.Dynamic.literal(
-    date = date.toString,
-    clientId = clientId,
-    level = level match {
-      case LogLevel.Fatal => "fatal"
-      case LogLevel.Error => "error"
-      case LogLevel.Warn => "warn"
-      case LogLevel.Info => "info"
-      case LogLevel.Debug => "debug"
-      case LogLevel.Trace => "trace"
-      case LogLevel.Off => ""
-    },
-    name = name,
-    msg = msg,
-    cause = if(cause==null) "" else cause.toString
-  )
+  val defaultFormatter: MessageFormatter = (date, clientId, level, name, msg, cause) =>
+    js.Dynamic.literal(
+      date = date.toString,
+      clientId = clientId,
+      level = level match {
+        case LogLevel.Fatal => "fatal"
+        case LogLevel.Error => "error"
+        case LogLevel.Warn  => "warn"
+        case LogLevel.Info  => "info"
+        case LogLevel.Debug => "debug"
+        case LogLevel.Trace => "trace"
+        case LogLevel.Off   => ""
+      },
+      name = name,
+      msg = msg,
+      cause = if (cause == null) "" else cause.toString
+    )
 
-  def makeWithName(url: String,
-                   clientId: String=UUID.randomUUID().toString,
-                   formatter: MessageFormatter=defaultFormatter)(name: String)(logFormat: (LogContext, => String) => String)
-  : ZLayer[Clock, Nothing, Logging] =
+  def makeWithName(
+    url: String,
+    clientId: String = UUID.randomUUID().toString,
+    formatter: MessageFormatter = defaultFormatter
+  )(name: String)(logFormat: (LogContext, => String) => String): ZLayer[Clock, Nothing, Logging] =
     make(url, clientId, formatter)((context, line) =>
-      logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line))
+      logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line)
+    )
 
-  def make(url: String,
-           clientId: String=UUID.randomUUID().toString,
-           formatter: MessageFormatter=defaultFormatter)(logFormat: (LogContext, => String) => String)
-  : ZLayer[Clock, Nothing, Logging] =
+  def make(url: String, clientId: String = UUID.randomUUID().toString, formatter: MessageFormatter = defaultFormatter)(
+    logFormat: (LogContext, => String) => String
+  ): ZLayer[Clock, Nothing, Logging] =
     Logging.make { (context, line) =>
       for {
-        date <- currentDateTime.orDie
-        level = context.get(LogAnnotation.Level)
+        date       <- currentDateTime.orDie
+        level      = context.get(LogAnnotation.Level)
         loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
-        msg = formatter(date, clientId, level, loggerName, logFormat(context,line), null)
-        _ <- ZIO.effectTotal(sendMessage(url, msg))
+        msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
+        _          <- ZIO.effectTotal(sendMessage(url, msg))
       } yield ()
     }
 

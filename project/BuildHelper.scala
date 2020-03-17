@@ -13,7 +13,8 @@ object BuildHelper {
         .cross(CrossVersion.full),
       compilerPlugin(
         ("com.github.ghik" % "silencer-plugin" % SilencerVersion)
-          .cross(CrossVersion.full))
+          .cross(CrossVersion.full)
+      )
     ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
