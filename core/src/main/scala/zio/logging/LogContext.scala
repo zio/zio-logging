@@ -21,6 +21,12 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
   }
 
   /**
+   * Renders value for given annotation
+   */
+  def apply[A](logAnnotation: LogAnnotation[A]): String =
+    logAnnotation.render(get(logAnnotation))
+
+  /**
    * Retrieves the specified annotation from the context.
    */
   def get[A](annotation: LogAnnotation[A]): A =
