@@ -169,8 +169,8 @@ microsite: &microsite
             nvm install
             nvm use
             node -v
-          ./sbt ++${SCALA_VERSION}! docs/docusaurusCreateSite
-          ./sbt ++${SCALA_VERSION}! docs/docusaurusPublishGhpages
+            ./sbt ++${SCALA_VERSION}! docs/docusaurusCreateSite
+            ./sbt ++${SCALA_VERSION}! docs/docusaurusPublishGhpages
       - <<: *clean_cache
       - <<: *save_cache
 
