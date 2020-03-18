@@ -18,11 +18,12 @@ object Examples extends zio.App {
 
   override def run(args: List[String]) =
     (for {
-      fiber <- logLocally(correlationId("1234"))(ZIO.unit).fork
-      _     <- log("info message without correlation id")
+      fiber <- log.locally(correlationId("1234"))(ZIO.unit).fork
+      _     <- log.info("info message without correlation id")
       _     <- fiber.join
-      _ <- logLocally(correlationId("1234111")) {
+      _ <- log.locally(correlationId("1234111")) {
             log("info message with correlation id") *>
+              log.throwable("this is error.", new RuntimeException("my error")) *>
               log(LogLevel.Error)("another info message with correlation id").fork
           }
     } yield 1).provideLayer(env)
