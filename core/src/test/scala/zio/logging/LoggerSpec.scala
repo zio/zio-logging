@@ -1,8 +1,9 @@
 package zio.logging
 
 import java.time.OffsetDateTime
+import java.util.UUID
 
-import zio._
+import zio.{ Has, Layer, Ref, UIO, ZIO, ZLayer }
 import zio.test.Assertion._
 import zio.test._
 
@@ -144,6 +145,23 @@ object LoggerSpec extends DefaultRunnableSpec {
                 )
               )
         )
+      },
+      test("LogContext render") {
+        val correlationId = UUID.randomUUID()
+        val rendered = LogContext.empty
+          .annotate(LogAnnotation.Name, List("logger_name", "second_level"))
+          .annotate(LogAnnotation.CorrelationId, Some(correlationId))
+          .renderContext
+
+        assert(rendered)(
+          equalTo(
+            Map(
+              LogAnnotation.Name.name          -> "logger_name.second_level",
+              LogAnnotation.CorrelationId.name -> correlationId.toString
+            )
+          )
+        )
+
       }
     ).provideCustomLayer(TestLogger.make)
 }

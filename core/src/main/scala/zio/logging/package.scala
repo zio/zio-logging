@@ -21,6 +21,11 @@ package object logging {
   def logLocally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     Logging.locally(fn)(zio)
 
+  def logLocallyM[A, R <: Logging, E, A1](
+    fn: LogContext => URIO[R, LogContext]
+  )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
+    Logging.locallyM(fn)(zio)
+
   def logThrowable(t: Throwable): ZIO[Logging, Nothing, Unit] =
     Logging.throwable(t)
 
