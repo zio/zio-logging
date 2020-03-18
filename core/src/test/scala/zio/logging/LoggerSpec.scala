@@ -1,8 +1,10 @@
 package zio.logging
 
 import java.time.OffsetDateTime
+import java.util.UUID
 
-import zio._
+import zio.logging.Logging.Logging
+import zio.{ Has, Layer, Ref, UIO, ZIO, ZLayer }
 import zio.test.Assertion._
 import zio.test._
 
@@ -30,7 +32,7 @@ object LoggerSpec extends DefaultRunnableSpec {
   def spec =
     suite("logger")(
       testM("simple log") {
-        Logging.log("test") *>
+        log("test") *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(
@@ -43,7 +45,7 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
       },
       testM("log with log level") {
-        Logging.log(LogLevel.Debug)("test") *>
+        log(LogLevel.Debug)("test") *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(
@@ -63,8 +65,8 @@ object LoggerSpec extends DefaultRunnableSpec {
           render = identity
         )
 
-        Logging.logger.flatMap(
-          _.locallyAnnotate(exampleAnnotation, "value1")(Logging.log("line1")) *>
+        log.logger.flatMap(
+          _.locallyAnnotate(exampleAnnotation, "value1")(log("line1")) *>
             assertM(TestLogger.lines)(
               equalTo(
                 Vector(
@@ -86,7 +88,7 @@ object LoggerSpec extends DefaultRunnableSpec {
           render = identity
         )
 
-        Logging.locally(exampleAnnotation("value1"))(Logging.log("line1")) *>
+        log.locally(exampleAnnotation("value1"))(log("line1")) *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(
@@ -103,7 +105,7 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
       },
       testM("named logger") {
-        Logging.logger.flatMap(logger =>
+        log.logger.flatMap(logger =>
           logger.locallyAnnotate(LogAnnotation.Name, List("first"))(logger.named("second").log("line1")) *>
             assertM(TestLogger.lines)(
               equalTo(
@@ -126,24 +128,39 @@ object LoggerSpec extends DefaultRunnableSpec {
           _.toString
         )
         import zio.clock._
-        Logging.logger.flatMap(logger =>
-          logger.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(logger.log("line1")) *>
-            ZIO
-              .accessM[Clock](_.get.currentDateTime)
-              .flatMap(now =>
-                assertM(TestLogger.lines)(
-                  equalTo(
-                    Vector(
-                      (
-                        LogContext.empty
-                          .annotate(timely, now),
-                        "line1"
-                      )
+        log.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(log("line1")) *>
+          ZIO
+            .accessM[Clock](_.get.currentDateTime)
+            .flatMap(now =>
+              assertM(TestLogger.lines)(
+                equalTo(
+                  Vector(
+                    (
+                      LogContext.empty
+                        .annotate(timely, now),
+                      "line1"
                     )
                   )
                 )
               )
+            )
+      },
+      test("LogContext render") {
+        val correlationId = UUID.randomUUID()
+        val rendered = LogContext.empty
+          .annotate(LogAnnotation.Name, List("logger_name", "second_level"))
+          .annotate(LogAnnotation.CorrelationId, Some(correlationId))
+          .renderContext
+
+        assert(rendered)(
+          equalTo(
+            Map(
+              LogAnnotation.Name.name          -> "logger_name.second_level",
+              LogAnnotation.CorrelationId.name -> correlationId.toString
+            )
+          )
         )
+
       }
     ).provideCustomLayer(TestLogger.make)
 }
