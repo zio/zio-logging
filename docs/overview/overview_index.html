@@ -63,10 +63,10 @@
         </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Summary</h1></header><article><div><span><p>ZIO Logging is a functional, type-safe library for logging.</p>
 <h2><a class="anchor" aria-hidden="true" id="installation"></a><a href="#installation" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Installation</h2>
 <p><code>ZIO-Logging</code> is available via maven repo so import in <code>build.sbt</code> is sufficient:</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging"</span> % <span class="hljs-string">"0.2.3"</span>
+<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging"</span> % version
 </code></pre>
 <p>If you need <code>slf4j</code> integration use <code>zio-logging-slf4j</code> instead</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-slf4j"</span> % <span class="hljs-string">"0.2.3"</span>
+<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-slf4j"</span> % version
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="logger-interface"></a><a href="#logger-interface" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Interface</h2>
 <pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">LoggerLike</span>[-<span class="hljs-type">A</span>] </span>{ self =&gt;
@@ -120,22 +120,56 @@
   <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">named</span></span>(name: <span class="hljs-type">String</span>): <span class="hljs-type">LoggerLike</span>[<span class="hljs-type">A</span>] 
 }
 </code></pre>
-<p>Library provides package object that exposes basic methods:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">package</span> <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">logging</span> </span>{
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">log</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] 
+<p>Library provides object <code>log</code> that exposes basic methods:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">log</span> </span>{
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">apply</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    <span class="hljs-type">ZIO</span>.accessM[<span class="hljs-type">Logging</span>](_.get.logger.log(line))
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">log</span></span>(level: <span class="hljs-type">LogLevel</span>)(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] 
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">apply</span></span>(level: <span class="hljs-type">LogLevel</span>)(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    <span class="hljs-type">ZIO</span>.accessM[<span class="hljs-type">Logging</span>](_.get.logger.log(level)(line))
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">locally</span></span>[<span class="hljs-type">R1</span> &lt;: <span class="hljs-type">Logging</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>](f: <span class="hljs-type">LogContext</span> =&gt; <span class="hljs-type">LogContext</span>)(zio: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R1</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]): <span class="hljs-type">ZIO</span>[<span class="hljs-type">R1</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]
-    zio: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]
-  ): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span> <span class="hljs-keyword">with</span> <span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>] 
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">context</span></span>: <span class="hljs-type">URIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">LogContext</span>] =
+    <span class="hljs-type">ZIO</span>.accessM[<span class="hljs-type">Logging</span>](_.get.logger.logContext)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">debug</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Debug</span>)(line)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">error</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(line)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">error</span></span>(line: =&gt; <span class="hljs-type">String</span>, cause: <span class="hljs-type">Cause</span>[<span class="hljs-type">Any</span>]): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(line + <span class="hljs-type">System</span>.lineSeparator() + cause.prettyPrint)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">info</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Info</span>)(line)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">locally</span></span>[<span class="hljs-type">A</span>, <span class="hljs-type">R</span> &lt;: <span class="hljs-type">Logging</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>](fn: <span class="hljs-type">LogContext</span> =&gt; <span class="hljs-type">LogContext</span>)(zio: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span> <span class="hljs-keyword">with</span> <span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>] =
+    <span class="hljs-type">ZIO</span>.accessM(_.get.logger.locally(fn)(zio))
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">locallyM</span></span>[<span class="hljs-type">A</span>, <span class="hljs-type">R</span> &lt;: <span class="hljs-type">Logging</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>](
+    fn: <span class="hljs-type">LogContext</span> =&gt; <span class="hljs-type">URIO</span>[<span class="hljs-type">R</span>, <span class="hljs-type">LogContext</span>]
+  )(zio: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>]): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span> <span class="hljs-keyword">with</span> <span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A1</span>] =
+    <span class="hljs-type">ZIO</span>.accessM(_.get.logger.locallyM(fn)(zio))
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">logger</span></span>: <span class="hljs-type">URIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Logger</span>] =
+    <span class="hljs-type">ZIO</span>.access[<span class="hljs-type">Logging</span>](_.get.logger)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">throwable</span></span>(line: =&gt; <span class="hljs-type">String</span>, t: <span class="hljs-type">Throwable</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    error(line, <span class="hljs-type">Cause</span>.die(t))
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">trace</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Trace</span>)(line)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">warn</span></span>(line: =&gt; <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Logging</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Unit</span>] =
+    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Warn</span>)(line)
+
 }
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="logger-context"></a><a href="#logger-context" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Context</h3>
 <p>Logger Context is mechanism that we use to carry information like logger name or correlation id across different Fibers. Implementation uses <code>FiberRef</code> from <code>ZIO</code>.</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
-locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-type">Name</span>, <span class="hljs-string">"my-logger"</span> :: <span class="hljs-type">Nil</span>) {
-  log(<span class="hljs-string">"log entry"</span>) <span class="hljs-comment">// value of LogAnnotation.Name is only visible in this block</span>
+log.locally(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"my-logger"</span> :: <span class="hljs-type">Nil</span>)) {
+  log.info(<span class="hljs-string">"log entry"</span>) <span class="hljs-comment">// value of LogAnnotation.Name is only visible in this block</span>
 }
 </code></pre>
 <p>User of library is allowed to add custom <code>LogAnnatation</code></p>
@@ -171,8 +205,8 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
     )
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-   env &gt;&gt;&gt; locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"logger-name-here"</span> :: <span class="hljs-type">Nil</span>)) { 
-    log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Debug</span>)(<span class="hljs-string">"Hello from ZIO logger"</span>)
+   env &gt;&gt;&gt; log.locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"logger-name-here"</span> :: <span class="hljs-type">Nil</span>)) { 
+    log.debug(<span class="hljs-string">"Hello from ZIO logger"</span>)
    }.as(<span class="hljs-number">0</span>)
 }
 </code></pre>
@@ -201,20 +235,32 @@ locallyAnnotate(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-t
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
       (<span class="hljs-keyword">for</span> {
-        fiber &lt;- logLocally(correlationId(<span class="hljs-string">"1234"</span>))(<span class="hljs-type">ZIO</span>.unit).fork
-        _     &lt;- log(<span class="hljs-string">"info message without correlation id"</span>)
+        fiber &lt;- log.locally(correlationId(<span class="hljs-string">"1234"</span>))(<span class="hljs-type">ZIO</span>.unit).fork
+        _     &lt;- log.info(<span class="hljs-string">"info message without correlation id"</span>)
         _     &lt;- fiber.join
-        _ &lt;- logLocally(correlationId(<span class="hljs-string">"1234111"</span>)) {
-              log(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
-                log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(<span class="hljs-string">"another info message with correlation id"</span>).fork
+        _ &lt;- log.locally(correlationId(<span class="hljs-string">"1234111"</span>)) {
+              log.info(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
+                log.throwable(<span class="hljs-string">"another info message with correlation id"</span>, <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">"error message"</span>)).fork
             }
       } <span class="hljs-keyword">yield</span> <span class="hljs-number">1</span>).provideLayer(env)
 }
 
 </code></pre>
 <p>Expected Console Output:</p>
-<pre><code class="hljs"><span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.392</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-1</span><span class="hljs-number">-78428773</span>] INFO  Slf4jAndCorrelationId$ [correlation-id = undefined-correlation-id] info message without correlation id
-<span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.434</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-1</span><span class="hljs-number">-78428773</span>] INFO  Slf4jAndCorrelationId$ [correlation-id = <span class="hljs-number">9</span>da4b9be<span class="hljs-number">-9e27</span><span class="hljs-number">-4</span>af6-b687-d96851ab15f1] info message with correlation id
-<span class="hljs-number">18</span>:<span class="hljs-number">47</span>:<span class="hljs-number">32.440</span> [zio-<span class="hljs-keyword">default</span>-async<span class="hljs-number">-2</span><span class="hljs-number">-78428773</span>] ERROR Slf4jAndCorrelationId$ [correlation-id = <span class="hljs-number">9</span>da4b9be<span class="hljs-number">-9e27</span><span class="hljs-number">-4</span>af6-b687-d96851ab15f1] another info message with correlation id
+<pre><code class="hljs"><span class="hljs-number">00</span>:<span class="hljs-number">27</span>:<span class="hljs-number">56.448</span> <span class="hljs-literal">[<span class="hljs-identifier">zio</span>-<span class="hljs-identifier">default</span>-<span class="hljs-identifier">async</span>-<span class="hljs-number">1</span>-<span class="hljs-number">1920387277</span>]</span> INFO  zio.logging.Examples$ <span class="hljs-literal">[<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span> = <span class="hljs-identifier">undefined</span>-<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span>]</span> info message without correlation id
+<span class="hljs-number">00</span>:<span class="hljs-number">27</span>:<span class="hljs-number">56.530</span> <span class="hljs-literal">[<span class="hljs-identifier">zio</span>-<span class="hljs-identifier">default</span>-<span class="hljs-identifier">async</span>-<span class="hljs-number">1</span>-<span class="hljs-number">1920387277</span>]</span> INFO  zio.logging.Examples$ <span class="hljs-literal">[<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span> = <span class="hljs-number">1234111</span>]</span> info message <span class="hljs-keyword">with</span> correlation id
+<span class="hljs-number">00</span>:<span class="hljs-number">27</span>:<span class="hljs-number">56.546</span> <span class="hljs-literal">[<span class="hljs-identifier">zio</span>-<span class="hljs-identifier">default</span>-<span class="hljs-identifier">async</span>-<span class="hljs-number">4</span>-<span class="hljs-number">1920387277</span>]</span> ERROR zio.logging.Examples$ <span class="hljs-literal">[<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span> = <span class="hljs-number">1234111</span>]</span> another info message <span class="hljs-keyword">with</span> correlation id
+Fiber failed.
+An unchecked error was produced.
+java.lang.RuntimeException: error message
+    at zio.logging.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Examples$</span>.</span></span><span class="hljs-constructor">$anonfun$run$6(Examples.<span class="hljs-params">scala</span>:26)</span>
+    at zio.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO$ZipRightFn</span>.</span></span>apply(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO</span>.</span></span>scala:<span class="hljs-number">3368</span>)
+    at zio.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO$ZipRightFn</span>.</span></span>apply(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO</span>.</span></span>scala:<span class="hljs-number">3365</span>)
+    at zio.internal.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">FiberContext</span>.</span></span>evaluate<span class="hljs-constructor">Now(FiberContext.<span class="hljs-params">scala</span>:815)</span>
+    at zio.internal.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">FiberContext</span>.</span></span><span class="hljs-constructor">$anonfun$fork$2(FiberContext.<span class="hljs-params">scala</span>:681)</span>
+    at java.util.concurrent.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ThreadPoolExecutor</span>.</span></span>run<span class="hljs-constructor">Worker(ThreadPoolExecutor.<span class="hljs-params">java</span>:1142)</span>
+    at java.util.concurrent.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ThreadPoolExecutor$Worker</span>.</span></span>run(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ThreadPoolExecutor</span>.</span></span>java:<span class="hljs-number">617</span>)
+    at java.lang.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>run(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>java:<span class="hljs-number">745</span>)
+No ZIO Trace available.
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/9/2020 by Pierangelo Cecchetto</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/18/2020 by przemyslaw wierzbicki</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
