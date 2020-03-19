@@ -68,6 +68,12 @@
 <p>If you need <code>slf4j</code> integration use <code>zio-logging-slf4j</code> instead</p>
 <pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-slf4j"</span> % version
 </code></pre>
+<p>If you need  <code>scala.js console</code> integration use <code>zio-logging-slf4j</code> instead</p>
+<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-jsconsole"</span> % <span class="hljs-string">"0.2.3"</span>
+</code></pre>
+<p>If you need  <code>scala.js http</code> log publishing integration use <code>zio-logging-slf4j</code> instead</p>
+<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-jshttp"</span> % <span class="hljs-string">"0.2.3"</span>
+</code></pre>
 <h2><a class="anchor" aria-hidden="true" id="logger-interface"></a><a href="#logger-interface" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Interface</h2>
 <pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">LoggerLike</span>[-<span class="hljs-type">A</span>] </span>{ self =&gt;
 
@@ -263,4 +269,59 @@ java.lang.RuntimeException: error message
     at java.lang.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>run(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>java:<span class="hljs-number">745</span>)
 No ZIO Trace available.
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/18/2020 by przemyslaw wierzbicki</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
+<h3><a class="anchor" aria-hidden="true" id="scalajs-console"></a><a href="#scalajs-console" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Scala.JS Console</h3>
+<p>Scala.Js console works as the JVM Console using the standard JS console for output.</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
+<span class="hljs-keyword">import</span> zio.logging.js._
+...
+
+    <span class="hljs-type">Logging</span>.log(<span class="hljs-string">"test"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Trace</span>)(<span class="hljs-string">"test Trace"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Debug</span>)(<span class="hljs-string">"test Debug"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Info</span>)(<span class="hljs-string">"test Info"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Warn</span>)(<span class="hljs-string">"test Warn"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(<span class="hljs-string">"test Error"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Fatal</span>)(<span class="hljs-string">"test Fatal"</span>) *&gt;
+      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Off</span>)(<span class="hljs-string">"test Off"</span>)
+</code></pre>
+<p>Expected Console Output:</p>
+<pre><code class="hljs"><span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z INFO  test
+Trace: <span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z TRACE  test Trace
+    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">14731</span>:<span class="hljs-number">82</span>
+    at $c_sjsr_AnonFunction0.apply__O (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">54402</span>:<span class="hljs-number">23</span>)
+    at $c_Lzio_internal_FiberContext.evaluateNow__Lzio_ZIO__V (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">59390</span>:<span class="hljs-number">42</span>)
+    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">58797</span>:<span class="hljs-number">13</span>
+    at $c_Lzio_internal_FiberContext$$Lambda$<span class="hljs-number">2.</span>run__V (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">34590</span>:<span class="hljs-number">16</span>)
+    at $c_sjs_concurrent_QueueExecutionContext$PromisesExecutionContext.scala$scalajs$concurrent$QueueExecutionContext$PromisesExecutionContext$$$anonfun$execute$<span class="hljs-number">2</span>__sr_BoxedUnit__jl_Runnable__sjs_js_$bar (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">63008</span>:<span class="hljs-number">16</span>)
+    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">63025</span>:<span class="hljs-number">24</span>
+    at processTicksAndRejections (<span class="hljs-built_in">int</span>ernal/process/task_queues.js:<span class="hljs-number">97</span>:<span class="hljs-number">5</span>)
+<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z DEBUG  test Debug
+<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z INFO  test Info
+<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z WARN  test Warn
+<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z ERROR  test Error
+<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z FATAL  test Fatal
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="scalajs-http-ajax-pusher"></a><a href="#scalajs-http-ajax-pusher" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Scala.JS HTTP Ajax pusher</h3>
+<p>This scala.js implementation allows to send logs to a remote server. It's very useful to control the navigation and action inside a SPA.</p>
+<p>All events are sent to a backend via Ajax POST.</p>
+<p>The Json format of the event is the following</p>
+<pre><code class="hljs">{
+     <span class="hljs-attr">"date"</span>: <span class="hljs-string">"2020-03-15T21:58:31.085+01:00"</span>,
+     <span class="hljs-attr">"clientId"</span>: <span class="hljs-string">"446352f6-11be-4af9-99cb-2c0c1bab8721"</span>,
+     <span class="hljs-attr">"level"</span>: <span class="hljs-string">"info"</span>,
+     <span class="hljs-attr">"name"</span>: <span class="hljs-string">"index_page"</span>,
+     <span class="hljs-attr">"msg"</span>: <span class="hljs-string">"index page loaded"</span>,
+     <span class="hljs-attr">"cause"</span>: <span class="hljs-string">""</span>
+}
+</code></pre>
+<p><strong>clientId</strong> is an identifier of the connection. Default is a UUID random generated</p>
+<p>To create a logger, the <strong>url</strong> for the POST is mandatory.</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
+<span class="hljs-keyword">import</span> zio.logging.js._
+...
+
+<span class="hljs-keyword">val</span> loggerLayer=<span class="hljs-type">HTTPLogger</span>.make(<span class="hljs-string">"http://localhost:9000/event/collect"</span>)((context, message) =&gt; message)
+
+
+</code></pre>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/19/2020 by Alberto Paro</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a></li><li><a href="#logger-interface">Logger Interface</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li><li><a href="#scalajs-console">Scala.JS Console</a></li><li><a href="#scalajs-http-ajax-pusher">Scala.JS HTTP Ajax pusher</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
