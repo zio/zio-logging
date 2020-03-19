@@ -119,6 +119,7 @@ test: &test
     - checkout
     - <<: *load_cache
     - <<: *install_jdk
+    - <<: *install_nodejs
     - run:
         name: Run tests
         command: ./sbt ++${SCALA_VERSION}! test
@@ -196,7 +197,6 @@ jobs:
     environment:
       - <<: *scala_212
       - <<: *jdk_8
-      - <<: *install_nodejs
 
   test_212_jdk11:
     <<: *test
@@ -205,7 +205,6 @@ jobs:
     environment:
       - <<: *scala_212
       - <<: *jdk_11
-      - <<: *install_nodejs
 
   test_213_jdk8:
     <<: *test
@@ -214,7 +213,6 @@ jobs:
     environment:
       - <<: *scala_213
       - <<: *jdk_8
-      - <<: *install_nodejs
 
   release:
     <<: *release
