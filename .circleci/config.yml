@@ -75,8 +75,10 @@ install_yarn: &install_yarn
   - run:
       name: Install Yarn
       command: |
+        export NVM_DIR="/opt/circleci/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install
         nvm use
-        node -v
         curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
         sudo bash -c 'echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list'
         sudo apt update && sudo apt install --no-install-recommends yarn -y
@@ -112,6 +114,10 @@ mdoc: &mdoc
     - run:
         name: Generate documentation
         command: |
+          export NVM_DIR="/opt/circleci/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install
+          nvm use
           ./sbt doc
           ./sbt ++${SCALA_VERSION}! mdoc
     - <<: *clean_cache
@@ -126,7 +132,12 @@ test: &test
     - <<: *install_nodejs
     - run:
         name: Run tests
-        command: ./sbt ++${SCALA_VERSION}! test
+        command: |
+          export NVM_DIR="/opt/circleci/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install
+          nvm use
+          ./sbt ++${SCALA_VERSION}! test
     - <<: *clean_cache
     - <<: *save_cache
 
