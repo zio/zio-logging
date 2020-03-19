@@ -2,8 +2,8 @@ package zio.logging.js
 
 import zio.clock._
 import zio.logging.Logging.Logging
-import zio.logging.{LogAnnotation, LogContext, LogLevel, Logging}
-import zio.{IO, ZIO, ZLayer}
+import zio.logging.{ LogAnnotation, LogContext, LogLevel, Logging }
+import zio.{ IO, ZIO, ZLayer }
 
 import scala.scalajs.js.Dynamic.global
 
