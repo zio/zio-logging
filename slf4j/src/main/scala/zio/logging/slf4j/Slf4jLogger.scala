@@ -6,6 +6,7 @@ import zio.internal.stacktracer.Tracer
 import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
+import zio.logging.Logging.Logging
 import zio.logging._
 import zio.{ ZIO, ZLayer }
 

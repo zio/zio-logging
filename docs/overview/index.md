@@ -10,13 +10,13 @@ ZIO Logging is a functional, type-safe library for logging.
 `ZIO-Logging` is available via maven repo so import in `build.sbt` is sufficient:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging" % "0.2.3"
+libraryDependencies += "dev.zio" %% "zio-logging" % version
 ```
 
 If you need `slf4j` integration use `zio-logging-slf4j` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "0.2.3"
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 ```
 
 If you need  `scala.js console` integration use `zio-logging-slf4j` instead 
@@ -87,17 +87,51 @@ trait LoggerLike[-A] { self =>
 }
 ```
 
-Library provides package object that exposes basic methods:
+Library provides object `log` that exposes basic methods:
 
 ```scala
-package object logging {
-  def log(line: => String): ZIO[Logging, Nothing, Unit] 
+object log {
+  def apply(line: => String): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.logger.log(line))
 
-  def log(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] 
+  def apply(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.logger.log(level)(line))
 
-  def locally[R1 <: Logging, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1]
-    zio: ZIO[R, E, A1]
-  ): ZIO[Logging with R, E, A1] 
+  def context: URIO[Logging, LogContext] =
+    ZIO.accessM[Logging](_.get.logger.logContext)
+
+  def debug(line: => String): ZIO[Logging, Nothing, Unit] =
+    log(LogLevel.Debug)(line)
+
+  def error(line: => String): ZIO[Logging, Nothing, Unit] =
+    log(LogLevel.Error)(line)
+
+  def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
+    log(LogLevel.Error)(line + System.lineSeparator() + cause.prettyPrint)
+
+  def info(line: => String): ZIO[Logging, Nothing, Unit] =
+    log(LogLevel.Info)(line)
+
+  def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
+    ZIO.accessM(_.get.logger.locally(fn)(zio))
+
+  def locallyM[A, R <: Logging, E, A1](
+    fn: LogContext => URIO[R, LogContext]
+  )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
+    ZIO.accessM(_.get.logger.locallyM(fn)(zio))
+
+  def logger: URIO[Logging, Logger] =
+    ZIO.access[Logging](_.get.logger)
+
+  def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
+    error(line, Cause.die(t))
+
+  def trace(line: => String): ZIO[Logging, Nothing, Unit] =
+    log(LogLevel.Trace)(line)
+
+  def warn(line: => String): ZIO[Logging, Nothing, Unit] =
+    log(LogLevel.Warn)(line)
+
 }
 ```
 
@@ -106,8 +140,8 @@ Logger Context is mechanism that we use to carry information like logger name or
 
 ```scala
 import zio.logging._
-locallyAnnotate(LogAnnatation.Name, "my-logger" :: Nil) {
-  log("log entry") // value of LogAnnotation.Name is only visible in this block
+log.locally(LogAnnatation.Name("my-logger" :: Nil)) {
+  log.info("log entry") // value of LogAnnotation.Name is only visible in this block
 }
 ```
 
@@ -156,8 +190,8 @@ object LogLevelAndLoggerName extends zio.App {
     )
 
   override def run(args: List[String]) =
-   env >>> locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
-    log(LogLevel.Debug)("Hello from ZIO logger")
+   env >>> log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
+    log.debug("Hello from ZIO logger")
    }.as(0)
 }
 ```
@@ -191,12 +225,12 @@ object Slf4jAndCorrelationId extends zio.App {
 
   override def run(args: List[String]) =
       (for {
-        fiber <- logLocally(correlationId("1234"))(ZIO.unit).fork
-        _     <- log("info message without correlation id")
+        fiber <- log.locally(correlationId("1234"))(ZIO.unit).fork
+        _     <- log.info("info message without correlation id")
         _     <- fiber.join
-        _ <- logLocally(correlationId("1234111")) {
-              log("info message with correlation id") *>
-                log(LogLevel.Error)("another info message with correlation id").fork
+        _ <- log.locally(correlationId("1234111")) {
+              log.info("info message with correlation id") *>
+                log.throwable("another info message with correlation id", new RuntimeException("error message")).fork
             }
       } yield 1).provideLayer(env)
 }
@@ -206,9 +240,21 @@ object Slf4jAndCorrelationId extends zio.App {
 
 Expected Console Output:
 ```
-18:47:32.392 [zio-default-async-1-78428773] INFO  Slf4jAndCorrelationId$ [correlation-id = undefined-correlation-id] info message without correlation id
-18:47:32.434 [zio-default-async-1-78428773] INFO  Slf4jAndCorrelationId$ [correlation-id = 9da4b9be-9e27-4af6-b687-d96851ab15f1] info message with correlation id
-18:47:32.440 [zio-default-async-2-78428773] ERROR Slf4jAndCorrelationId$ [correlation-id = 9da4b9be-9e27-4af6-b687-d96851ab15f1] another info message with correlation id
+00:27:56.448 [zio-default-async-1-1920387277] INFO  zio.logging.Examples$ [correlation-id = undefined-correlation-id] info message without correlation id
+00:27:56.530 [zio-default-async-1-1920387277] INFO  zio.logging.Examples$ [correlation-id = 1234111] info message with correlation id
+00:27:56.546 [zio-default-async-4-1920387277] ERROR zio.logging.Examples$ [correlation-id = 1234111] another info message with correlation id
+Fiber failed.
+An unchecked error was produced.
+java.lang.RuntimeException: error message
+	at zio.logging.Examples$.$anonfun$run$6(Examples.scala:26)
+	at zio.ZIO$ZipRightFn.apply(ZIO.scala:3368)
+	at zio.ZIO$ZipRightFn.apply(ZIO.scala:3365)
+	at zio.internal.FiberContext.evaluateNow(FiberContext.scala:815)
+	at zio.internal.FiberContext.$anonfun$fork$2(FiberContext.scala:681)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+No ZIO Trace available.
 ```
 
 ### Scala.JS Console
