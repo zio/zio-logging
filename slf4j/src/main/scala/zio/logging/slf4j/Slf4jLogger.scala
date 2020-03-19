@@ -36,16 +36,17 @@ object Slf4jLogger {
         case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
         case names => LogAnnotation.Name.render(names)
       }
-      logger(loggerName).map(slf4jLogger =>
+      logger(loggerName).map { slf4jLogger =>
+        val maybeThrowable = context.get(LogAnnotation.Throwable).getOrElse(null)
         context.get(LogAnnotation.Level).level match {
           case LogLevel.Off.level   => ()
-          case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line))
-          case LogLevel.Trace.level => slf4jLogger.trace(logFormat(context, line))
-          case LogLevel.Info.level  => slf4jLogger.info(logFormat(context, line))
-          case LogLevel.Warn.level  => slf4jLogger.warn(logFormat(context, line))
-          case LogLevel.Error.level => slf4jLogger.error(logFormat(context, line))
-          case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line))
+          case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line), maybeThrowable)
+          case LogLevel.Trace.level => slf4jLogger.trace(logFormat(context, line), maybeThrowable)
+          case LogLevel.Info.level  => slf4jLogger.info(logFormat(context, line), maybeThrowable)
+          case LogLevel.Warn.level  => slf4jLogger.warn(logFormat(context, line), maybeThrowable)
+          case LogLevel.Error.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
+          case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
         }
-      )
+      }
     }
 }
