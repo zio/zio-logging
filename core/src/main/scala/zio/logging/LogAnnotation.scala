@@ -50,4 +50,9 @@ object LogAnnotation {
    */
   val Name = LogAnnotation[List[String]]("name", Nil, _ ++ _, _.mkString("."))
 
+  /**
+   * The `Throwable` annotation keeps track of a throwable.
+   */
+  val Throwable =
+    LogAnnotation[Option[Throwable]](name = "throwable", initialValue = None, combine = (_, t) => t, _.toString)
 }
