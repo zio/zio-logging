@@ -20,7 +20,9 @@ object log {
     log(LogLevel.Error)(line)
 
   def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Error)(line + System.lineSeparator() + cause.prettyPrint)
+    locally(LogAnnotation.Cause(Some(cause))) {
+      log(LogLevel.Error)(line)
+    }
 
   def info(line: => String): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Info)(line)
@@ -37,7 +39,9 @@ object log {
     ZIO.access[Logging](_.get.logger)
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
-    error(line, Cause.die(t))
+    locally(LogAnnotation.Throwable(Some(t))) {
+      error(line)
+    }
 
   def trace(line: => String): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Trace)(line)
