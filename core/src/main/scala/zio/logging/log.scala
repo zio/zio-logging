@@ -14,18 +14,16 @@ object log {
     ZIO.accessM[Logging](_.get.logger.logContext)
 
   def debug(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Debug)(line)
+    ZIO.accessM[Logging](_.get.logger.debug(line))
 
   def error(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Error)(line)
+    ZIO.accessM[Logging](_.get.logger.error(line))
 
   def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
-    locally(LogAnnotation.Cause(Some(cause))) {
-      log(LogLevel.Error)(line)
-    }
+    ZIO.accessM[Logging](_.get.logger.error(line, cause))
 
   def info(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Info)(line)
+    ZIO.accessM[Logging](_.get.logger.info(line))
 
   def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     ZIO.accessM(_.get.logger.locally(fn)(zio))
@@ -39,14 +37,12 @@ object log {
     ZIO.access[Logging](_.get.logger)
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
-    locally(LogAnnotation.Throwable(Some(t))) {
-      error(line)
-    }
+    ZIO.accessM[Logging](_.get.logger.throwable(line, t))
 
   def trace(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Trace)(line)
+    ZIO.accessM[Logging](_.get.logger.trace(line))
 
   def warn(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Warn)(line)
+    ZIO.accessM[Logging](_.get.logger.warn(line))
 
 }
