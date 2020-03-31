@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import zio.logging.Logging.Logging
-import zio.{ Has, Layer, Ref, UIO, ZIO, ZLayer }
+import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
 import zio.test.Assertion._
 import zio.test._
 
@@ -12,40 +12,37 @@ object LoggerSpec extends DefaultRunnableSpec {
 
   object TestLogger {
     type TestLogging = Has[TestLogger.Service]
-    trait Service extends Logging.Service {
+    trait Service extends Logger[String] {
       def lines: UIO[Vector[(LogContext, String)]]
     }
     def make: Layer[Nothing, TestLogging with Logging] =
       ZLayer.fromEffectMany(for {
-        data    <- Ref.make(Vector.empty[(LogContext, String)])
-        logger0 <- Logger.make((context, message) => data.update(_ :+ ((context, message))).unit)
-        test = new TestLogger.Service {
-          override def lines: UIO[Vector[(LogContext, String)]] = data.get
+        data <- Ref.make(Vector.empty[(LogContext, String)])
+        logger <- FiberRef
+                   .make(LogContext.empty)
+                   .map { ref =>
+                     new Logger[String] with TestLogger.Service {
+                       def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
+                         ref.get.flatMap(context => ref.locally(f(context))(zio))
 
-          override def logger: Logger = logger0
-        }
-      } yield Has.allOf[Logging.Service, TestLogger.Service](test, test))
+                       def log(line: => String): UIO[Unit] =
+                         ref.get.flatMap(context => data.update(_ :+ ((context, line))).unit)
+
+                       def logContext: UIO[LogContext] = ref.get
+
+                       def lines: UIO[Vector[(LogContext, String)]] = data.get
+                     }
+                   }
+
+      } yield Has.allOf[Logger[String], TestLogger.Service](logger, logger))
 
     def lines = ZIO.accessM[TestLogging](_.get.lines)
   }
 
   def spec =
     suite("logger")(
-      testM("simple log") {
-        log("test") *>
-          assertM(TestLogger.lines)(
-            equalTo(
-              Vector(
-                (
-                  LogContext.empty,
-                  "test"
-                )
-              )
-            )
-          )
-      },
       testM("log with log level") {
-        log(LogLevel.Debug)("test") *>
+        log.debug("test") *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(
@@ -57,29 +54,6 @@ object LoggerSpec extends DefaultRunnableSpec {
             )
           )
       },
-      testM("log annotations") {
-        val exampleAnnotation = LogAnnotation[String](
-          name = "annotation-name",
-          initialValue = "unknown-annotation-value",
-          combine = (oldValue, newValue) => oldValue + " " + newValue,
-          render = identity
-        )
-
-        log.logger.flatMap(
-          _.locallyAnnotate(exampleAnnotation, "value1")(log("line1")) *>
-            assertM(TestLogger.lines)(
-              equalTo(
-                Vector(
-                  (
-                    LogContext.empty
-                      .annotate(exampleAnnotation, "value1"),
-                    "line1"
-                  )
-                )
-              )
-            )
-        )
-      },
       testM("log annotations apply method") {
         val exampleAnnotation = LogAnnotation[String](
           name = "annotation-name",
@@ -88,7 +62,7 @@ object LoggerSpec extends DefaultRunnableSpec {
           render = identity
         )
 
-        log.locally(exampleAnnotation("value1"))(log("line1")) *>
+        log.locally(exampleAnnotation("value1"))(log.info("line1")) *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(
@@ -97,7 +71,8 @@ object LoggerSpec extends DefaultRunnableSpec {
                     .annotate(
                       exampleAnnotation,
                       exampleAnnotation.combine(exampleAnnotation.initialValue, "value1")
-                    ),
+                    )
+                    .annotate(LogAnnotation.Level, LogLevel.Info),
                   "line1"
                 )
               )
@@ -105,20 +80,18 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
       },
       testM("named logger") {
-        log.logger.flatMap(logger =>
-          logger.locallyAnnotate(LogAnnotation.Name, List("first"))(logger.named("second").log("line1")) *>
-            assertM(TestLogger.lines)(
-              equalTo(
-                Vector(
-                  (
-                    LogContext.empty
-                      .annotate(LogAnnotation.Name, List("first", "second")),
-                    "line1"
-                  )
+        log.locally(LogAnnotation.Name(List("first")))(ZIO.accessM[Logging](_.get.named("second").log("line1"))) *>
+          assertM(TestLogger.lines)(
+            equalTo(
+              Vector(
+                (
+                  LogContext.empty
+                    .annotate(LogAnnotation.Name, List("first", "second")),
+                  "line1"
                 )
               )
             )
-        )
+          )
       },
       testM("locallyM") {
         val timely = LogAnnotation[OffsetDateTime](
@@ -128,7 +101,7 @@ object LoggerSpec extends DefaultRunnableSpec {
           _.toString
         )
         import zio.clock._
-        log.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(log("line1")) *>
+        log.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(log.info("line1")) *>
           ZIO
             .accessM[Clock](_.get.currentDateTime)
             .flatMap(now =>
@@ -137,7 +110,8 @@ object LoggerSpec extends DefaultRunnableSpec {
                   Vector(
                     (
                       LogContext.empty
-                        .annotate(timely, now),
+                        .annotate(timely, now)
+                        .annotate(LogAnnotation.Level, LogLevel.Info),
                       "line1"
                     )
                   )

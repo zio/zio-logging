@@ -22,32 +22,74 @@ libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 If you need  `scala.js console` integration use `zio-logging-slf4j` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % "0.2.3"
+libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % "0.2.6"
 ```
 
 If you need  `scala.js http` log publishing integration use `zio-logging-slf4j` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "0.2.3"
+libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "0.2.6"
 ```
 
 
 ## Logger Interface
 
 ```scala
-trait LoggerLike[-A] { self =>
+trait Logger[-A] { self =>
 
   /**
    * Produces a new logger by adapting a different input type to the input
    * type of this logger.
    */
-  def contramap[A1](f: A1 => A): LoggerLike[A1]
-  
+  final def contramap[A1](f: A1 => A): Logger[A1] =
+    new Logger[A1] {
+      def locally[R1, E, A2](f: LogContext => LogContext)(zio: ZIO[R1, E, A2]): ZIO[R1, E, A2] =
+        self.locally(f)(zio)
+
+      def log(line: => A1): UIO[Unit] = self.log(f(line))
+
+      def logContext: UIO[LogContext] = self.logContext
+    }
+
+  /**
+   * Logs the specified element at the debug level.
+   */
+  def debug(line: => A): UIO[Unit] =
+    self.log(LogLevel.Debug)(line)
+
+  /**
+   * Logs the specified element at the error level.
+   */
+  def error(line: => A): UIO[Unit] =
+    self.log(LogLevel.Error)(line)
+
+  /**
+   * Logs the specified element at the error level with cause.
+   */
+  def error(line: => A, cause: Cause[Any]) =
+    self.locally(LogAnnotation.Cause(Some(cause))) {
+      self.log(LogLevel.Error)(line)
+    }
+
   /**
    * Derives a new logger from this one, by applying the specified decorator
    * to the logger context.
    */
-  def derive(f: LogContext => LogContext): LoggerLike[A]
+  def derive(f: LogContext => LogContext): Logger[A] =
+    new Logger[A] {
+      def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+        self.locally(f)(zio)
+
+      def log(line: => A): UIO[Unit] = locally(f)(self.log(line))
+
+      def logContext: UIO[LogContext] = self.logContext
+    }
+
+  /**
+   * Logs the specified element at the info level
+   */
+  def info(line: => A): UIO[Unit] =
+    self.log(LogLevel.Info)(line)
 
   /**
    * Modifies the log context in the scope of the specified effect.
@@ -57,12 +99,14 @@ trait LoggerLike[-A] { self =>
   /**
    * Modifies the log context with effect in the scope of the specified effect.
    */
-  def locallyM[R1, E, A1](f: LogContext => URIO[R1, LogContext])(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] 
+  def locallyM[R1, E, A1](f: LogContext => URIO[R1, LogContext])(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+    logContext.flatMap(ctx => f(ctx)).flatMap(ctx => locally(_ => ctx)(zio))
 
   /**
    * Modifies the annotate in the scope of the specified effect.
    */
-  final def locallyAnnotate[B, R, E, A1](annotation: LogAnnotation[B], value: B)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] 
+  final def locallyAnnotate[B, R, E, A1](annotation: LogAnnotation[B], value: B)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] =
+    locally(_.annotate(annotation, value))(zio)
 
   /**
    * Logs the specified element using an inherited log level.
@@ -78,12 +122,34 @@ trait LoggerLike[-A] { self =>
    * Logs the specified element at the specified level. Implementations may
    * override this for greater efficiency.
    */
-  def log(level: LogLevel)(line: => A): UIO[Unit] 
+  def log(level: LogLevel)(line: => A): UIO[Unit] =
+    locally(_.annotate(LogAnnotation.Level, level))(log(line))
 
   /**
    * Produces a named logger.
    */
-  def named(name: String): LoggerLike[A] 
+  def named(name: String): Logger[A] =
+    derive(_.annotate(LogAnnotation.Name, name :: Nil))
+
+  /**
+   * Logs the specified element at the error level with exception.
+   */
+  def throwable(line: => A, t: Throwable) =
+    self.locally(LogAnnotation.Throwable(Some(t))) {
+      self.error(line)
+    }
+
+  /**
+   * Logs the specified element at the trace level.
+   */
+  def trace(line: => A): UIO[Unit] =
+    self.log(LogLevel.Trace)(line)
+
+  /**
+   * Logs the specified element at the warn level.
+   */
+  def warn(line: => A) =
+    self.log(LogLevel.Warn)(line)
 }
 ```
 
@@ -92,47 +158,45 @@ Library provides object `log` that exposes basic methods:
 ```scala
 object log {
   def apply(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.logger.log(line))
+    ZIO.accessM[Logging](_.get.log(line))
 
   def apply(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.logger.log(level)(line))
+    ZIO.accessM[Logging](_.get.log(level)(line))
 
-  def context: URIO[Logging, LogContext] =
-    ZIO.accessM[Logging](_.get.logger.logContext)
+  val context: URIO[Logging, LogContext] =
+    Logging.context
 
   def debug(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Debug)(line)
+    Logging.debug(line)
 
   def error(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Error)(line)
+    Logging.error(line)
 
   def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Error)(line + System.lineSeparator() + cause.prettyPrint)
+    Logging.error(line, cause)
 
   def info(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Info)(line)
+    Logging.info(line)
 
   def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
-    ZIO.accessM(_.get.logger.locally(fn)(zio))
+    Logging.locally(fn)(zio)
 
   def locallyM[A, R <: Logging, E, A1](
     fn: LogContext => URIO[R, LogContext]
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
-    ZIO.accessM(_.get.logger.locallyM(fn)(zio))
-
-  def logger: URIO[Logging, Logger] =
-    ZIO.access[Logging](_.get.logger)
+    Logging.locallyM(fn)(zio)
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
-    error(line, Cause.die(t))
+    Logging.throwable(line, t)
 
   def trace(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Trace)(line)
+    Logging.trace(line)
 
   def warn(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Warn)(line)
+    Logging.warn(line)
 
 }
+
 ```
 
 ### Logger Context
@@ -160,13 +224,14 @@ import zio.logging._
 
 object Simple extends zio.App {
 
-  val env = 
-    Logging.console((_, logEntry) =>
-      logEntry
+  val env =
+    Logging.console(
+      format = (_, logEntry) => logEntry,
+      rootLoggerName = Some("default-logger")
     )
 
   override def run(args: List[String]) =
-    env >>> log("Hello from ZIO logger").as(0)
+    log("Hello from ZIO logger").provideCustomLayer(env).as(0)
 }
 
 ```
@@ -174,7 +239,7 @@ object Simple extends zio.App {
 Expected console output:
 
 ```
-2020-02-02T18:09:45.197-05:00 INFO  Hello from ZIO logger
+2020-02-02T18:09:45.197-05:00 INFO default-logger Hello from ZIO logger
 ```
 
 ### Logger Name and Log Level
@@ -184,15 +249,15 @@ import zio.logging._
 
 object LogLevelAndLoggerName extends zio.App {
 
-  val env = 
+  val env =
     Logging.console((_, logEntry) =>
       logEntry
     )
 
   override def run(args: List[String]) =
-   env >>> log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
-    log.debug("Hello from ZIO logger")
-   }.as(0)
+    log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) {
+      log.debug("Hello from ZIO logger")
+    }.provideCustomLayer(env).as(0)
 }
 ```
 
