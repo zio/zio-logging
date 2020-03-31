@@ -1,5 +1,5 @@
 package zio.logging
-import zio.{ UIO, URIO, ZIO }
+import zio.{ Cause, UIO, URIO, ZIO }
 
 trait LoggerLike[-A] { self =>
 
@@ -18,6 +18,26 @@ trait LoggerLike[-A] { self =>
     }
 
   /**
+   * Logs the specified element at the debug level.
+   */
+  def debug(line: => A): UIO[Unit] =
+    self.log(LogLevel.Debug)(line)
+
+  /**
+   * Logs the specified element at the error level.
+   */
+  def error(line: => A): UIO[Unit] =
+    self.log(LogLevel.Error)(line)
+
+  /**
+   * Logs the specified element at the error level with cause.
+   */
+  def error(line: => A, cause: Cause[Any]) =
+    self.locally(LogAnnotation.Cause(Some(cause))) {
+      self.log(LogLevel.Error)(line)
+    }
+
+  /**
    * Derives a new logger from this one, by applying the specified decorator
    * to the logger context.
    */
@@ -30,6 +50,12 @@ trait LoggerLike[-A] { self =>
 
       def logContext: UIO[LogContext] = self.logContext
     }
+
+  /**
+   * Logs the specified element at the info level
+   */
+  def info(line: => A): UIO[Unit] =
+    self.log(LogLevel.Info)(line)
 
   /**
    * Modifies the log context in the scope of the specified effect.
@@ -70,4 +96,24 @@ trait LoggerLike[-A] { self =>
    */
   def named(name: String): LoggerLike[A] =
     derive(_.annotate(LogAnnotation.Name, name :: Nil))
+
+  /**
+   * Logs the specified element at the error level with exception.
+   */
+  def throwable(line: => A, t: Throwable) =
+    self.locally(LogAnnotation.Throwable(Some(t))) {
+      self.error(line)
+    }
+
+  /**
+   * Logs the specified element at the trace level.
+   */
+  def trace(line: => A): UIO[Unit] =
+    self.log(LogLevel.Trace)(line)
+
+  /**
+   * Logs the specified element at the warn level.
+   */
+  def warn(line: => A) =
+    self.log(LogLevel.Warn)(line)
 }
