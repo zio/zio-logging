@@ -23,7 +23,7 @@ object Examples extends zio.App {
       _     <- fiber.join
       _ <- log.locally(correlationId("1234111")) {
             log.info("info message with correlation id") *>
-              log.throwable("another info message with correlation id", new RuntimeException("error message")).fork
+              log.throwable("this is error", new RuntimeException("error message")).fork
           }
     } yield 1).provideLayer(env)
 }
