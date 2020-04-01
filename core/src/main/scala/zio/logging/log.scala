@@ -4,11 +4,9 @@ import zio.logging.Logging.Logging
 import zio.{ Cause, URIO, ZIO }
 
 object log {
-  def apply(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.log(line))
 
   def apply(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.log(level)(line))
+    Logging.log(level)(line)
 
   val context: URIO[Logging, LogContext] =
     Logging.context

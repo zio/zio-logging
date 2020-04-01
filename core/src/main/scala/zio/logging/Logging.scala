@@ -28,8 +28,34 @@ object Logging {
       rootLoggerName
     )
 
+  val context: URIO[Logging, LogContext] =
+    ZIO.accessM[Logging](_.get.logContext)
+
+  def debug(line: => String): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.debug(line))
+
+  def error(line: => String): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.error(line))
+
+  def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.error(line, cause))
+
   val ignore: Layer[Nothing, Logging] =
     make((_, _) => ZIO.unit)
+
+  def info(line: => String): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.info(line))
+
+  def log(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.log(level)(line))
+
+  def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
+    ZIO.accessM(_.get.locally(fn)(zio))
+
+  def locallyM[A, R <: Logging, E, A1](
+    fn: LogContext => URIO[R, LogContext]
+  )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
+    ZIO.accessM(_.get.locallyM(fn)(zio))
 
   def make[R](
     logger: (LogContext, => String) => URIO[R, Unit],
@@ -57,29 +83,6 @@ object Logging {
             }
         )
     )
-
-  val context: URIO[Logging, LogContext] =
-    ZIO.accessM[Logging](_.get.logContext)
-
-  def debug(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.debug(line))
-
-  def error(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.error(line))
-
-  def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.error(line, cause))
-
-  def info(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.info(line))
-
-  def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
-    ZIO.accessM(_.get.locally(fn)(zio))
-
-  def locallyM[A, R <: Logging, E, A1](
-    fn: LogContext => URIO[R, LogContext]
-  )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
-    ZIO.accessM(_.get.locallyM(fn)(zio))
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.throwable(line, t))

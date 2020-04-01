@@ -27,15 +27,3 @@ object Examples extends zio.App {
           }
     } yield 1).provideLayer(env)
 }
-
-object Simple extends zio.App {
-
-  val env =
-    Logging.console(
-      format = (_, logEntry) => logEntry,
-      rootLoggerName = Some("default-logger")
-    )
-
-  override def run(args: List[String]) =
-    log("Hello from ZIO logger").provideCustomLayer(env).as(0)
-}
