@@ -5,7 +5,7 @@ object BuildHelper {
 
   def stdSettings(prjName: String) = Seq(
     name := s"$prjName",
-    crossScalaVersions := Seq(Scala212, Scala213),
+    crossScalaVersions := Seq(Scala211, Scala212, Scala213),
     scalaVersion in ThisBuild := Scala212,
     scalacOptions := CommonOpts ++ extraOptions(scalaVersion.value),
     libraryDependencies ++= Seq(
@@ -19,6 +19,7 @@ object BuildHelper {
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
+  final private val Scala211 = "2.11.12"
   final private val Scala212 = "2.12.10"
   final private val Scala213 = "2.13.1"
 
