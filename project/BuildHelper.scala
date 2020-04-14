@@ -23,7 +23,7 @@ object BuildHelper {
   final private val Scala212 = "2.12.10"
   final private val Scala213 = "2.13.1"
 
-  final private val SilencerVersion = "1.4.4"
+  final val SilencerVersion = "1.4.4"
 
   final private val CommonOpts =
     Seq(
