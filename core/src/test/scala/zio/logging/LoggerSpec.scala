@@ -3,7 +3,6 @@ package zio.logging
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import zio.logging.Logging.Logging
 import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
 import zio.test.Assertion._
 import zio.test._

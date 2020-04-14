@@ -5,7 +5,6 @@ import zio.clock.{ currentDateTime, Clock }
 import zio.console.{ putStrLn, Console }
 
 object Logging {
-  type Logging = Has[Logger[String]]
 
   def console(
     format: (LogContext, => String) => String,

@@ -1,6 +1,5 @@
 package zio.logging
 
-import zio.logging.Logging.Logging
 import zio.{ Cause, URIO, ZIO }
 
 object log {
