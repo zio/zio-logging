@@ -20,6 +20,7 @@ object Logging {
         _          <- putStrLn(date.toString + " " + level.render + " " + loggerName + " " + format(context, line))
       } yield ()
     )
+
   def error(cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
     log(LogLevel.Error)(cause.prettyPrint)
 

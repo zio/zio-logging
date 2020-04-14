@@ -37,6 +37,10 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
         map + (annotation -> annotation.combine(self.get(annotation), that.get(annotation)))
     })
   }
+
+  def asStringMap: Map[String, String] = map.map {
+    case (LogAnnotation(name, _, _, render), value) => (name, render(value))
+  }
 }
 
 object LogContext {
