@@ -1,7 +1,7 @@
 package zio.logging.js
 
 import zio.clock._
-import zio.logging.Logging.Logging
+import zio.logging.Logging
 import zio.logging.{ LogAnnotation, LogContext, LogLevel, Logging }
 import zio.{ IO, ZIO, ZLayer }
 

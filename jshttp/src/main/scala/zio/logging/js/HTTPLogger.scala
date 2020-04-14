@@ -6,7 +6,7 @@ import java.util.UUID
 import org.scalajs.dom.ext.Ajax
 import zio.{ ZIO, ZLayer }
 import zio.clock.{ currentDateTime, Clock }
-import zio.logging.Logging.Logging
+import zio.logging.Logging
 import zio.logging.{ LogAnnotation, LogContext, LogLevel, Logging }
 
 import scala.scalajs.js
