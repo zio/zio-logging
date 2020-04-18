@@ -9,8 +9,8 @@ import zio.internal.tracing.TracingConfig
 import zio.logging.Logging
 import zio.logging._
 import zio.{ ZIO, ZLayer }
-import scala.collection.JavaConverters._
 
+import scala.jdk.CollectionConverters._
 object Slf4jLogger {
 
   private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
@@ -69,7 +69,10 @@ object Slf4jLogger {
         }
         logger(loggerName).map {
           slf4jLogger =>
-            MDC.setContextMap(context.renderContext.filterKeys(annotationNames.contains).asJava)
+            val mdc: Map[String, String] = context.renderContext.filter {
+              case (k, _) => annotationNames.contains(k)
+            }
+            MDC.setContextMap(mdc.asJava)
             context.get(LogAnnotation.Level).level match {
               case LogLevel.Off.level   => ()
               case LogLevel.Debug.level => slf4jLogger.debug(line)
