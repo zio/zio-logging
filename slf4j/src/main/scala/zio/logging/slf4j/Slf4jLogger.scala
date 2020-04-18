@@ -1,6 +1,6 @@
 package zio.logging.slf4j
 
-import org.slf4j.LoggerFactory
+import org.slf4j.{ LoggerFactory, MDC }
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
 import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
@@ -9,6 +9,7 @@ import zio.internal.tracing.TracingConfig
 import zio.logging.Logging
 import zio.logging._
 import zio.{ ZIO, ZLayer }
+import scala.collection.JavaConverters._
 
 object Slf4jLogger {
 
@@ -53,4 +54,37 @@ object Slf4jLogger {
       },
       rootLoggerName = rootLoggerName
     )
+
+  def makeWithAnnotationsAsMdc(
+    rootLoggerName: Option[String] = None,
+    mdcAnnotations: List[LogAnnotation[_]]
+  ): ZLayer[Any, Nothing, Logging] = {
+    val annotationNames = mdcAnnotations.map(_.name)
+
+    Logging.make(
+      (context, line) => {
+        val loggerName = context.get(LogAnnotation.Name) match {
+          case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
+          case names => LogAnnotation.Name.render(names)
+        }
+        logger(loggerName).map {
+          slf4jLogger =>
+            MDC.setContextMap(context.renderContext.filterKeys(annotationNames.contains).asJava)
+            context.get(LogAnnotation.Level).level match {
+              case LogLevel.Off.level   => ()
+              case LogLevel.Debug.level => slf4jLogger.debug(line)
+              case LogLevel.Trace.level => slf4jLogger.trace(line)
+              case LogLevel.Info.level  => slf4jLogger.info(line)
+              case LogLevel.Warn.level  => slf4jLogger.warn(line)
+              case LogLevel.Error.level => slf4jLogger.error(line)
+              case LogLevel.Fatal.level => slf4jLogger.error(line)
+            }
+
+            MDC.clear()
+        }
+
+      },
+      rootLoggerName = rootLoggerName
+    )
+  }
 }
