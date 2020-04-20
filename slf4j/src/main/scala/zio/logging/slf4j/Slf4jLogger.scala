@@ -56,8 +56,9 @@ object Slf4jLogger {
     )
 
   def makeWithAnnotationsAsMdc(
-    rootLoggerName: Option[String] = None,
-    mdcAnnotations: List[LogAnnotation[_]]
+    mdcAnnotations: List[LogAnnotation[_]],
+    logFormat: (LogContext, => String) => String = (_, s) => s,
+    rootLoggerName: Option[String] = None
   ): ZLayer[Any, Nothing, Logging] = {
     val annotationNames = mdcAnnotations.map(_.name)
 
@@ -69,20 +70,21 @@ object Slf4jLogger {
         }
         logger(loggerName).map {
           slf4jLogger =>
+            val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
+
             val mdc: Map[String, String] = context.renderContext.filter {
               case (k, _) => annotationNames.contains(k)
             }
             MDC.setContextMap(mdc.asJava)
             context.get(LogAnnotation.Level).level match {
               case LogLevel.Off.level   => ()
-              case LogLevel.Debug.level => slf4jLogger.debug(line)
-              case LogLevel.Trace.level => slf4jLogger.trace(line)
-              case LogLevel.Info.level  => slf4jLogger.info(line)
-              case LogLevel.Warn.level  => slf4jLogger.warn(line)
-              case LogLevel.Error.level => slf4jLogger.error(line)
-              case LogLevel.Fatal.level => slf4jLogger.error(line)
+              case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line), maybeThrowable)
+              case LogLevel.Trace.level => slf4jLogger.trace(logFormat(context, line), maybeThrowable)
+              case LogLevel.Info.level  => slf4jLogger.info(logFormat(context, line), maybeThrowable)
+              case LogLevel.Warn.level  => slf4jLogger.warn(logFormat(context, line), maybeThrowable)
+              case LogLevel.Error.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
+              case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
             }
-
             MDC.clear()
         }
 
