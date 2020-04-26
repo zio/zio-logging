@@ -55,6 +55,9 @@ object Slf4jLogger {
       rootLoggerName = rootLoggerName
     )
 
+  /**
+   * Creates a slf4j logger that puts all the annotations defined in `mdcAnnotations` in the MDC context
+   */
   def makeWithAnnotationsAsMdc(
     mdcAnnotations: List[LogAnnotation[_]],
     logFormat: (LogContext, => String) => String = (_, s) => s,

@@ -126,6 +126,7 @@ lazy val examples = project
   .settings(
     skip in publish := true,
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
+      "ch.qos.logback"       % "logback-classic"          % "1.2.3",
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.3"
     )
   )
