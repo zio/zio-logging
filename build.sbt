@@ -47,7 +47,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.4",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),
@@ -59,7 +59,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   )
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js.settings(
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0-RC5" % Test
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test
 )
 
 lazy val slf4j = project
@@ -108,7 +108,7 @@ lazy val docs = project
     scalacOptions ~= { _.filterNot(_.startsWith("-Ywarn")) },
     scalacOptions ~= { _.filterNot(_.startsWith("-Xlint")) },
     libraryDependencies ++= Seq(
-      ("com.github.ghik" % "silencer-lib" % "1.6.0" % Provided).cross(CrossVersion.full)
+      ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided).cross(CrossVersion.full)
     )
   )
   .dependsOn(coreJVM, slf4j)

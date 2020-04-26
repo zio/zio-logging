@@ -22,118 +22,15 @@ libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 If you need  `scala.js console` integration use `zio-logging-slf4j` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % "0.2.3"
+libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % version
 ```
 
 If you need  `scala.js http` log publishing integration use `zio-logging-slf4j` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "0.2.3"
+libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % version
 ```
 
-
-## Logger Interface
-
-```scala
-trait LoggerLike[-A] { self =>
-
-  /**
-   * Produces a new logger by adapting a different input type to the input
-   * type of this logger.
-   */
-  def contramap[A1](f: A1 => A): LoggerLike[A1]
-  
-  /**
-   * Derives a new logger from this one, by applying the specified decorator
-   * to the logger context.
-   */
-  def derive(f: LogContext => LogContext): LoggerLike[A]
-
-  /**
-   * Modifies the log context in the scope of the specified effect.
-   */
-  def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1]
-
-  /**
-   * Modifies the log context with effect in the scope of the specified effect.
-   */
-  def locallyM[R1, E, A1](f: LogContext => URIO[R1, LogContext])(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] 
-
-  /**
-   * Modifies the annotate in the scope of the specified effect.
-   */
-  final def locallyAnnotate[B, R, E, A1](annotation: LogAnnotation[B], value: B)(zio: ZIO[R, E, A1]): ZIO[R, E, A1] 
-
-  /**
-   * Logs the specified element using an inherited log level.
-   */
-  def log(line: => A): UIO[Unit]
-
-  /**
-   * Retrieves the log context.
-   */
-  def logContext: UIO[LogContext]
-
-  /**
-   * Logs the specified element at the specified level. Implementations may
-   * override this for greater efficiency.
-   */
-  def log(level: LogLevel)(line: => A): UIO[Unit] 
-
-  /**
-   * Produces a named logger.
-   */
-  def named(name: String): LoggerLike[A] 
-}
-```
-
-Library provides object `log` that exposes basic methods:
-
-```scala
-object log {
-  def apply(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.logger.log(line))
-
-  def apply(level: LogLevel)(line: => String): ZIO[Logging, Nothing, Unit] =
-    ZIO.accessM[Logging](_.get.logger.log(level)(line))
-
-  def context: URIO[Logging, LogContext] =
-    ZIO.accessM[Logging](_.get.logger.logContext)
-
-  def debug(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Debug)(line)
-
-  def error(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Error)(line)
-
-  def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Error)(line + System.lineSeparator() + cause.prettyPrint)
-
-  def info(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Info)(line)
-
-  def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
-    ZIO.accessM(_.get.logger.locally(fn)(zio))
-
-  def locallyM[A, R <: Logging, E, A1](
-    fn: LogContext => URIO[R, LogContext]
-  )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
-    ZIO.accessM(_.get.logger.locallyM(fn)(zio))
-
-  def logger: URIO[Logging, Logger] =
-    ZIO.access[Logging](_.get.logger)
-
-  def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
-    error(line, Cause.die(t))
-
-  def trace(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Trace)(line)
-
-  def warn(line: => String): ZIO[Logging, Nothing, Unit] =
-    log(LogLevel.Warn)(line)
-
-}
-```
 
 ### Logger Context
 Logger Context is mechanism that we use to carry information like logger name or correlation id across different Fibers. Implementation uses `FiberRef` from `ZIO`. 
@@ -160,13 +57,14 @@ import zio.logging._
 
 object Simple extends zio.App {
 
-  val env = 
-    Logging.console((_, logEntry) =>
-      logEntry
+  val env =
+    Logging.console(
+      format = (_, logEntry) => logEntry,
+      rootLoggerName = Some("default-logger")
     )
 
   override def run(args: List[String]) =
-    env >>> log("Hello from ZIO logger").as(0)
+    log("Hello from ZIO logger").provideCustomLayer(env).as(0)
 }
 
 ```
@@ -174,7 +72,7 @@ object Simple extends zio.App {
 Expected console output:
 
 ```
-2020-02-02T18:09:45.197-05:00 INFO  Hello from ZIO logger
+2020-02-02T18:09:45.197-05:00 INFO default-logger Hello from ZIO logger
 ```
 
 ### Logger Name and Log Level
@@ -184,15 +82,15 @@ import zio.logging._
 
 object LogLevelAndLoggerName extends zio.App {
 
-  val env = 
+  val env =
     Logging.console((_, logEntry) =>
       logEntry
     )
 
   override def run(args: List[String]) =
-   env >>> log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) { 
-    log.debug("Hello from ZIO logger")
-   }.as(0)
+    log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) {
+      log.debug("Hello from ZIO logger")
+    }.provideCustomLayer(env).as(0)
 }
 ```
 
@@ -321,11 +219,13 @@ To create a logger, the **url** for the POST is mandatory.
 
 
 ```scala
+
+
 import zio.logging._
 import zio.logging.js._
 ...
 
-val loggerLayer=HTTPLogger.make("http://localhost:9000/event/collect")((context, message) => message)
+val loggerLayer = HTTPLogger.make("http://localhost:9000/event/collect")((context, message) => message)
 
 
 ```

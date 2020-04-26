@@ -1,5 +1,7 @@
 package zio.logging
 
+import zio.Cause
+
 import scala.reflect.ClassTag
 
 /**
@@ -49,5 +51,27 @@ object LogAnnotation {
    * The `Name` annotation keeps track of logger names.
    */
   val Name = LogAnnotation[List[String]]("name", Nil, _ ++ _, _.mkString("."))
+
+  /**
+   * The `Throwable` annotation keeps track of a throwable.
+   */
+  val Throwable =
+    LogAnnotation[Option[Throwable]](
+      name = "throwable",
+      initialValue = None,
+      combine = (_, t) => t,
+      _.map(_.toString).getOrElse("")
+    )
+
+  /**
+   * The `Cause` annotation keeps track of a Cause.
+   */
+  val Cause =
+    LogAnnotation[Option[Cause[Any]]](
+      name = "cause",
+      initialValue = None,
+      combine = (_, t) => t,
+      _.map(_.toString).getOrElse("")
+    )
 
 }
