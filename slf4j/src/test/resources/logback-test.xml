@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT" class="zio.logging.slf4j.TestAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} %msg%n</Pattern>
         </layout>
@@ -15,5 +15,4 @@
         <appender-ref ref="STDOUT" />
         <appender-ref ref="logstash" />
     </root>
-
 </configuration>

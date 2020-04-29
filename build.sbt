@@ -68,8 +68,13 @@ lazy val slf4j = project
   .settings(stdSettings("zio-logging-slf4j"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % "1.7.30"
-    )
+      "org.slf4j"            % "slf4j-api"                % "1.7.30",
+      "dev.zio"              %%% "zio-test"               % ZioVersion % Test,
+      "dev.zio"              %%% "zio-test-sbt"           % ZioVersion % Test,
+      "ch.qos.logback"       % "logback-classic"          % "1.2.3" % Test,
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.3" % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
 lazy val jsconsole = project
@@ -121,6 +126,7 @@ lazy val examples = project
   .settings(
     skip in publish := true,
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
+      "ch.qos.logback"       % "logback-classic"          % "1.2.3",
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.3"
     )
   )

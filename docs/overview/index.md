@@ -101,6 +101,8 @@ Expected console output:
 ```
 
 ### Slf4j and correlation id
+We can create a `slf4j` logger and define how the annotations translates into the logging message
+
 ```scala
 
 import zio.logging._
@@ -153,6 +155,46 @@ java.lang.RuntimeException: error message
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
 	at java.lang.Thread.run(Thread.java:745)
 No ZIO Trace available.
+```
+
+### Slf4j and MDC
+We can create a logger and define a number of annotations that will be translated into MDC context
+
+```scala
+object Slf4jMdc extends zio.App {
+
+  val userId = LogAnnotation[UUID](
+    name = "user-id",
+    initialValue = UUID.fromString("0-0-0-0-0"),
+    combine = (_, newValue) => newValue,
+    render = _.toString
+  )
+
+  val logLayer = Slf4jLogger.makeWithAnnotationsAsMdc(List(userId))
+  val users = List.fill(2)(UUID.randomUUID())
+
+  override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] =
+    (for {
+      _ <- log.in
+      correlationId <- UIO(Some(UUID.randomUUID()))
+      _ <- ZIO.foreachPar(users) { uId =>
+        log.locally(_.annotate(userId, uId).annotate(LogAnnotation.CorrelationId, correlationId)) {
+          log.info("Starting operation") *>
+            ZIO.sleep(500.millis) *>
+            log.info("Stopping operation")
+        }
+      }
+    } yield 0).provideSomeLayer[Clock](logLayer)
+}
+```
+
+Expected console output (with logstash encoder):
+
+```
+{"@timestamp":"2020-04-26T13:19:14.845+02:00","@version":"1","message":"Starting operation","logger_name":"zio.logging.Slf4jMdc$","thread_name":"zio-default-async-7-1282747478","level":"INFO","level_value":20000,"user-id":"952fd569-b63c-4dac-ac9a-63dd2c60e50e"}
+{"@timestamp":"2020-04-26T13:19:14.845+02:00","@version":"1","message":"Starting operation","logger_name":"zio.logging.Slf4jMdc$","thread_name":"zio-default-async-8-1282747478","level":"INFO","level_value":20000,"user-id":"ec86bf22-41b4-4d09-a2b7-6d8ccadb1ca0"}
+{"@timestamp":"2020-04-26T13:19:15.360+02:00","@version":"1","message":"Stopping operation","logger_name":"zio.logging.Slf4jMdc$","thread_name":"zio-default-async-11-1282747478","level":"INFO","level_value":20000,"user-id":"952fd569-b63c-4dac-ac9a-63dd2c60e50e"}
+{"@timestamp":"2020-04-26T13:19:15.360+02:00","@version":"1","message":"Stopping operation","logger_name":"zio.logging.Slf4jMdc$","thread_name":"zio-default-async-10-1282747478","level":"INFO","level_value":20000,"user-id":"ec86bf22-41b4-4d09-a2b7-6d8ccadb1ca0"}
 ```
 
 ### Scala.JS Console
