@@ -19,16 +19,16 @@ If you need `slf4j` integration use `zio-logging-slf4j` instead
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 ```
 
-If you need  `scala.js console` integration use `zio-logging-slf4j` instead 
+If you need  `scala.js console` integration use `zio-logging-jsconsole` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % version
+libraryDependencies += "dev.zio" %%% "zio-logging-jsconsole" % version
 ```
 
-If you need  `scala.js http` log publishing integration use `zio-logging-slf4j` instead 
+If you need  `scala.js http` log publishing integration use `zio-logging-jshttp` instead 
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % version
+libraryDependencies += "dev.zio" %%% "zio-logging-jshttp" % version
 ```
 
 
