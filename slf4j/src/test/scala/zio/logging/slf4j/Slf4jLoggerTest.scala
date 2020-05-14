@@ -23,18 +23,20 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
         for {
           uuid1 <- UIO(UUID.randomUUID())
           uuid2 <- UIO(UUID.randomUUID())
-          _ <- log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid1))) {
-                log.info("log stmt 1") *>
-                  log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid2))) {
-                    log.info("log stmt 1_1") *>
-                      log.info("log stmt 1_2")
-                  } *>
-                  log.info("log stmt 2")
-              }
+          _     <- log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid1))) {
+                 log.info("log stmt 1") *>
+                   log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid2))) {
+                     log.info("log stmt 1_1") *>
+                       log.info("log stmt 1_2")
+                   } *>
+                   log.info("log stmt 2")
+               }
         } yield {
           val testEvs = TestAppender.events
           assert(testEvs.size)(equalTo(4)) &&
-          assert(testEvs.map(_.getMessage))(equalTo(List("log stmt 1", "log stmt 1_1", "log stmt 1_2", "log stmt 2"))) &&
+          assert(testEvs.map(_.getMessage))(
+            equalTo(List("log stmt 1", "log stmt 1_1", "log stmt 1_2", "log stmt 2"))
+          ) &&
           assert(testEvs.map(_.getMDCPropertyMap.asScala("correlation-id")))(
             equalTo(List(uuid1.toString, uuid2.toString, uuid2.toString, uuid1.toString))
           )

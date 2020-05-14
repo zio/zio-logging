@@ -23,12 +23,12 @@ object Slf4jMdc extends App {
     (for {
       _             <- log.info("Start...")
       correlationId <- UIO(Some(UUID.randomUUID()))
-      _ <- ZIO.foreachPar(users) { uId =>
-            log.locally(_.annotate(userId, uId).annotate(LogAnnotation.CorrelationId, correlationId)) {
-              log.info("Starting operation") *>
-                ZIO.sleep(500.millis) *>
-                log.info("Stopping operation")
-            }
-          }
+      _             <- ZIO.foreachPar(users) { uId =>
+             log.locally(_.annotate(userId, uId).annotate(LogAnnotation.CorrelationId, correlationId)) {
+               log.info("Starting operation") *>
+                 ZIO.sleep(500.millis) *>
+                 log.info("Stopping operation")
+             }
+           }
     } yield 0).provideSomeLayer[Clock](logLayer)
 }

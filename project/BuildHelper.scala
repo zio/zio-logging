@@ -3,21 +3,22 @@ import sbt.Keys._
 
 object BuildHelper {
 
-  def stdSettings(prjName: String) = Seq(
-    name := s"$prjName",
-    crossScalaVersions := Seq(Scala211, Scala212, Scala213),
-    scalaVersion in ThisBuild := Scala212,
-    scalacOptions := CommonOpts ++ extraOptions(scalaVersion.value),
-    libraryDependencies ++= Seq(
-      ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided)
-        .cross(CrossVersion.full),
-      compilerPlugin(
-        ("com.github.ghik" % "silencer-plugin" % SilencerVersion)
-          .cross(CrossVersion.full)
-      )
-    ),
-    incOptions ~= (_.withLogRecompileOnMacro(false))
-  )
+  def stdSettings(prjName: String) =
+    Seq(
+      name := s"$prjName",
+      crossScalaVersions := Seq(Scala211, Scala212, Scala213),
+      scalaVersion in ThisBuild := Scala212,
+      scalacOptions := CommonOpts ++ extraOptions(scalaVersion.value),
+      libraryDependencies ++= Seq(
+        ("com.github.ghik"   % "silencer-lib"    % SilencerVersion % Provided)
+          .cross(CrossVersion.full),
+        compilerPlugin(
+          ("com.github.ghik" % "silencer-plugin" % SilencerVersion)
+            .cross(CrossVersion.full)
+        )
+      ),
+      incOptions ~= (_.withLogRecompileOnMacro(false))
+    )
 
   final private val Scala211 = "2.11.12"
   final private val Scala212 = "2.12.10"
@@ -81,7 +82,7 @@ object BuildHelper {
           "-opt:l:inline",
           "-opt-inline-from:<source>"
         ) ++ OptsTo212
-      case _ =>
+      case _             =>
         Seq("-Xexperimental") ++ OptsTo212
     }
 }

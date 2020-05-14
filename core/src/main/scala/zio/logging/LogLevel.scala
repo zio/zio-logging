@@ -16,7 +16,8 @@ sealed trait LogLevel { self =>
 
   def min(that: LogLevel): LogLevel = if (self > that) that else self
 }
-object LogLevel {
+object LogLevel       {
+
   case object Fatal extends LogLevel { val level = 6; val render = "FATAL" }
   case object Error extends LogLevel { val level = 5; val render = "ERROR" }
   case object Warn  extends LogLevel { val level = 4; val render = "WARN"  }
