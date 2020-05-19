@@ -7,7 +7,7 @@ import zio.console.{ putStrLn, Console }
 object Logging {
 
   def console(
-    format: (LogContext, => String) => String,
+    format: (LogContext, => String) => String = (_, s) => s,
     rootLoggerName: Option[String] = None
   ): ZLayer[Console with Clock, Nothing, Logging] =
     make(
