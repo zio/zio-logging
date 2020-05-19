@@ -78,6 +78,8 @@ install_yarn: &install_yarn
   - run:
       name: Install Yarn
       command: |
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 78BD65473CB3BD13
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5DC22404A6F9F1CA
         export NVM_DIR="/opt/circleci/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         nvm install
