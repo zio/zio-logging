@@ -16,22 +16,22 @@ object LoggerSpec extends DefaultRunnableSpec {
     }
     def make: Layer[Nothing, TestLogging with Logging] =
       ZLayer.fromEffectMany(for {
-        data <- Ref.make(Vector.empty[(LogContext, String)])
+        data   <- Ref.make(Vector.empty[(LogContext, String)])
         logger <- FiberRef
-                   .make(LogContext.empty)
-                   .map { ref =>
-                     new Logger[String] with TestLogger.Service {
-                       def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
-                         ref.get.flatMap(context => ref.locally(f(context))(zio))
+                    .make(LogContext.empty)
+                    .map { ref =>
+                      new Logger[String] with TestLogger.Service {
+                        def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
+                          ref.get.flatMap(context => ref.locally(f(context))(zio))
 
-                       def log(line: => String): UIO[Unit] =
-                         ref.get.flatMap(context => data.update(_ :+ ((context, line))).unit)
+                        def log(line: => String): UIO[Unit] =
+                          ref.get.flatMap(context => data.update(_ :+ ((context, line))).unit)
 
-                       def logContext: UIO[LogContext] = ref.get
+                        def logContext: UIO[LogContext] = ref.get
 
-                       def lines: UIO[Vector[(LogContext, String)]] = data.get
-                     }
-                   }
+                        def lines: UIO[Vector[(LogContext, String)]] = data.get
+                      }
+                    }
 
       } yield Has.allOf[Logger[String], TestLogger.Service](logger, logger))
 
@@ -120,7 +120,7 @@ object LoggerSpec extends DefaultRunnableSpec {
       },
       test("LogContext render") {
         val correlationId = UUID.randomUUID()
-        val rendered = LogContext.empty
+        val rendered      = LogContext.empty
           .annotate(LogAnnotation.Name, List("logger_name", "second_level"))
           .annotate(LogAnnotation.CorrelationId, Some(correlationId))
           .renderContext
