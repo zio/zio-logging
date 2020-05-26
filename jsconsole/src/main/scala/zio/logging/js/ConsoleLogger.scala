@@ -21,14 +21,14 @@ object ConsoleLogger {
         loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
         msg        = (date.toString + " " + level.render + " " + loggerName + " " + logFormat(context, line))
         _         <- level match {
-               case LogLevel.Fatal => IO.effectTotal(console.error(msg))
-               case LogLevel.Error => IO.effectTotal(console.error(msg))
-               case LogLevel.Warn  => IO.effectTotal(console.warn(msg))
-               case LogLevel.Info  => IO.effectTotal(console.info(msg))
-               case LogLevel.Debug => IO.effectTotal(console.debug(msg))
-               case LogLevel.Trace => IO.effectTotal(console.trace(msg))
-               case LogLevel.Off   => ZIO.unit
-             }
+                       case LogLevel.Fatal => IO.effectTotal(console.error(msg))
+                       case LogLevel.Error => IO.effectTotal(console.error(msg))
+                       case LogLevel.Warn  => IO.effectTotal(console.warn(msg))
+                       case LogLevel.Info  => IO.effectTotal(console.info(msg))
+                       case LogLevel.Debug => IO.effectTotal(console.debug(msg))
+                       case LogLevel.Trace => IO.effectTotal(console.trace(msg))
+                       case LogLevel.Off   => ZIO.unit
+                     }
       } yield ()
     }
 

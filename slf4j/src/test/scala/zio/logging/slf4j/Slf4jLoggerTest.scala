@@ -24,13 +24,13 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
           uuid1 <- UIO(UUID.randomUUID())
           uuid2 <- UIO(UUID.randomUUID())
           _     <- log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid1))) {
-                 log.info("log stmt 1") *>
-                   log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid2))) {
-                     log.info("log stmt 1_1") *>
-                       log.info("log stmt 1_2")
-                   } *>
-                   log.info("log stmt 2")
-               }
+                     log.info("log stmt 1") *>
+                       log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid2))) {
+                         log.info("log stmt 1_1") *>
+                           log.info("log stmt 1_2")
+                       } *>
+                       log.info("log stmt 2")
+                   }
         } yield {
           val testEvs = TestAppender.events
           assert(testEvs.size)(equalTo(4)) &&
