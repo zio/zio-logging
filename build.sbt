@@ -40,7 +40,7 @@ lazy val root = project
   .settings(skip in publish := true)
   .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs)
 
-lazy val core = crossProject(JSPlatform, JVMPlatform)
+lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
   .settings(stdSettings("zio-logging"))
@@ -58,7 +58,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     fork in run := true
   )
 lazy val coreJVM = core.jvm
-lazy val coreJS = core.js.settings(
+lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test
 )
 
@@ -69,10 +69,10 @@ lazy val slf4j = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % "1.7.30",
-      "dev.zio"              %%% "zio-test"               % ZioVersion % Test,
-      "dev.zio"              %%% "zio-test-sbt"           % ZioVersion % Test,
-      "ch.qos.logback"       % "logback-classic"          % "1.2.3" % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.3" % Test
+      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
+      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
+      "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.3"      % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )

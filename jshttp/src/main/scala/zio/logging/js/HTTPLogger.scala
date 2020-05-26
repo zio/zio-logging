@@ -61,11 +61,11 @@ object HTTPLogger {
   ): ZLayer[Clock, Nothing, Logging] =
     Logging.make { (context, line) =>
       for {
-        date       <- currentDateTime.orDie
+        date      <- currentDateTime.orDie
         level      = context.get(LogAnnotation.Level)
         loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
         msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
-        _          <- ZIO.effectTotal(sendMessage(url, msg))
+        _         <- ZIO.effectTotal(sendMessage(url, msg))
       } yield ()
     }
 
