@@ -22,10 +22,11 @@ final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combi
 
   override def hashCode: Int = id.hashCode
 
-  override def equals(that: Any): Boolean = that match {
-    case that: LogAnnotation[_] => self.id == that.id
-    case _                      => false
-  }
+  override def equals(that: Any): Boolean =
+    that match {
+      case that: LogAnnotation[_] => self.id == that.id
+      case _                      => false
+    }
 
   override def toString: String = "LogAnnotation(" + name + ")"
 }
