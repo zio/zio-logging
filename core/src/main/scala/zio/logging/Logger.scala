@@ -24,10 +24,20 @@ trait Logger[-A] { self =>
     self.log(LogLevel.Debug)(line)
 
   /**
+   * Evaluates the specified element based on the LogLevel set and logs at the debug level
+   */
+  def debug(line: UIO[A]): UIO[Unit] = line >>= debug
+
+  /**
    * Logs the specified element at the error level.
    */
   def error(line: => A): UIO[Unit] =
     self.log(LogLevel.Error)(line)
+
+  /**
+   * Evaluates the specified element based on the LogLevel set and logs at the error level
+   */
+  def error(line: UIO[A]): UIO[Unit] = line >>= error
 
   /**
    * Logs the specified element at the error level with cause.
@@ -36,6 +46,11 @@ trait Logger[-A] { self =>
     self.locally(LogAnnotation.Cause(Some(cause))) {
       self.log(LogLevel.Error)(line)
     }
+
+  /**
+   * Evaluates the specified element based on the LogLevel set and logs at the error level
+   */
+  def error(line: UIO[A], cause: Cause[Any]): UIO[Unit] = line.flatMap(l => error(l, cause))
 
   /**
    * Derives a new logger from this one, by applying the specified decorator
@@ -56,6 +71,11 @@ trait Logger[-A] { self =>
    */
   def info(line: => A): UIO[Unit] =
     self.log(LogLevel.Info)(line)
+
+  /**
+   * Evaluates the specified element based on the LogLevel set and logs at the info level
+   */
+  def info(line: UIO[A]): UIO[Unit] = line >>= info
 
   /**
    * Modifies the log context in the scope of the specified effect.
@@ -112,8 +132,18 @@ trait Logger[-A] { self =>
     self.log(LogLevel.Trace)(line)
 
   /**
+   * Evaluates the specified element based on the LogLevel set and logs at the trace level
+   */
+  def trace(line: UIO[A]): UIO[Unit] = line >>= trace
+
+  /**
    * Logs the specified element at the warn level.
    */
   def warn(line: => A) =
     self.log(LogLevel.Warn)(line)
+
+  /**
+   * Evaluates the specified element based on the LogLevel set and logs at the warn level
+   */
+  def warn(line: UIO[A]): UIO[Unit] = line >>= warn
 }
