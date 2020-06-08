@@ -1,8 +1,8 @@
 package zio.logging
 
 import zio._
-import zio.clock.{ currentDateTime, Clock }
-import zio.console.{ putStrLn, Console }
+import zio.clock.Clock
+import zio.console.Console
 
 object Logging {
 
@@ -11,19 +11,7 @@ object Logging {
     rootLoggerName: Option[String] = None
   ): ZLayer[Console with Clock, Nothing, Logging] =
     make(
-      (context, line) =>
-        for {
-          date      <- currentDateTime.orDie
-          level      = context(LogAnnotation.Level)
-          loggerName = context(LogAnnotation.Name)
-          maybeError = context
-                         .get(LogAnnotation.Throwable)
-                         .map(Cause.fail)
-                         .orElse(context.get(LogAnnotation.Cause))
-                         .map(cause => System.lineSeparator() + cause.prettyPrint)
-                         .getOrElse("")
-          _         <- putStrLn(date.toString + " " + level + " " + loggerName + " " + format(context, line) + " " + maybeError)
-        } yield (),
+      LogWriter.ColoredLogWriter(format),
       rootLoggerName
     )
 
@@ -57,7 +45,7 @@ object Logging {
     ZIO.accessM(_.get.locallyM(fn)(zio))
 
   def make[R](
-    logger: (LogContext, => String) => URIO[R, Unit],
+    logger: LogWriter[R],
     rootLoggerName: Option[String] = None
   ): ZLayer[R, Nothing, Logging] =
     ZLayer.fromEffect(
@@ -75,7 +63,8 @@ object Logging {
                 def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
                   ref.get.flatMap(context => ref.locally(f(context))(zio))
 
-                def log(line: => String): UIO[Unit] = ref.get.flatMap(context => logger(context, line).provide(env))
+                def log(line: => String): UIO[Unit] =
+                  ref.get.flatMap(context => logger.writeLog(context, line).provide(env))
 
                 def logContext: UIO[LogContext] = ref.get
               }

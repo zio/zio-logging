@@ -1,6 +1,8 @@
 import sbtcrossproject.CrossPlugin.autoImport.{ crossProject, CrossType }
 import BuildHelper._
 
+name := "zio-logging"
+
 inThisBuild(
   List(
     organization := "dev.zio",
