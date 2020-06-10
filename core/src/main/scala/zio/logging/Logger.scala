@@ -26,7 +26,7 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the debug level
    */
-  def debug(line: UIO[A]): UIO[Unit] = line >>= debug
+  def debugM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (debug(_))
 
   /**
    * Logs the specified element at the error level.
@@ -37,7 +37,7 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the error level
    */
-  def error(line: UIO[A]): UIO[Unit] = line >>= error
+  def errorM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (error(_))
 
   /**
    * Logs the specified element at the error level with cause.
@@ -50,7 +50,7 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the error level
    */
-  def error(line: UIO[A], cause: Cause[Any]): UIO[Unit] = line.flatMap(l => error(l, cause))
+  def errorM[R, E](line: ZIO[R, E, A], cause: Cause[Any]): ZIO[R, E, Unit] = line.flatMap(l => error(l, cause))
 
   /**
    * Derives a new logger from this one, by applying the specified decorator
@@ -75,7 +75,7 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the info level
    */
-  def info(line: UIO[A]): UIO[Unit] = line >>= info
+  def infoM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (info(_))
 
   /**
    * Modifies the log context in the scope of the specified effect.
@@ -134,7 +134,7 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the trace level
    */
-  def trace(line: UIO[A]): UIO[Unit] = line >>= trace
+  def traceM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (trace(_))
 
   /**
    * Logs the specified element at the warn level.
@@ -145,5 +145,5 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the warn level
    */
-  def warn(line: UIO[A]): UIO[Unit] = line >>= warn
+  def warnM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (warn(_))
 }
