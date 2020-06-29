@@ -303,7 +303,7 @@ workflows:
               only: 
                 - master
       - release:
-          context: Sonatype
+          context: Sonatype2
           requires:
             - microsite
           filters:
