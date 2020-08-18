@@ -6,9 +6,8 @@ import zio.internal.stacktracer.Tracer
 import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
-import zio.logging.Logging
-import zio.logging._
-import zio.{ ZIO, ZLayer }
+import zio.logging.{ Logging, _ }
+import zio.{ ULayer, ZIO }
 
 import scala.jdk.CollectionConverters._
 object Slf4jLogger {
@@ -31,9 +30,10 @@ object Slf4jLogger {
   def make(
     logFormat: (LogContext, => String) => String,
     rootLoggerName: Option[String] = None
-  ): ZLayer[Any, Nothing, Logging] =
-    Logging.make(
-      logger = { (context, line) =>
+  ): ULayer[Logging] =
+    LogAppender.make[Any, String](
+      LogFormat.fromFunction(logFormat),
+      (context, line) => {
         val loggerName = context.get(LogAnnotation.Name) match {
           case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
           case names => LogAnnotation.Name.render(names)
@@ -42,17 +42,19 @@ object Slf4jLogger {
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
           context.get(LogAnnotation.Level).level match {
             case LogLevel.Off.level   => ()
-            case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line), maybeThrowable)
-            case LogLevel.Trace.level => slf4jLogger.trace(logFormat(context, line), maybeThrowable)
-            case LogLevel.Info.level  => slf4jLogger.info(logFormat(context, line), maybeThrowable)
-            case LogLevel.Warn.level  => slf4jLogger.warn(logFormat(context, line), maybeThrowable)
-            case LogLevel.Error.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
-            case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
+            case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
+            case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
+            case LogLevel.Info.level  => slf4jLogger.info(line, maybeThrowable)
+            case LogLevel.Warn.level  => slf4jLogger.warn(line, maybeThrowable)
+            case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
+            case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
           }
         }
-      },
-      rootLoggerName = rootLoggerName
-    )
+      }
+    ) >>>
+      Logging.make(
+        rootLoggerName = rootLoggerName
+      )
 
   /**
    * Creates a slf4j logger that puts all the annotations defined in `mdcAnnotations` in the MDC context
@@ -61,10 +63,11 @@ object Slf4jLogger {
     mdcAnnotations: List[LogAnnotation[_]],
     logFormat: (LogContext, => String) => String = (_, s) => s,
     rootLoggerName: Option[String] = None
-  ): ZLayer[Any, Nothing, Logging] = {
+  ): ULayer[Logging] = {
     val annotationNames = mdcAnnotations.map(_.name)
 
-    Logging.make(
+    LogAppender.make[Any, String](
+      LogFormat.fromFunction(logFormat),
       (context, line) => {
         val loggerName = context.get(LogAnnotation.Name) match {
           case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
@@ -79,17 +82,17 @@ object Slf4jLogger {
           MDC.setContextMap(mdc.asJava)
           context.get(LogAnnotation.Level).level match {
             case LogLevel.Off.level   => ()
-            case LogLevel.Debug.level => slf4jLogger.debug(logFormat(context, line), maybeThrowable)
-            case LogLevel.Trace.level => slf4jLogger.trace(logFormat(context, line), maybeThrowable)
-            case LogLevel.Info.level  => slf4jLogger.info(logFormat(context, line), maybeThrowable)
-            case LogLevel.Warn.level  => slf4jLogger.warn(logFormat(context, line), maybeThrowable)
-            case LogLevel.Error.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
-            case LogLevel.Fatal.level => slf4jLogger.error(logFormat(context, line), maybeThrowable)
+            case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
+            case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
+            case LogLevel.Info.level  => slf4jLogger.info(line, maybeThrowable)
+            case LogLevel.Warn.level  => slf4jLogger.warn(line, maybeThrowable)
+            case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
+            case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
           }
           MDC.clear()
         }
-
-      },
+      }
+    ) >>> Logging.make(
       rootLoggerName = rootLoggerName
     )
   }

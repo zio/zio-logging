@@ -1,5 +1,7 @@
 package zio.logging
 
+import java.time.OffsetDateTime
+
 import zio.Cause
 
 import scala.reflect.ClassTag
@@ -61,7 +63,7 @@ object LogAnnotation {
       name = "throwable",
       initialValue = None,
       combine = (_, t) => t,
-      _.map(_.toString).getOrElse("")
+      _.map(ex => zio.Cause.fail(ex).prettyPrint).getOrElse("")
     )
 
   /**
@@ -72,7 +74,16 @@ object LogAnnotation {
       name = "cause",
       initialValue = None,
       combine = (_, t) => t,
-      _.map(_.toString).getOrElse("")
+      _.map(_.prettyPrint).getOrElse("")
     )
 
+  /**
+   * Log timestamp
+   */
+  val Timestamp = LogAnnotation[OffsetDateTime](
+    name = "timestamp",
+    initialValue = OffsetDateTime.MIN,
+    combine = (_, newValue) => newValue,
+    render = (time: OffsetDateTime) => LogDatetimeFormatter.humanReadableDateTimeFormatter.format(time)
+  )
 }
