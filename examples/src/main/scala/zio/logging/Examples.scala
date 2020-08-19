@@ -16,7 +16,10 @@ object Examples extends zio.App {
 
   val env =
     //Slf4jLogger.make((context, message) => logFormat.format(context(correlationId), message))
-  ZLayer.requires[Console with Clock] ++ LogAppender.console(LogLevel.Info, LogFormat.SimpleConsoleLogFormat((_, s) => s)) >>> Logging.makeWithTimestamp()
+    ZLayer.requires[Console with Clock] ++ LogAppender.console(
+      LogLevel.Info,
+      LogFormat.SimpleConsoleLogFormat((_, s) => s)
+    ) >>> Logging.makeWithTimestamp()
 
   override def run(args: List[String]) =
     (for {
