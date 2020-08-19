@@ -10,7 +10,7 @@ import scala.Console._
  *  Idea is that those format should be composed by decoration.
  */
 trait LogFormat[A] {
-  def format(context: LogContext, line: => A): A
+  def format(context: LogContext, line: A): A
 }
 
 object LogFormat {
@@ -21,12 +21,12 @@ object LogFormat {
 
   def fromFunction(fn: LineFormatter): LogFormat[String] =
     new LogFormat[String] {
-      override def format(context: LogContext, line: => String): String =
+      override def format(context: LogContext, line: String): String =
         fn(context, line)
     }
 
   final case class SimpleConsoleLogFormat(format0: LineFormatter) extends LogFormat[String] {
-    override def format(context: LogContext, line: => String): String = {
+    override def format(context: LogContext, line: String): String = {
 
       val date       = context(LogAnnotation.Timestamp)
       val level      = context(LogAnnotation.Level)

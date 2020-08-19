@@ -46,8 +46,8 @@ object Logging {
   def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.error(line, cause))
 
-//  val ignore: Layer[Nothing, Logging] =
-//    make((_, _) => ZIO.unit)
+  val ignore: Layer[Nothing, Logging] =
+    LogAppender.ignore[String] >>> make()
 
   def info(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.info(line))
