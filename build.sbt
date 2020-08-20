@@ -31,7 +31,7 @@ inThisBuild(
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val ZioVersion           = "1.0.0"
+val ZioVersion           = "1.0.1"
 val scalaJavaTimeVersion = "2.0.0-RC5"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
