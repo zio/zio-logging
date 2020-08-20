@@ -22,7 +22,7 @@ object Slf4jMdc extends App {
   override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, ExitCode] =
     (for {
       _             <- log.info("Start...")
-      correlationId <- UIO(Some(UUID.randomUUID()))
+      correlationId <- UIO.some(UUID.randomUUID())
       _             <- ZIO.foreachPar(users) { uId =>
                          log.locally(_.annotate(userId, uId).annotate(LogAnnotation.CorrelationId, correlationId)) {
                            log.info("Starting operation") *>
