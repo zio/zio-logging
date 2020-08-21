@@ -18,7 +18,7 @@ object LogAppender {
 
     def write(ctx: LogContext, msg: => A): UIO[Unit]
 
-    final def filter(fn: (LogContext, => A) => Boolean): Service[A] =
+    def filter(fn: (LogContext, => A) => Boolean): Service[A] =
       new Service[A] {
         override def write(ctx: LogContext, msg: => A): zio.UIO[Unit] =
           if (fn(ctx, msg))

@@ -25,7 +25,7 @@ object LogFormat {
         fn(context, line)
     }
 
-  final case class SimpleConsoleLogFormat(format0: LineFormatter) extends LogFormat[String] {
+  final case class SimpleConsoleLogFormat(format0: LineFormatter = (_, line) => line) extends LogFormat[String] {
     override def format(context: LogContext, line: String): String = {
 
       val date       = context(LogAnnotation.Timestamp)
@@ -41,7 +41,7 @@ object LogFormat {
     }
   }
 
-  final case class ColoredLogFormat(lineFormat: LineFormatter) extends LogFormat[String] {
+  final case class ColoredLogFormat(lineFormat: LineFormatter = (_, line) => line) extends LogFormat[String] {
     private def withColor(color: String, s: String): String = s"$color$s$RESET"
 
     private def highlightLog(level: LogLevel, message: String): String = {
