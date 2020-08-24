@@ -29,7 +29,7 @@ object Slf4jLogger {
 
   def make(
     logFormat: (LogContext, => String) => String,
-    rootLoggerName: Option[String] = None
+    initialContext: LogContext = LogContext.empty
   ): ULayer[Logging] =
     LogAppender.make[Any, String](
       LogFormat.fromFunction(logFormat),
@@ -53,7 +53,7 @@ object Slf4jLogger {
       }
     ) >>>
       Logging.make(
-        rootLoggerName = rootLoggerName
+        initialContext
       )
 
   /**
@@ -62,7 +62,7 @@ object Slf4jLogger {
   def makeWithAnnotationsAsMdc(
     mdcAnnotations: List[LogAnnotation[_]],
     logFormat: (LogContext, => String) => String = (_, s) => s,
-    rootLoggerName: Option[String] = None
+    initialContext: LogContext = LogContext.empty
   ): ULayer[Logging] = {
     val annotationNames = mdcAnnotations.map(_.name)
 
@@ -93,7 +93,7 @@ object Slf4jLogger {
         }
       }
     ) >>> Logging.make(
-      rootLoggerName = rootLoggerName
+      initialContext
     )
   }
 }

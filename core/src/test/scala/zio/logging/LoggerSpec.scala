@@ -92,6 +92,24 @@ object LoggerSpec extends DefaultRunnableSpec {
             )
           )
       },
+      testM("derive") {
+        val counter = LogAnnotation[Int](
+          "counter",
+          0,
+          _ + _,
+          _.toString()
+        )
+
+        for {
+          derived <- log.derive(counter(10))
+          _       <- derived.locally(counter(20))(derived.info("fake log"))
+          lines   <- TestLogger.lines
+        } yield assert(lines)(
+          equalTo(
+            Vector((LogContext.empty.annotate(LogAnnotation.Level, LogLevel.Info).annotate(counter, 30), "fake log"))
+          )
+        )
+      },
       testM("locallyM") {
         val timely = LogAnnotation[OffsetDateTime](
           "time",

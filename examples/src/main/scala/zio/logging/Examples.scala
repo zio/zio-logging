@@ -1,8 +1,6 @@
 package zio.logging
 
 import zio._
-import zio.console._
-import zio.clock._
 
 object Examples extends zio.App {
   val correlationId = LogAnnotation[String](
@@ -16,10 +14,9 @@ object Examples extends zio.App {
 
   val env =
     //Slf4jLogger.make((context, message) => logFormat.format(context(correlationId), message))
-    ZLayer.requires[Console with Clock] ++ LogAppender.console(
-      LogLevel.Info,
-      LogFormat.ColoredLogFormat((_, s) => s)
-    ) >>> Logging.makeWithTimestamp()
+    Logging.console(format =
+      LogFormat.ColoredLogFormat((context, message) => logFormat.format(context(correlationId), message))
+    )
 
   override def run(args: List[String]) =
     (for {

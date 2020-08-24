@@ -13,6 +13,9 @@ object log {
   def debug(line: => String): ZIO[Logging, Nothing, Unit] =
     Logging.debug(line)
 
+  def derive(f: LogContext => LogContext): ZIO[Logging, Nothing, Logger[String]] =
+    Logging.derive(f)
+
   def error(line: => String): ZIO[Logging, Nothing, Unit] =
     Logging.error(line)
 

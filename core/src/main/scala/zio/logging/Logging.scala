@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio._
-import zio.clock.Clock
+import zio.clock._
 import zio.console.Console
 import zio.logging.Logger.LoggerWithFormat
 
@@ -11,35 +11,33 @@ object Logging {
    * Add timestamp annotation to every message
    */
   def addTimestamp[A](self: Logger[A]): URIO[Clock, Logger[A]] =
-    ZIO.access[Clock](env =>
-      new Logger[A] {
-        def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
-          self.locally(f)(zio)
-
-        def log(line: => A): UIO[Unit] =
-          env.get.currentDateTime.orDie.flatMap(time => locally(LogAnnotation.Timestamp(time))(self.log(line)))
-
-        def logContext: UIO[LogContext] = self.logContext
-      }
-    )
+    self.deriveM(ctx => currentDateTime.orDie.map(time => LogAnnotation.Timestamp(time)(ctx)))
 
   def console(
     logLevel: LogLevel = LogLevel.Info,
-    format: (LogContext, => String) => String = (_, s) => s,
+    format: LogFormat[String] = LogFormat.ColoredLogFormat((_, s) => s),
     rootLoggerName: Option[String] = None
   ): ZLayer[Console with Clock, Nothing, Logging] =
-    ZLayer.requires[Clock] ++ LogAppender.console[String](
-      logLevel,
-      LogFormat.ColoredLogFormat(format)
-    ) >>> makeWithTimestamp(
-      rootLoggerName
-    )
+    ZLayer.requires[Clock] ++
+      LogAppender.console[String](
+        logLevel,
+        format
+      ) >>> modifyM(
+      make(
+        rootLoggerName
+          .map(name => LogContext.empty.annotate(LogAnnotation.Name, List(name)))
+          .getOrElse(LogContext.empty)
+      )
+    )(addTimestamp)
 
   val context: URIO[Logging, LogContext] =
     ZIO.accessM[Logging](_.get.logContext)
 
   def debug(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.debug(line))
+
+  def derive(f: LogContext => LogContext): ZIO[Logging, Nothing, Logger[String]] =
+    ZIO.access[Logging](_.get.derive(f))
 
   def error(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.error(line))
@@ -64,26 +62,24 @@ object Logging {
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     ZIO.accessM(_.get.locallyM(fn)(zio))
 
-  def make(rootLoggerName: Option[String] = None): URLayer[Appender[String], Logging] =
+  def make(initialContext: LogContext = LogContext.empty): URLayer[Appender[String], Logging] =
     ZLayer.fromFunctionM((appender: Appender[String]) =>
       FiberRef
-        .make(LogContext.empty)
-        .tap(_.getAndUpdateSome {
-          case ctx if rootLoggerName.isDefined =>
-            ctx.annotate(LogAnnotation.Name, rootLoggerName.toList)
-        })
+        .make(initialContext)
         .map { ref =>
           LoggerWithFormat(ref, appender.get)
         }
     )
 
   /**
-   * creates layer with Logger that produces timestamp for every entry.
+   * modify Logger Layer.
    */
-  def makeWithTimestamp(rootLoggerName: Option[String] = None) =
+  def modifyM[R1, R2, E](
+    layer: ZLayer[R1, E, Logging]
+  )(fn: Logger[String] => ZIO[R2, E, Logger[String]]): ZLayer[R1 with R2, E, Logging] =
     ZLayer.fromManaged(
-      make(rootLoggerName).build
-        .mapM(logger => addTimestamp(logger.get))
+      layer.build
+        .mapM(logger => fn(logger.get))
     )
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =

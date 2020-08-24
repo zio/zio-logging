@@ -17,7 +17,7 @@ object ConsoleLogger {
       LogFormat.fromFunction { (context, line) =>
         val date       = context(LogAnnotation.Timestamp)
         val level      = context.get(LogAnnotation.Level)
-        val loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
+        val loggerName = context(LogAnnotation.Name)
         (date + " " + level.render + " " + loggerName + " " + logFormat(context, line))
       },
       (context, msg) => {
@@ -32,6 +32,6 @@ object ConsoleLogger {
           case LogLevel.Off   => ZIO.unit
         }
       }
-    ) >>> Logging.makeWithTimestamp()
+    ) >>> Logging.modifyM(Logging.make())(Logging.addTimestamp)
 
 }

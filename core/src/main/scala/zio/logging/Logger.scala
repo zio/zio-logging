@@ -68,6 +68,22 @@ trait Logger[-A] { self =>
     }
 
   /**
+   * Derives a new logger from this one, by applying the specified decorator
+   * to the logger context.
+   */
+  def deriveM[R](f: LogContext => ZIO[R, Nothing, LogContext]): ZIO[R, Nothing, Logger[A]] =
+    ZIO.access[R] { env =>
+      new Logger[A] {
+        def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+          self.locally(f)(zio)
+
+        def log(line: => A): UIO[Unit] = locallyM(ctx => f(ctx).provide(env))(self.log(line))
+
+        def logContext: UIO[LogContext] = self.logContext
+      }
+    }
+
+  /**
    * Logs the specified element at the info level
    */
   def info(line: => A): UIO[Unit] =
