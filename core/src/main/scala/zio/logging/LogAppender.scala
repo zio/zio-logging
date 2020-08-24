@@ -18,7 +18,7 @@ object LogAppender {
 
     def write(ctx: LogContext, msg: => A): UIO[Unit]
 
-    def filter(fn: (LogContext, => A) => Boolean): Service[A] =
+    final def filter(fn: (LogContext, => A) => Boolean): Service[A] =
       new Service[A] {
         override def write(ctx: LogContext, msg: => A): zio.UIO[Unit] =
           if (fn(ctx, msg))
@@ -31,7 +31,7 @@ object LogAppender {
   def make[R, A: Tag](
     format0: LogFormat[A],
     write0: (LogContext, => String) => URIO[R, Unit]
-  ): ZLayer[R, Nothing, LogAppender[A]] =
+  ): ZLayer[R, Nothing, Appender[A]] =
     ZIO
       .access[R](env =>
         new Service[A] {
@@ -42,20 +42,20 @@ object LogAppender {
       )
       .toLayer
 
-  def console[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, LogAppender[A]] =
+  def console[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, Appender[A]] =
     make[Console, A](format, (_, line) => putStrLn(line)).map(appender =>
       Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel))
     )
 
-  def consoleErr(format: LogFormat[String]) =
-    make[Console, String](
+  def consoleErr[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, Appender[A]] =
+    make[Console, A](
       format,
       (ctx, msg) =>
         if (ctx.get(LogAnnotation.Level) == LogLevel.Error)
-          putStrLnErr(format.format(ctx, msg))
+          putStrLnErr(msg)
         else
-          putStrLn(format.format(ctx, msg))
-    )
+          putStrLn(msg)
+    ).map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
 
   def file[A: Tag](filename: String, format0: LogFormat[A]) =
     ZManaged.makeEffect {
@@ -76,5 +76,5 @@ object LogAppender {
 
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =
         ZIO.unit
-    }.filter((_, _) => false))
+    })
 }

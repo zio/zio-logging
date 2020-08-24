@@ -2,7 +2,7 @@ package zio.logging
 
 import zio._
 import zio.clock.Clock
-import zio.console.{ putStrLn, Console }
+import zio.console.Console
 import zio.logging.Logger.LoggerWithFormat
 
 object Logging {
@@ -24,12 +24,13 @@ object Logging {
     )
 
   def console(
+    logLevel: LogLevel = LogLevel.Info,
     format: (LogContext, => String) => String = (_, s) => s,
     rootLoggerName: Option[String] = None
   ): ZLayer[Console with Clock, Nothing, Logging] =
-    ZLayer.requires[Clock] ++ LogAppender.make[Console, String](
-      LogFormat.ColoredLogFormat(format),
-      (_, line) => putStrLn(line)
+    ZLayer.requires[Clock] ++ LogAppender.console[String](
+      logLevel,
+      LogFormat.ColoredLogFormat(format)
     ) >>> makeWithTimestamp(
       rootLoggerName
     )
@@ -63,8 +64,8 @@ object Logging {
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     ZIO.accessM(_.get.locallyM(fn)(zio))
 
-  def make(rootLoggerName: Option[String] = None): URLayer[LogAppender[String], Logging] =
-    ZLayer.fromFunctionM((appender: LogAppender[String]) =>
+  def make(rootLoggerName: Option[String] = None): URLayer[Appender[String], Logging] =
+    ZLayer.fromFunctionM((appender: Appender[String]) =>
       FiberRef
         .make(LogContext.empty)
         .tap(_.getAndUpdateSome {
