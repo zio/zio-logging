@@ -22,10 +22,10 @@ object log {
   def info(line: => String): ZIO[Logging, Nothing, Unit] =
     Logging.info(line)
 
-  def locally[A, R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
+  def locally[R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     Logging.locally(fn)(zio)
 
-  def locallyM[A, R <: Logging, E, A1](
+  def locallyM[R <: Logging, E, A1](
     fn: LogContext => URIO[R, LogContext]
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     Logging.locallyM(fn)(zio)
