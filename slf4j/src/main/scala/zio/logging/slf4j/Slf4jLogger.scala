@@ -11,6 +11,7 @@ import zio.logging._
 import zio.{ ZIO, ZLayer }
 
 import scala.jdk.CollectionConverters._
+
 object Slf4jLogger {
 
   private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
@@ -30,7 +31,8 @@ object Slf4jLogger {
 
   def make(
     logFormat: (LogContext, => String) => String,
-    rootLoggerName: Option[String] = None
+    rootLoggerName: Option[String] = None,
+    initialContext: LogContext = LogContext.empty
   ): ZLayer[Any, Nothing, Logging] =
     Logging.make(
       logger = { (context, line) =>
@@ -51,7 +53,8 @@ object Slf4jLogger {
           }
         }
       },
-      rootLoggerName = rootLoggerName
+      rootLoggerName = rootLoggerName,
+      initialContext = initialContext
     )
 
   /**
@@ -60,7 +63,8 @@ object Slf4jLogger {
   def makeWithAnnotationsAsMdc(
     mdcAnnotations: List[LogAnnotation[_]],
     logFormat: (LogContext, => String) => String = (_, s) => s,
-    rootLoggerName: Option[String] = None
+    rootLoggerName: Option[String] = None,
+    initialContext: LogContext = LogContext.empty
   ): ZLayer[Any, Nothing, Logging] = {
     val annotationNames = mdcAnnotations.map(_.name)
 
@@ -90,7 +94,8 @@ object Slf4jLogger {
         }
 
       },
-      rootLoggerName = rootLoggerName
+      rootLoggerName = rootLoggerName,
+      initialContext = initialContext
     )
   }
 }

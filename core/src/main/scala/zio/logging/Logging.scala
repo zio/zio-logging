@@ -8,11 +8,13 @@ object Logging {
 
   def console(
     format: (LogContext, => String) => String = (_, s) => s,
-    rootLoggerName: Option[String] = None
+    rootLoggerName: Option[String] = None,
+    initialContext: LogContext = LogContext.empty
   ): ZLayer[Console with Clock, Nothing, Logging] =
     make(
       LogWriter.ColoredLogWriter(format),
-      rootLoggerName
+      rootLoggerName,
+      initialContext
     )
 
   val context: URIO[Logging, LogContext] =
@@ -46,31 +48,31 @@ object Logging {
 
   def make[R](
     logger: LogWriter[R],
-    rootLoggerName: Option[String] = None
+    rootLoggerName: Option[String] = None,
+    initialContext: LogContext = LogContext.empty
   ): ZLayer[R, Nothing, Logging] =
-    ZLayer.fromEffect(
-      ZIO
-        .environment[R]
-        .flatMap(env =>
-          FiberRef
-            .make(LogContext.empty)
-            .tap(_.getAndUpdateSome {
-              case ctx if rootLoggerName.isDefined =>
-                ctx.annotate(LogAnnotation.Name, rootLoggerName.toList)
-            })
-            .map { ref =>
-              new Logger[String] {
-                def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
-                  ref.get.flatMap(context => ref.locally(f(context))(zio))
+    ZIO
+      .environment[R]
+      .flatMap(env =>
+        FiberRef
+          .make(initialContext)
+          .tap(_.getAndUpdateSome {
+            case ctx if rootLoggerName.isDefined =>
+              ctx.annotate(LogAnnotation.Name, rootLoggerName.toList)
+          })
+          .map { ref =>
+            new Logger[String] {
+              def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
+                ref.get.flatMap(context => ref.locally(f(context))(zio))
 
-                def log(line: => String): UIO[Unit] =
-                  ref.get.flatMap(context => logger.writeLog(context, line).provide(env))
+              def log(line: => String): UIO[Unit] =
+                ref.get.flatMap(context => logger.writeLog(context, line).provide(env))
 
-                def logContext: UIO[LogContext] = ref.get
-              }
+              def logContext: UIO[LogContext] = ref.get
             }
-        )
-    )
+          }
+      )
+      .toLayer
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.throwable(line, t))

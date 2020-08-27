@@ -50,23 +50,28 @@ object HTTPLogger {
   def makeWithName(
     url: String,
     clientId: String = UUID.randomUUID().toString,
-    formatter: MessageFormatter = defaultFormatter
+    formatter: MessageFormatter = defaultFormatter,
+    initialContext: LogContext = LogContext.empty
   )(name: String)(logFormat: (LogContext, => String) => String): ZLayer[Clock, Nothing, Logging] =
-    make(url, clientId, formatter)((context, line) =>
-      logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line)
+    make(url, clientId, formatter)(
+      (context, line) => logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line),
+      initialContext
     )
 
   def make(url: String, clientId: String = UUID.randomUUID().toString, formatter: MessageFormatter = defaultFormatter)(
-    logFormat: (LogContext, => String) => String
+    logFormat: (LogContext, => String) => String,
+    initialContext: LogContext = LogContext.empty
   ): ZLayer[Clock, Nothing, Logging] =
-    Logging.make { (context, line) =>
-      for {
-        date      <- currentDateTime.orDie
-        level      = context.get(LogAnnotation.Level)
-        loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
-        msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
-        _         <- ZIO.effectTotal(sendMessage(url, msg))
-      } yield ()
-    }
+    Logging.make(
+      (context, line) =>
+        for {
+          date      <- currentDateTime.orDie
+          level      = context.get(LogAnnotation.Level)
+          loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
+          msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
+          _         <- ZIO.effectTotal(sendMessage(url, msg))
+        } yield (),
+      initialContext = initialContext
+    )
 
 }
