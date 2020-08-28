@@ -79,7 +79,9 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
       },
       testM("named logger") {
-        log.locally(LogAnnotation.Name(List("first")))(ZIO.accessM[Logging](_.get.named("second").log("line1"))) *>
+        ZIO
+          .access[Logging](_.get.named("first"))
+          .flatMap(logger => logger.locally(LogAnnotation.Name(List("second")))(logger.log("line1"))) *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(

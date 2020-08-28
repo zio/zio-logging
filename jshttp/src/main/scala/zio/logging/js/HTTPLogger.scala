@@ -68,6 +68,6 @@ object HTTPLogger {
           msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
           _         <- ZIO.effectTotal(sendMessage(url, msg))
         } yield ()
-    ) >>> Logging.make()
+    ) >>> Logging.make
 
 }

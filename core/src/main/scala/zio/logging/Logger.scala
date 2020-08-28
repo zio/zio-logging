@@ -62,9 +62,11 @@ trait Logger[-A] { self =>
       def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
         self.locally(f)(zio)
 
-      def log(line: => A): UIO[Unit] = locally(f)(self.log(line))
+      def log(line: => A): UIO[Unit] =
+        locally(ctx => f(LogContext.empty).merge(ctx))(self.log(line))
 
-      def logContext: UIO[LogContext] = self.logContext
+      def logContext: UIO[LogContext] =
+        self.logContext
     }
 
   /**
@@ -77,9 +79,11 @@ trait Logger[-A] { self =>
         def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
           self.locally(f)(zio)
 
-        def log(line: => A): UIO[Unit] = locallyM(ctx => f(ctx).provide(env))(self.log(line))
+        def log(line: => A): UIO[Unit] =
+          locallyM(ctx => f(LogContext.empty).map(_.merge(ctx)).provide(env))(self.log(line))
 
-        def logContext: UIO[LogContext] = self.logContext
+        def logContext: UIO[LogContext] =
+          self.logContext
       }
     }
 

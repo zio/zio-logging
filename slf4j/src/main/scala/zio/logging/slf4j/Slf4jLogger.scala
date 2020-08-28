@@ -10,6 +10,7 @@ import zio.logging.{ Logging, _ }
 import zio.{ ULayer, ZIO }
 
 import scala.jdk.CollectionConverters._
+
 object Slf4jLogger {
 
   private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
@@ -28,8 +29,7 @@ object Slf4jLogger {
     )
 
   def make(
-    logFormat: (LogContext, => String) => String,
-    initialContext: LogContext = LogContext.empty
+    logFormat: (LogContext, => String) => String
   ): ULayer[Logging] =
     LogAppender.make[Any, String](
       LogFormat.fromFunction(logFormat),
@@ -52,17 +52,14 @@ object Slf4jLogger {
         }
       }
     ) >>>
-      Logging.make(
-        initialContext
-      )
+      Logging.make
 
   /**
    * Creates a slf4j logger that puts all the annotations defined in `mdcAnnotations` in the MDC context
    */
   def makeWithAnnotationsAsMdc(
     mdcAnnotations: List[LogAnnotation[_]],
-    logFormat: (LogContext, => String) => String = (_, s) => s,
-    initialContext: LogContext = LogContext.empty
+    logFormat: (LogContext, => String) => String = (_, s) => s
   ): ULayer[Logging] = {
     val annotationNames = mdcAnnotations.map(_.name)
 
@@ -92,8 +89,6 @@ object Slf4jLogger {
           MDC.clear()
         }
       }
-    ) >>> Logging.make(
-      initialContext
-    )
+    ) >>> Logging.make
   }
 }

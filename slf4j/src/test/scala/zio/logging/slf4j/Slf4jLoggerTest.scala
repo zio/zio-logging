@@ -12,25 +12,23 @@ import scala.jdk.CollectionConverters._
 
 object Slf4jLoggerTest extends DefaultRunnableSpec {
 
+  val uuid1                     = UUID.randomUUID()
   val logLayer: ULayer[Logging] =
     Slf4jLogger.makeWithAnnotationsAsMdc(
-      List(LogAnnotation.CorrelationId, LogAnnotation.Level)
-    )
+      mdcAnnotations = List(LogAnnotation.CorrelationId, LogAnnotation.Level)
+    ) >>> Logging.withContext(LogContext.empty.annotate(LogAnnotation.CorrelationId, Some(uuid1)))
 
   def spec =
     suite("slf4j logger")(
       testM("test1") {
         for {
-          uuid1 <- UIO(UUID.randomUUID())
           uuid2 <- UIO(UUID.randomUUID())
-          _     <- log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid1))) {
-                     log.info("log stmt 1") *>
-                       log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid2))) {
-                         log.info("log stmt 1_1") *>
-                           log.info("log stmt 1_2")
-                       } *>
-                       log.info("log stmt 2")
-                   }
+          _     <- log.info("log stmt 1") *>
+                     log.locally(_.annotate(LogAnnotation.CorrelationId, Some(uuid2))) {
+                       log.info("log stmt 1_1") *>
+                         log.info("log stmt 1_2")
+                     } *>
+                     log.info("log stmt 2")
         } yield {
           val testEvs = TestAppender.events
           assert(testEvs.size)(equalTo(4)) &&

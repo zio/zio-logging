@@ -15,20 +15,23 @@ object Logging {
 
   def console(
     logLevel: LogLevel = LogLevel.Info,
-    format: LogFormat[String] = LogFormat.ColoredLogFormat((_, s) => s),
-    rootLoggerName: Option[String] = None
+    format: LogFormat[String] = LogFormat.ColoredLogFormat((_, s) => s)
   ): ZLayer[Console with Clock, Nothing, Logging] =
     ZLayer.requires[Clock] ++
       LogAppender.console[String](
         logLevel,
         format
-      ) >>> modifyM(
-      make(
-        rootLoggerName
-          .map(name => LogContext.empty.annotate(LogAnnotation.Name, List(name)))
-          .getOrElse(LogContext.empty)
-      )
-    )(addTimestamp)
+      ) >+> make >>> modifyLoggerM(addTimestamp[String])
+
+  def consoleErr(
+    logLevel: LogLevel = LogLevel.Info,
+    format: LogFormat[String] = LogFormat.SimpleConsoleLogFormat((_, s) => s)
+  ): ZLayer[Console with Clock, Nothing, Logging] =
+    ZLayer.requires[Clock] ++
+      LogAppender.consoleErr[String](
+        logLevel,
+        format
+      ) >+> make >>> modifyLoggerM(addTimestamp[String])
 
   val context: URIO[Logging, LogContext] =
     ZIO.accessM[Logging](_.get.logContext)
@@ -46,7 +49,7 @@ object Logging {
     ZIO.accessM[Logging](_.get.error(line, cause))
 
   val ignore: Layer[Nothing, Logging] =
-    LogAppender.ignore[String] >>> make()
+    LogAppender.ignore[String] >>> make
 
   def info(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.info(line))
@@ -62,25 +65,20 @@ object Logging {
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     ZIO.accessM(_.get.locallyM(fn)(zio))
 
-  def make(initialContext: LogContext = LogContext.empty): URLayer[Appender[String], Logging] =
+  def make: URLayer[Appender[String], Logging] =
     ZLayer.fromFunctionM((appender: Appender[String]) =>
       FiberRef
-        .make(initialContext)
+        .make(LogContext.empty)
         .map { ref =>
           LoggerWithFormat(ref, appender.get)
         }
     )
 
-  /**
-   * modify Logger Layer.
-   */
-  def modifyM[R1, R2, E](
-    layer: ZLayer[R1, E, Logging]
-  )(fn: Logger[String] => ZIO[R2, E, Logger[String]]): ZLayer[R1 with R2, E, Logging] =
-    ZLayer.fromManaged(
-      layer.build
-        .mapM(logger => fn(logger.get))
-    )
+  def modifyLogger(fn: Logger[String] => Logger[String]): ZLayer[Logging, Nothing, Logging] =
+    ZLayer.fromFunction[Logging, Logger[String]](logging => fn(logging.get))
+
+  def modifyLoggerM[R, E](fn: Logger[String] => ZIO[R, E, Logger[String]]): ZLayer[Logging with R, E, Logging] =
+    ZLayer.fromFunctionM[Logging with R, E, Logger[String]](logging => fn(logging.get).provide(logging))
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.throwable(line, t))
@@ -90,4 +88,16 @@ object Logging {
 
   def warn(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.warn(line))
+
+  /**
+   * Adds root logger name
+   */
+  def withRootLoggerName(name: String): ZLayer[Logging, Nothing, Logging] =
+    modifyLogger(_.named(name))
+
+  /**
+   * modify initial context
+   */
+  def withContext(context: LogContext): ZLayer[Logging, Nothing, Logging] =
+    modifyLogger(_.derive(_ => context))
 }
