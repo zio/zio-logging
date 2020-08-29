@@ -96,10 +96,10 @@ object LoggerSpec extends DefaultRunnableSpec {
       },
       testM("derive") {
         val counter = LogAnnotation[Int](
-          "counter",
-          0,
-          _ + _,
-          _.toString()
+          name = "counter",
+          initialValue = 0,
+          combine = _ + _,
+          render = _.toString()
         )
 
         for {
@@ -114,10 +114,10 @@ object LoggerSpec extends DefaultRunnableSpec {
       },
       testM("locallyM") {
         val timely = LogAnnotation[OffsetDateTime](
-          "time",
-          OffsetDateTime.MIN,
-          (_, newVal) => newVal,
-          _.toString
+          name = "time",
+          initialValue = OffsetDateTime.MIN,
+          combine = (_, newVal) => newVal,
+          render = _.toString
         )
         import zio.clock._
         log.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(log.info("line1")) *>

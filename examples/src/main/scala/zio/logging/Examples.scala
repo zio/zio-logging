@@ -22,7 +22,7 @@ object Examples extends zio.App {
   override def run(args: List[String]) =
     (for {
       fiber <- log.locally(correlationId("1234"))(ZIO.unit).fork
-      _     <- log.info("info message without correlation id")
+      _     <- log.info("info message with correlation id from modifyLogger")
       _     <- fiber.join
       _     <- log.locally(correlationId("1234111").andThen(LogAnnotation.Name("other-logger" :: Nil))) {
                  log.info("info message with correlation id") *>
