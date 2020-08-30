@@ -92,12 +92,12 @@ log.locally(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-type"
 
   <span class="hljs-keyword">val</span> env =
     <span class="hljs-type">Logging</span>.console(
-      format = (_, logEntry) =&gt; logEntry,
-      rootLoggerName = <span class="hljs-type">Some</span>(<span class="hljs-string">"default-logger"</span>)
-    )
+      level = <span class="hljs-type">LogLevel</span>.<span class="hljs-type">Info</span>,
+      format = <span class="hljs-type">LogFormat</span>.<span class="hljs-type">ColoredLogFormat</span>()
+    ) &gt;&gt;&gt; <span class="hljs-type">Logging</span>.withRootLoggerName(<span class="hljs-string">"my-component"</span>)
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-    log(<span class="hljs-string">"Hello from ZIO logger"</span>).provideCustomLayer(env).as(<span class="hljs-number">0</span>)
+    log.info(<span class="hljs-string">"Hello from ZIO logger"</span>).provideCustomLayer(env).as(<span class="hljs-type">ExitCode</span>.success)
 }
 
 </code></pre>
@@ -110,14 +110,12 @@ log.locally(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-type"
 <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">LogLevelAndLoggerName</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">zio</span>.<span class="hljs-title">App</span> </span>{
 
   <span class="hljs-keyword">val</span> env =
-    <span class="hljs-type">Logging</span>.console((_, logEntry) =&gt;
-      logEntry
-    )
+    <span class="hljs-type">Logging</span>.consoleErr()
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
     log.locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"logger-name-here"</span> :: <span class="hljs-type">Nil</span>)) {
       log.debug(<span class="hljs-string">"Hello from ZIO logger"</span>)
-    }.provideCustomLayer(env).as(<span class="hljs-number">0</span>)
+    }.provideCustomLayer(env).as(<span class="hljs-type">ExitCode</span>.success)
 }
 </code></pre>
 <p>Expected console output:</p>
@@ -153,7 +151,7 @@ log.locally(<span class="hljs-type">LogAnnatation</span>.<span class="hljs-type"
               log.info(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
                 log.throwable(<span class="hljs-string">"another info message with correlation id"</span>, <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">"error message"</span>)).fork
             }
-      } <span class="hljs-keyword">yield</span> <span class="hljs-number">1</span>).provideLayer(env)
+      } <span class="hljs-keyword">yield</span> <span class="hljs-type">ExitCode</span>.success).provideLayer(env)
 }
 
 </code></pre>
@@ -190,7 +188,6 @@ No ZIO Trace available.
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]): <span class="hljs-type">ZIO</span>[zio.<span class="hljs-type">ZEnv</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Int</span>] =
     (<span class="hljs-keyword">for</span> {
-      _ &lt;- log.in
       correlationId &lt;- <span class="hljs-type">UIO</span>(<span class="hljs-type">Some</span>(<span class="hljs-type">UUID</span>.randomUUID()))
       _ &lt;- <span class="hljs-type">ZIO</span>.foreachPar(users) { uId =&gt;
         log.locally(_.annotate(userId, uId).annotate(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">CorrelationId</span>, correlationId)) {
@@ -199,7 +196,7 @@ No ZIO Trace available.
             log.info(<span class="hljs-string">"Stopping operation"</span>)
         }
       }
-    } <span class="hljs-keyword">yield</span> <span class="hljs-number">0</span>).provideSomeLayer[<span class="hljs-type">Clock</span>](logLayer)
+    } <span class="hljs-keyword">yield</span> <span class="hljs-type">ExitCode</span>.success).provideCustomLayer(logLayer)
 }
 </code></pre>
 <p>Expected console output (with logstash encoder):</p>
@@ -265,4 +262,4 @@ Trace: <span class="hljs-number">1970</span><span class="hljs-number">-01</span>
 
 
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 4/29/2020 by Pierangelo Cecchetto</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li><li><a href="#slf4j-and-mdc">Slf4j and MDC</a></li><li><a href="#scalajs-console">Scala.JS Console</a></li><li><a href="#scalajs-http-ajax-pusher">Scala.JS HTTP Ajax pusher</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 8/30/2020 by przemyslaw wierzbicki</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li><li><a href="#slf4j-and-mdc">Slf4j and MDC</a></li><li><a href="#scalajs-console">Scala.JS Console</a></li><li><a href="#scalajs-http-ajax-pusher">Scala.JS HTTP Ajax pusher</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
