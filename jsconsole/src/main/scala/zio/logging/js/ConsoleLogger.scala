@@ -1,8 +1,7 @@
 package zio.logging.js
 
 import zio.clock._
-import zio.logging.Logging
-import zio.logging.{ LogAnnotation, LogContext, LogLevel, Logging }
+import zio.logging._
 import zio.{ IO, ZIO, ZLayer }
 
 import scala.scalajs.js.Dynamic.global
@@ -10,34 +9,22 @@ import scala.scalajs.js.Dynamic.global
 object ConsoleLogger {
   private val console = global.console
 
-  def makeWithName(name: String)(
-    logFormat: (LogContext, => String) => String,
-    initialContext: LogContext = LogContext.empty
-  ): ZLayer[Clock, Nothing, Logging] =
-    make((context, line) => logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line), initialContext)
-
   def make(
-    logFormat: (LogContext, => String) => String,
-    initialContext: LogContext = LogContext.empty
+    logFormat: LogFormat[String] = LogFormat.SimpleConsoleLogFormat()
   ): ZLayer[Clock, Nothing, Logging] =
-    Logging.make(
-      (context, line) =>
-        for {
-          date      <- currentDateTime.orDie
-          level      = context.get(LogAnnotation.Level)
-          loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
-          msg        = (date.toString + " " + level.render + " " + loggerName + " " + logFormat(context, line))
-          _         <- level match {
-                         case LogLevel.Fatal => IO.effectTotal(console.error(msg))
-                         case LogLevel.Error => IO.effectTotal(console.error(msg))
-                         case LogLevel.Warn  => IO.effectTotal(console.warn(msg))
-                         case LogLevel.Info  => IO.effectTotal(console.info(msg))
-                         case LogLevel.Debug => IO.effectTotal(console.debug(msg))
-                         case LogLevel.Trace => IO.effectTotal(console.trace(msg))
-                         case LogLevel.Off   => ZIO.unit
-                       }
-        } yield (),
-      initialContext = initialContext
-    )
-
+    ZLayer.requires[Clock] ++ LogAppender.make[Any, String](
+      logFormat,
+      (context, msg) => {
+        val level = context.get(LogAnnotation.Level)
+        level match {
+          case LogLevel.Fatal => IO.effectTotal(console.error(msg)).unit
+          case LogLevel.Error => IO.effectTotal(console.error(msg)).unit
+          case LogLevel.Warn  => IO.effectTotal(console.warn(msg)).unit
+          case LogLevel.Info  => IO.effectTotal(console.info(msg)).unit
+          case LogLevel.Debug => IO.effectTotal(console.debug(msg)).unit
+          case LogLevel.Trace => IO.effectTotal(console.trace(msg)).unit
+          case LogLevel.Off   => ZIO.unit
+        }
+      }
+    ) >+> Logging.make >>> Logging.modifyLoggerM(Logging.addTimestamp)
 }

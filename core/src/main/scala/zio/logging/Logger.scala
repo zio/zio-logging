@@ -1,5 +1,6 @@
 package zio.logging
-import zio.{ Cause, UIO, URIO, ZIO }
+
+import zio.{ Cause, FiberRef, UIO, URIO, ZIO }
 
 trait Logger[-A] { self =>
 
@@ -61,9 +62,29 @@ trait Logger[-A] { self =>
       def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
         self.locally(f)(zio)
 
-      def log(line: => A): UIO[Unit] = locally(f)(self.log(line))
+      def log(line: => A): UIO[Unit] =
+        locally(ctx => f(LogContext.empty).merge(ctx))(self.log(line))
 
-      def logContext: UIO[LogContext] = self.logContext
+      def logContext: UIO[LogContext] =
+        self.logContext
+    }
+
+  /**
+   * Derives a new logger from this one, by applying the specified decorator
+   * to the logger context.
+   */
+  def deriveM[R](f: LogContext => ZIO[R, Nothing, LogContext]): ZIO[R, Nothing, Logger[A]] =
+    ZIO.access[R] { env =>
+      new Logger[A] {
+        def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+          self.locally(f)(zio)
+
+        def log(line: => A): UIO[Unit] =
+          locallyM(ctx => f(LogContext.empty).map(_.merge(ctx)).provide(env))(self.log(line))
+
+        def logContext: UIO[LogContext] =
+          self.logContext
+      }
     }
 
   /**
@@ -146,4 +167,27 @@ trait Logger[-A] { self =>
    * Evaluates the specified element based on the LogLevel set and logs at the warn level
    */
   def warnM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (warn(_))
+}
+
+object Logger {
+  final case class LoggerWithFormat[R, A](contextRef: FiberRef[LogContext], appender: LogAppender.Service[A])
+      extends Logger[A] {
+
+    /**
+     * Modifies the log context in the scope of the specified effect.
+     */
+    override def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
+      contextRef.get.flatMap(context => contextRef.locally(f(context))(zio))
+
+    /**
+     * Logs the specified element using an inherited log level.
+     */
+    override def log(line: => A): UIO[Unit] =
+      contextRef.get.flatMap(context => appender.write(context, line))
+
+    /**
+     * Retrieves the log context.
+     */
+    override def logContext: UIO[LogContext] = contextRef.get
+  }
 }

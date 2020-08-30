@@ -79,7 +79,9 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
       },
       testM("named logger") {
-        log.locally(LogAnnotation.Name(List("first")))(ZIO.accessM[Logging](_.get.named("second").log("line1"))) *>
+        ZIO
+          .access[Logging](_.get.named("first"))
+          .flatMap(logger => logger.locally(LogAnnotation.Name(List("second")))(logger.log("line1"))) *>
           assertM(TestLogger.lines)(
             equalTo(
               Vector(
@@ -92,12 +94,30 @@ object LoggerSpec extends DefaultRunnableSpec {
             )
           )
       },
+      testM("derive") {
+        val counter = LogAnnotation[Int](
+          name = "counter",
+          initialValue = 0,
+          combine = _ + _,
+          render = _.toString()
+        )
+
+        for {
+          derived <- log.derive(counter(10))
+          _       <- derived.locally(counter(20))(derived.info("fake log"))
+          lines   <- TestLogger.lines
+        } yield assert(lines)(
+          equalTo(
+            Vector((LogContext.empty.annotate(LogAnnotation.Level, LogLevel.Info).annotate(counter, 30), "fake log"))
+          )
+        )
+      },
       testM("locallyM") {
         val timely = LogAnnotation[OffsetDateTime](
-          "time",
-          OffsetDateTime.MIN,
-          (_, newVal) => newVal,
-          _.toString
+          name = "time",
+          initialValue = OffsetDateTime.MIN,
+          combine = (_, newVal) => newVal,
+          render = _.toString
         )
         import zio.clock._
         log.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(log.info("line1")) *>

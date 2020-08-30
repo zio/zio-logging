@@ -6,8 +6,7 @@ import java.util.UUID
 import org.scalajs.dom.ext.Ajax
 import zio.{ ZIO, ZLayer }
 import zio.clock.{ currentDateTime, Clock }
-import zio.logging.Logging
-import zio.logging.{ LogAnnotation, LogContext, LogLevel, Logging }
+import zio.logging.{ LogAnnotation, LogAppender, LogContext, LogFormat, LogLevel, Logging }
 
 import scala.scalajs.js
 import scala.scalajs.js.JSON
@@ -50,19 +49,17 @@ object HTTPLogger {
   def makeWithName(
     url: String,
     clientId: String = UUID.randomUUID().toString,
-    formatter: MessageFormatter = defaultFormatter,
-    initialContext: LogContext = LogContext.empty
+    formatter: MessageFormatter = defaultFormatter
   )(name: String)(logFormat: (LogContext, => String) => String): ZLayer[Clock, Nothing, Logging] =
-    make(url, clientId, formatter)(
-      (context, line) => logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line),
-      initialContext
+    make(url, clientId, formatter)((context, line) =>
+      logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line)
     )
 
   def make(url: String, clientId: String = UUID.randomUUID().toString, formatter: MessageFormatter = defaultFormatter)(
-    logFormat: (LogContext, => String) => String,
-    initialContext: LogContext = LogContext.empty
+    logFormat: (LogContext, => String) => String
   ): ZLayer[Clock, Nothing, Logging] =
-    Logging.make(
+    LogAppender.make[Clock, String](
+      LogFormat.fromFunction(logFormat),
       (context, line) =>
         for {
           date      <- currentDateTime.orDie
@@ -70,8 +67,7 @@ object HTTPLogger {
           loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
           msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
           _         <- ZIO.effectTotal(sendMessage(url, msg))
-        } yield (),
-      initialContext = initialContext
-    )
+        } yield ()
+    ) >>> Logging.make
 
 }

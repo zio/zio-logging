@@ -59,12 +59,12 @@ object Simple extends zio.App {
 
   val env =
     Logging.console(
-      format = (_, logEntry) => logEntry,
-      rootLoggerName = Some("default-logger")
-    )
+      level = LogLevel.Info,
+      format = LogFormat.ColoredLogFormat()
+    ) >>> Logging.withRootLoggerName("my-component")
 
   override def run(args: List[String]) =
-    log("Hello from ZIO logger").provideCustomLayer(env).as(0)
+    log.info("Hello from ZIO logger").provideCustomLayer(env).as(ExitCode.success)
 }
 
 ```
@@ -83,14 +83,12 @@ import zio.logging._
 object LogLevelAndLoggerName extends zio.App {
 
   val env =
-    Logging.console((_, logEntry) =>
-      logEntry
-    )
+    Logging.consoleErr()
 
   override def run(args: List[String]) =
     log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) {
       log.debug("Hello from ZIO logger")
-    }.provideCustomLayer(env).as(0)
+    }.provideCustomLayer(env).as(ExitCode.success)
 }
 ```
 
@@ -132,7 +130,7 @@ object Slf4jAndCorrelationId extends zio.App {
               log.info("info message with correlation id") *>
                 log.throwable("another info message with correlation id", new RuntimeException("error message")).fork
             }
-      } yield 1).provideLayer(env)
+      } yield ExitCode.success).provideLayer(env)
 }
 
 ```
@@ -175,7 +173,6 @@ object Slf4jMdc extends zio.App {
 
   override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] =
     (for {
-      _ <- log.in
       correlationId <- UIO(Some(UUID.randomUUID()))
       _ <- ZIO.foreachPar(users) { uId =>
         log.locally(_.annotate(userId, uId).annotate(LogAnnotation.CorrelationId, correlationId)) {
@@ -184,7 +181,7 @@ object Slf4jMdc extends zio.App {
             log.info("Stopping operation")
         }
       }
-    } yield 0).provideSomeLayer[Clock](logLayer)
+    } yield ExitCode.success).provideCustomLayer(logLayer)
 }
 ```
 

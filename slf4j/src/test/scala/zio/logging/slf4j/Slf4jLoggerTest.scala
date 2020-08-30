@@ -15,9 +15,8 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
   val uuid1                     = UUID.randomUUID()
   val logLayer: ULayer[Logging] =
     Slf4jLogger.makeWithAnnotationsAsMdc(
-      mdcAnnotations = List(LogAnnotation.CorrelationId, LogAnnotation.Level),
-      initialContext = LogContext.empty.annotate(LogAnnotation.CorrelationId, Some(uuid1))
-    )
+      mdcAnnotations = List(LogAnnotation.CorrelationId, LogAnnotation.Level)
+    ) >>> Logging.withContext(LogContext.empty.annotate(LogAnnotation.CorrelationId, Some(uuid1)))
 
   def spec =
     suite("slf4j logger")(
