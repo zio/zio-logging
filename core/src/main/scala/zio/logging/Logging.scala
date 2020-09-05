@@ -1,5 +1,7 @@
 package zio.logging
 
+import java.nio.file.Path
+
 import zio._
 import zio.clock._
 import zio.console.Console
@@ -47,6 +49,29 @@ object Logging {
 
   def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.error(line, cause))
+
+  def file(
+    destination: Path,
+    logLevel: LogLevel = LogLevel.Info,
+    format: LogFormat[String] = LogFormat.SimpleConsoleLogFormat((_, s) => s)
+  ): ZLayer[Console with Clock, Throwable, Logging] =
+    (ZLayer.requires[Clock] ++
+      LogAppender
+        .file[String](destination, format)
+        .map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
+      >+> Logging.make >>> modifyLoggerM(addTimestamp[String]))
+
+  def fileAsync(
+    destination: Path,
+    autoFlushBatchSize: Int = 128,
+    logLevel: LogLevel = LogLevel.Info,
+    format: LogFormat[String] = LogFormat.SimpleConsoleLogFormat((_, s) => s)
+  ): ZLayer[Console with Clock, Throwable, Logging] =
+    (ZLayer.requires[Clock] ++
+      LogAppender
+        .fileAsync[String](destination, format, autoFlushBatchSize)
+        .map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
+      >+> Logging.make >>> modifyLoggerM(addTimestamp[String]))
 
   val ignore: Layer[Nothing, Logging] =
     LogAppender.ignore[String] >>> make

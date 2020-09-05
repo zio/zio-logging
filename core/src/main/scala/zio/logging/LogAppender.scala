@@ -1,16 +1,14 @@
 package zio.logging
 
-import zio.{ UIO, URIO, ZIO }
-import zio.console._
-import zio.ZLayer
+import java.io.FileWriter
+import java.nio.file.{ Files, Path }
+
 import izumi.reflect.Tag
-import zio.ZManaged
-import java.nio.file.Files
-import java.nio.file.Paths
-import zio.Has
+import zio.console._
+import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue }
 
 /**
- * Represets log writer function that turns A into String and put in console or save to file.
+ * Represents log writer function that turns A into String and put in console or save to file.
  */
 object LogAppender {
 
@@ -57,21 +55,49 @@ object LogAppender {
           putStrLn(msg)
     ).map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
 
-  def file[A: Tag](filename: String, format0: LogFormat[A]) =
-    ZManaged.makeEffect {
-      val path = Paths.get(filename)
-      Files.newBufferedWriter(path)
-    }(_.close())
+  def file[A: Tag](destination: Path, format0: LogFormat[A]): ZLayer[Any, Throwable, Appender[A]] =
+    ZManaged
+      .makeEffect(Files.newBufferedWriter(destination))(_.close())
       .map(writer =>
         new Service[A] {
-
           override def write(ctx: LogContext, msg: => A): UIO[Unit] =
-            ZIO.effectTotal(writer.write(format0.format(ctx, msg)))
+            ZIO.effectTotal {
+              writer.write(s"${format0.format(ctx, msg)}${System.lineSeparator}")
+            }
         }
       )
       .toLayer
 
-  def ignore[A: Tag] =
+  def fileAsync[A: Tag](
+    destination: Path,
+    format0: LogFormat[A],
+    autoFlushBatchSize: Int
+  ): ZLayer[Any, Throwable, Appender[A]] =
+    ZManaged.make {
+      for {
+        writer <- Task(new FileWriter(destination.toFile))
+        queue  <- ZQueue.unbounded[(LogContext, A)]
+        _      <- (for {
+                      messages <- queue.takeBetween(1, autoFlushBatchSize)
+                      _        <- Task {
+                                    messages.foreach {
+                                      case (ctx, msg) =>
+                                        writer.write(s"${format0.format(ctx, msg)}${System.lineSeparator}")
+                                    }
+
+                                    writer.flush()
+                                  }
+                    } yield ()).forever.forkDaemon
+      } yield (writer, queue)
+    } { case (writer, queue) => Task(writer.close()).ignore *> queue.shutdown }.map {
+      case (_, queue) =>
+        new Service[A] {
+          override def write(ctx: LogContext, msg: => A): UIO[Unit] =
+            queue.offer((ctx, msg)).unit
+        }
+    }.toLayer
+
+  def ignore[A: Tag]: ULayer[Appender[A]] =
     ZLayer.succeed(new Service[A] {
 
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =
