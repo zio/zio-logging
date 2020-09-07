@@ -43,7 +43,7 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the error level with cause.
    */
-  def error(line: => A, cause: Cause[Any]) =
+  def error(line: => A, cause: Cause[Any]): UIO[Unit] =
     self.locally(LogAnnotation.Cause(Some(cause))) {
       self.log(LogLevel.Error)(line)
     }
@@ -141,7 +141,7 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the error level with exception.
    */
-  def throwable(line: => A, t: Throwable) =
+  def throwable(line: => A, t: Throwable): UIO[Unit] =
     self.locally(LogAnnotation.Throwable(Some(t))) {
       self.error(line)
     }
@@ -160,7 +160,7 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the warn level.
    */
-  def warn(line: => A) =
+  def warn(line: => A): UIO[Unit] =
     self.log(LogLevel.Warn)(line)
 
   /**
