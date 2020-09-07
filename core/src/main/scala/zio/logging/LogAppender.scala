@@ -1,13 +1,10 @@
 package zio.logging
 
-import zio.{ UIO, URIO, ZIO }
+import zio.{ Has, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged }
 import zio.console._
-import zio.ZLayer
 import izumi.reflect.Tag
-import zio.ZManaged
 import java.nio.file.Files
 import java.nio.file.Paths
-import zio.Has
 
 /**
  * Represets log writer function that turns A into String and put in console or save to file.
@@ -57,7 +54,7 @@ object LogAppender {
           putStrLn(msg)
     ).map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
 
-  def file[A: Tag](filename: String, format0: LogFormat[A]) =
+  def file[A: Tag](filename: String, format0: LogFormat[A]): ZLayer[Any, Throwable, Appender[A]] =
     ZManaged.makeEffect {
       val path = Paths.get(filename)
       Files.newBufferedWriter(path)
@@ -71,7 +68,7 @@ object LogAppender {
       )
       .toLayer
 
-  def ignore[A: Tag] =
+  def ignore[A: Tag]: ULayer[Appender[A]] =
     ZLayer.succeed(new Service[A] {
 
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =

@@ -7,10 +7,10 @@ sealed trait LogLevel { self =>
   def render: String
   def level: Int
 
-  def >(that: LogLevel)  = self.level > that.level
-  def >=(that: LogLevel) = self.level >= that.level
-  def <(that: LogLevel)  = self.level < that.level
-  def <=(that: LogLevel) = self.level <= that.level
+  def >(that: LogLevel): Boolean  = self.level > that.level
+  def >=(that: LogLevel): Boolean = self.level >= that.level
+  def <(that: LogLevel): Boolean  = self.level < that.level
+  def <=(that: LogLevel): Boolean = self.level <= that.level
 
   def max(that: LogLevel): LogLevel = if (self < that) that else self
 
