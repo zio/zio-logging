@@ -35,6 +35,9 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
           assert(testEvs.map(_.getMessage))(
             equalTo(List("log stmt 1", "log stmt 1_1", "log stmt 1_2", "log stmt 2"))
           ) &&
+          assert(testEvs.map(_.getLoggerName).distinct)(
+            equalTo(List("zio.logging.slf4j.Slf4jLoggerTest$"))
+          ) &&
           assert(testEvs.map(_.getMDCPropertyMap.asScala("correlation-id")))(
             equalTo(List(uuid1.toString, uuid2.toString, uuid2.toString, uuid1.toString))
           )
