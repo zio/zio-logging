@@ -15,9 +15,6 @@ object Examples extends zio.App {
 
   val env =
     Slf4jLogger.make((context, message) => logFormat.format(context(correlationId), message))
-  //    Logging.console(format =
-//      LogFormat.ColoredLogFormat((context, message) => logFormat.format(context(correlationId), message))
-//    ) >>> Logging.modifyLogger(_.derive(correlationId("0000"))) >>> Logging.withRootLoggerName("root-logger")
 
   import zio.duration._
   override def run(args: List[String]) =
