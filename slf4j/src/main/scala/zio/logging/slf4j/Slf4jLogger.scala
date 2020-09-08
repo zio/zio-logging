@@ -1,6 +1,6 @@
 package zio.logging.slf4j
 
-import izumi.reflect.Tag
+import zio.Tag
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
