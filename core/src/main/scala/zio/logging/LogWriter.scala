@@ -1,6 +1,6 @@
 package zio.logging
 
-import java.io.{ BufferedWriter, FileWriter, Writer }
+import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
 import java.nio.file.Path
 
@@ -10,9 +10,12 @@ private[logging] class LogWriter(
   autoFlushBatchSize: Int,
   bufferedIOSize: Option[Int]
 ) extends Writer {
-  private val writer: Writer = bufferedIOSize match {
-    case Some(bufferSize) => new BufferedWriter(new FileWriter(destination.toFile, charset), bufferSize)
-    case None             => new FileWriter(destination.toFile, charset)
+  private val writer: Writer = {
+    val output = new OutputStreamWriter(new FileOutputStream(destination.toFile), charset)
+    bufferedIOSize match {
+      case Some(bufferSize) => new BufferedWriter(output, bufferSize)
+      case None             => output
+    }
   }
 
   private var entriesWritten: Long = 0
