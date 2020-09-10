@@ -1,13 +1,15 @@
 package zio.logging.slf4j
 
+import zio.Tag
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
 import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
+import zio.logging.LogAppender.Service
 import zio.logging.{ Logging, _ }
-import zio.{ ULayer, ZIO }
+import zio.{ UIO, ULayer, ZIO, ZLayer }
 
 import scala.jdk.CollectionConverters._
 
@@ -28,16 +30,31 @@ object Slf4jLogger {
       )
     )
 
+  private def withLoggerNameFromLine[A <: AnyRef: Tag]: ZLayer[Appender[A], Nothing, Appender[A]] =
+    ZLayer.fromFunction((appender: Appender[A]) =>
+      new Service[A] {
+
+        override def write(ctx: LogContext, msg: => A): UIO[Unit] = {
+          val ctxWithName = ctx.get(LogAnnotation.Name) match {
+            case Nil =>
+              ctx.annotate(
+                LogAnnotation.Name,
+                classNameForLambda(msg).getOrElse("ZIO.defaultLogger") :: Nil
+              )
+            case _   => ctx
+          }
+          appender.get.write(ctxWithName, msg)
+        }
+      }
+    )
+
   def make(
     logFormat: (LogContext, => String) => String
   ): ULayer[Logging] =
     LogAppender.make[Any, String](
       LogFormat.fromFunction(logFormat),
       (context, line) => {
-        val loggerName = context.get(LogAnnotation.Name) match {
-          case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
-          case names => LogAnnotation.Name.render(names)
-        }
+        val loggerName = context(LogAnnotation.Name)
         logger(loggerName).map { slf4jLogger =>
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
           context.get(LogAnnotation.Level).level match {
@@ -51,7 +68,7 @@ object Slf4jLogger {
           }
         }
       }
-    ) >>>
+    ) >>> withLoggerNameFromLine[String] >>>
       Logging.make
 
   /**
@@ -66,10 +83,7 @@ object Slf4jLogger {
     LogAppender.make[Any, String](
       LogFormat.fromFunction(logFormat),
       (context, line) => {
-        val loggerName = context.get(LogAnnotation.Name) match {
-          case Nil   => classNameForLambda(line).getOrElse("ZIO.defaultLogger")
-          case names => LogAnnotation.Name.render(names)
-        }
+        val loggerName = context(LogAnnotation.Name)
         logger(loggerName).map { slf4jLogger =>
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
 
@@ -89,6 +103,6 @@ object Slf4jLogger {
           MDC.clear()
         }
       }
-    ) >>> Logging.make
+    ) >>> withLoggerNameFromLine[String] >>> Logging.make
   }
 }
