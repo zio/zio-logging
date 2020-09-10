@@ -1,11 +1,11 @@
 package zio.logging
 
-import java.io.FileWriter
-import java.nio.file.{ Files, Path }
+import java.nio.charset.Charset
+import java.nio.file.Path
 
 import izumi.reflect.Tag
 import zio.console._
-import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue }
+import zio.{ Has, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue }
 
 /**
  * Represents log writer function that turns A into String and put in console or save to file.
@@ -40,6 +40,23 @@ object LogAppender {
       )
       .toLayer
 
+  def async[A: Tag](logEntryBufferSize: Int): ZLayer[Appender[A], Nothing, Appender[A]] = {
+    case class LogEntry(ctx: LogContext, line: () => A)
+    ZManaged.accessManaged[Appender[A]](env =>
+      ZQueue
+        .bounded[LogEntry](logEntryBufferSize)
+        .tap(queue => queue.take.flatMap(entry => env.get.write(entry.ctx, entry.line())).forever.forkDaemon)
+        .toManaged(_.shutdown)
+        .map(queue =>
+          new Service[A] {
+
+            override def write(ctx: LogContext, msg: => A): UIO[Unit] =
+              queue.offer(LogEntry(ctx, () => msg)).unit
+          }
+        )
+    )
+  }.toLayer
+
   def console[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, Appender[A]] =
     make[Console, A](format, (_, line) => putStrLn(line)).map(appender =>
       Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel))
@@ -55,47 +72,24 @@ object LogAppender {
           putStrLn(msg)
     ).map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
 
-  def file[A: Tag](destination: Path, format0: LogFormat[A]): ZLayer[Any, Throwable, Appender[A]] =
+  def file[A: Tag](
+    destination: Path,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int],
+    format0: LogFormat[A]
+  ): ZLayer[Any, Throwable, Appender[A]] =
     ZManaged
-      .makeEffect(Files.newBufferedWriter(destination))(_.close())
+      .fromAutoCloseable(UIO(new LogWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)))
       .map(writer =>
         new Service[A] {
           override def write(ctx: LogContext, msg: => A): UIO[Unit] =
             ZIO.effectTotal {
-              writer.write(s"${format0.format(ctx, msg)}${System.lineSeparator}")
+              writer.writeln(format0.format(ctx, msg))
             }
         }
       )
       .toLayer
-
-  def fileAsync[A: Tag](
-    destination: Path,
-    format0: LogFormat[A],
-    autoFlushBatchSize: Int
-  ): ZLayer[Any, Throwable, Appender[A]] =
-    ZManaged.make {
-      for {
-        writer <- Task(new FileWriter(destination.toFile))
-        queue  <- ZQueue.unbounded[(LogContext, A)]
-        _      <- (for {
-                      messages <- queue.takeBetween(1, autoFlushBatchSize)
-                      _        <- Task {
-                                    messages.foreach {
-                                      case (ctx, msg) =>
-                                        writer.write(s"${format0.format(ctx, msg)}${System.lineSeparator}")
-                                    }
-
-                                    writer.flush()
-                                  }
-                    } yield ()).forever.forkDaemon
-      } yield (writer, queue)
-    } { case (writer, queue) => Task(writer.close()).ignore *> queue.shutdown }.map {
-      case (_, queue) =>
-        new Service[A] {
-          override def write(ctx: LogContext, msg: => A): UIO[Unit] =
-            queue.offer((ctx, msg)).unit
-        }
-    }.toLayer
 
   def ignore[A: Tag]: ULayer[Appender[A]] =
     ZLayer.succeed(new Service[A] {

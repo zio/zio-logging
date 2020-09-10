@@ -1,5 +1,6 @@
 package zio.logging
 
+import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
 
 import zio._
@@ -52,25 +53,31 @@ object Logging {
 
   def file(
     destination: Path,
+    charset: Charset = StandardCharsets.UTF_8,
+    autoFlushBatchSize: Int = 1,
+    bufferedIOSize: Option[Int] = None,
     logLevel: LogLevel = LogLevel.Info,
     format: LogFormat[String] = LogFormat.SimpleConsoleLogFormat((_, s) => s)
   ): ZLayer[Console with Clock, Throwable, Logging] =
     (ZLayer.requires[Clock] ++
       LogAppender
-        .file[String](destination, format)
+        .file[String](destination, charset, autoFlushBatchSize, bufferedIOSize, format)
         .map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
       >+> Logging.make >>> modifyLoggerM(addTimestamp[String]))
 
   def fileAsync(
     destination: Path,
-    autoFlushBatchSize: Int = 128,
+    charset: Charset = StandardCharsets.UTF_8,
+    autoFlushBatchSize: Int = 32,
+    bufferedIOSize: Option[Int] = Some(8192),
     logLevel: LogLevel = LogLevel.Info,
     format: LogFormat[String] = LogFormat.SimpleConsoleLogFormat((_, s) => s)
   ): ZLayer[Console with Clock, Throwable, Logging] =
     (ZLayer.requires[Clock] ++
-      LogAppender
-        .fileAsync[String](destination, format, autoFlushBatchSize)
+      (LogAppender
+        .file[String](destination, charset, autoFlushBatchSize, bufferedIOSize, format)
         .map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
+        >>> LogAppender.async(autoFlushBatchSize))
       >+> Logging.make >>> modifyLoggerM(addTimestamp[String]))
 
   val ignore: Layer[Nothing, Logging] =
