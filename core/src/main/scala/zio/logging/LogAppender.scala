@@ -2,10 +2,11 @@ package zio.logging
 
 import java.nio.charset.Charset
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 
 import izumi.reflect.Tag
 import zio.console._
-import zio.{ Has, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue }
+import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue }
 
 /**
  * Represents log writer function that turns A into String and put in console or save to file.
@@ -83,9 +84,16 @@ object LogAppender {
       .fromAutoCloseable(UIO(new LogWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)))
       .map(writer =>
         new Service[A] {
+          private val hasWarned = new AtomicBoolean()
+
           override def write(ctx: LogContext, msg: => A): UIO[Unit] =
-            ZIO.effectTotal {
-              writer.writeln(format0.format(ctx, msg))
+            Task(writer.writeln(format0.format(ctx, msg))).catchAll { t =>
+              UIO {
+                System.err.println(
+                  s"Logging to file $destination failed with an exception. Further exceptions will be suppressed in order to prevent log spam."
+                )
+                t.printStackTrace(System.err)
+              }.when(!hasWarned.getAndSet(true))
             }
         }
       )
