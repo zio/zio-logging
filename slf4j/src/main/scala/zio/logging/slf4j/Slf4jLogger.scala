@@ -87,8 +87,8 @@ object Slf4jLogger {
         logger(loggerName).map { slf4jLogger =>
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
 
-          val mdc: Map[String, String] = context.renderContext.filter {
-            case (k, _) => annotationNames.contains(k)
+          val mdc: Map[String, String] = context.renderContext.filter { case (k, _) =>
+            annotationNames.contains(k)
           }
           MDC.setContextMap(mdc.asJava)
           context.get(LogAnnotation.Level).level match {

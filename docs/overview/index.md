@@ -37,15 +37,15 @@ Logger Context is mechanism that we use to carry information like logger name or
 
 ```scala
 import zio.logging._
-log.locally(LogAnnatation.Name("my-logger" :: Nil)) {
+log.locally(LogAnnotation.Name("my-logger" :: Nil)) {
   log.info("log entry") // value of LogAnnotation.Name is only visible in this block
 }
 ```
 
-User of library is allowed to add custom `LogAnnatation`  
+User of library is allowed to add custom `LogAnnotation`  
 
 ```scala
-val customLogAnnotation = LogAnnatation("custom_annotation", 1, _ + _, _.toString)
+val customLogAnnotation = LogAnnotation("custom_annotation", 1, _ + _, _.toString)
 ```
 
 ## Examples
