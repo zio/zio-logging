@@ -39,15 +39,14 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
     val allKeys = self.map.keySet ++ that.map.keySet
 
     new LogContext(
-      allKeys.foldLeft(Map.empty[LogAnnotation[_], Any]) {
-        case (map, annotation) =>
-          map +
-            (annotation -> ((self.map.get(annotation), that.map.get(annotation)) match {
-              case (Some(_), Some(_)) => annotation.combine(self.get(annotation), that.get(annotation))
-              case (None, Some(_))    => that.get(annotation)
-              case (Some(_), None)    => self.get(annotation)
-              case (None, None)       => annotation.combine(self.get(annotation), that.get(annotation)) // this is no possible
-            }))
+      allKeys.foldLeft(Map.empty[LogAnnotation[_], Any]) { case (map, annotation) =>
+        map +
+          (annotation -> ((self.map.get(annotation), that.map.get(annotation)) match {
+            case (Some(_), Some(_)) => annotation.combine(self.get(annotation), that.get(annotation))
+            case (None, Some(_))    => that.get(annotation)
+            case (Some(_), None)    => self.get(annotation)
+            case (None, None)       => annotation.combine(self.get(annotation), that.get(annotation)) // this is no possible
+          }))
       }
     )
   }
@@ -58,9 +57,8 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
    * @return Map from annotation name to rendered value
    */
   def renderContext: Map[String, String] =
-    map.asInstanceOf[Map[LogAnnotation[Any], Any]].map {
-      case (annotation, value) =>
-        annotation.name -> annotation.render(value)
+    map.asInstanceOf[Map[LogAnnotation[Any], Any]].map { case (annotation, value) =>
+      annotation.name -> annotation.render(value)
     }
 }
 
