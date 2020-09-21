@@ -5,7 +5,7 @@ import java.nio.file.Path
 
 import izumi.reflect.Tag
 import zio.console._
-import zio.{ Has, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue }
+import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
 
 /**
  * Represents log writer function that turns A into String and put in console or save to file.
@@ -81,14 +81,20 @@ object LogAppender {
   ): ZLayer[Any, Throwable, Appender[A]] =
     ZManaged
       .fromAutoCloseable(UIO(new LogWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)))
-      .map(writer =>
+      .zip(ZRef.makeManaged(false))
+      .map { case (writer, hasWarned) =>
         new Service[A] {
           override def write(ctx: LogContext, msg: => A): UIO[Unit] =
-            ZIO.effectTotal {
-              writer.writeln(format0.format(ctx, msg))
+            Task(writer.writeln(format0.format(ctx, msg))).catchAll { t =>
+              UIO {
+                System.err.println(
+                  s"Logging to file $destination failed with an exception. Further exceptions will be suppressed in order to prevent log spam."
+                )
+                t.printStackTrace(System.err)
+              }.unlessM(hasWarned.getAndSet(true))
             }
         }
-      )
+      }
       .toLayer
 
   def ignore[A: Tag]: ULayer[Appender[A]] =
