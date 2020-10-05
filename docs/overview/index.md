@@ -7,25 +7,25 @@ ZIO Logging is a functional, type-safe library for logging.
 
 ## Installation
 
-`ZIO-Logging` is available via maven repo so import in `build.sbt` is sufficient:
+`ZIO-Logging` is available via maven repo so importing in `build.sbt` is sufficient:
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging" % version
 ```
 
-If you need `slf4j` integration use `zio-logging-slf4j` instead 
+If you need `slf4j` integration use `zio-logging-slf4j` instead: 
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 ```
 
-If you need  `scala.js console` integration use `zio-logging-jsconsole` instead 
+If you need  `scala.js console` integration use `zio-logging-jsconsole` instead: 
 
 ```scala
 libraryDependencies += "dev.zio" %%% "zio-logging-jsconsole" % version
 ```
 
-If you need  `scala.js http` log publishing integration use `zio-logging-jshttp` instead 
+If you need  `scala.js http` log publishing integration use `zio-logging-jshttp` instead: 
 
 ```scala
 libraryDependencies += "dev.zio" %%% "zio-logging-jshttp" % version
@@ -33,7 +33,7 @@ libraryDependencies += "dev.zio" %%% "zio-logging-jshttp" % version
 
 
 ### Logger Context
-Logger Context is mechanism that we use to carry information like logger name or correlation id across different Fibers. Implementation uses `FiberRef` from `ZIO`. 
+Logger Context is a mechanism that we use to carry information like logger name or correlation id across different fibers. The implementation uses `FiberRef` from `ZIO`. 
 
 ```scala
 import zio.logging._
@@ -42,7 +42,7 @@ log.locally(LogAnnotation.Name("my-logger" :: Nil)) {
 }
 ```
 
-User of library is allowed to add custom `LogAnnotation`  
+The user of the library is allowed to add a custom `LogAnnotation`: 
 
 ```scala
 val customLogAnnotation = LogAnnotation("custom_annotation", 1, _ + _, _.toString)
@@ -99,7 +99,7 @@ Expected console output:
 ```
 
 ### Slf4j and correlation id
-We can create a `slf4j` logger and define how the annotations translates into the logging message
+We can create an `slf4j` logger and define how the annotations translate into the logging message:
 
 ```scala
 
@@ -156,7 +156,7 @@ No ZIO Trace available.
 ```
 
 ### Slf4j and MDC
-We can create a logger and define a number of annotations that will be translated into MDC context
+We can create a logger and define a number of annotations that will be translated into an MDC context:
 
 ```scala
 object Slf4jMdc extends zio.App {
@@ -194,9 +194,9 @@ Expected console output (with logstash encoder):
 {"@timestamp":"2020-04-26T13:19:15.360+02:00","@version":"1","message":"Stopping operation","logger_name":"zio.logging.Slf4jMdc$","thread_name":"zio-default-async-10-1282747478","level":"INFO","level_value":20000,"user-id":"ec86bf22-41b4-4d09-a2b7-6d8ccadb1ca0"}
 ```
 
-### Scala.JS Console
+### Scala.js Console
 
-Scala.Js console works as the JVM Console using the standard JS console for output.
+The Scala.js console works as the JVM Console using the standard JS console for output.
 
 ```scala
 import zio.logging._
@@ -233,13 +233,13 @@ Trace: 1970-01-01T00:00Z TRACE  test Trace
 1970-01-01T00:00Z FATAL  test Fatal
 ```
 
-### Scala.JS HTTP Ajax pusher
+### Scala.js HTTP Ajax pusher
 
-This scala.js implementation allows to send logs to a remote server. It's very useful to control the navigation and action inside a SPA.
+This Scala.js implementation allows you to send logs to a remote server. It's very useful to control the navigation and action inside a SPA.
 
 All events are sent to a backend via Ajax POST.
 
-The Json format of the event is the following
+The JSON format of the event is the following:
 
 ```
 {
@@ -252,7 +252,7 @@ The Json format of the event is the following
 }
 ```
 
-**clientId** is an identifier of the connection. Default is a UUID random generated
+The **clientId** is an identifier for the connection. The default is a randomly generated UUID.
 
 To create a logger, the **url** for the POST is mandatory. 
 
