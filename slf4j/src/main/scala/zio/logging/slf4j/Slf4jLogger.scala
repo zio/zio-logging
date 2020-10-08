@@ -31,7 +31,7 @@ object Slf4jLogger {
     )
 
   private def withLoggerNameFromLine[A <: AnyRef: Tag]: ZLayer[Appender[A], Nothing, Appender[A]] =
-    ZLayer.fromFunction((appender: Appender[A]) =>
+    ZLayer.fromFunction[Appender[A], LogAppender.Service[A]](appender =>
       new Service[A] {
 
         override def write(ctx: LogContext, msg: => A): UIO[Unit] = {

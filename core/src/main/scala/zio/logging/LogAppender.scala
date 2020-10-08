@@ -3,7 +3,7 @@ package zio.logging
 import java.nio.charset.Charset
 import java.nio.file.Path
 
-import izumi.reflect.Tag
+import zio.Tag
 import zio.console._
 import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
 
@@ -38,7 +38,7 @@ object LogAppender {
             write0(ctx, format0.format(ctx, msg)).provide(env)
         }
       )
-      .toLayer
+      .toLayer[LogAppender.Service[A]]
 
   def async[A: Tag](logEntryBufferSize: Int): ZLayer[Appender[A], Nothing, Appender[A]] = {
     case class LogEntry(ctx: LogContext, line: () => A)
@@ -55,7 +55,7 @@ object LogAppender {
           }
         )
     )
-  }.toLayer
+  }.toLayer[LogAppender.Service[A]]
 
   def console[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, Appender[A]] =
     make[Console, A](format, (_, line) => putStrLn(line)).map(appender =>
@@ -95,10 +95,10 @@ object LogAppender {
             }
         }
       }
-      .toLayer
+      .toLayer[LogAppender.Service[A]]
 
   def ignore[A: Tag]: ULayer[Appender[A]] =
-    ZLayer.succeed(new Service[A] {
+    ZLayer.succeed[LogAppender.Service[A]](new Service[A] {
 
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =
         ZIO.unit
