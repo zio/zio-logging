@@ -59,7 +59,7 @@ object Simple extends zio.App {
 
   val env =
     Logging.console(
-      level = LogLevel.Info,
+      logLevel = LogLevel.Info,
       format = LogFormat.ColoredLogFormat()
     ) >>> Logging.withRootLoggerName("my-component")
 
