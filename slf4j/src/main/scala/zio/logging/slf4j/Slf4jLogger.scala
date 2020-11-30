@@ -79,7 +79,10 @@ object Slf4jLogger {
     logFormat: (LogContext, => String) => String = (_, s) => s
   ): ULayer[Logging] = {
     val annotationNames = mdcAnnotations.map(_.name).toSet
-    val filter          = (renderContext: Map[String, String]) => renderContext.filterKeys(annotationNames)
+    val filter          = (renderContext: Map[String, String]) =>
+      renderContext.filter { case (k, _) =>
+        annotationNames.contains(k)
+      }
     makeWithAnnotationsAsMdcWithFilter(filter, logFormat)
   }
 
