@@ -75,11 +75,11 @@ object Slf4jLogger {
    * Creates a slf4j logger that puts all the annotations defined in `mdcAnnotations` in the MDC context
    */
   def makeWithAnnotationsAsMdc(
-                                mdcAnnotations: List[LogAnnotation[_]],
-                                logFormat: (LogContext, => String) => String = (_, s) => s
-                              ): ULayer[Logging] = {
+    mdcAnnotations: List[LogAnnotation[_]],
+    logFormat: (LogContext, => String) => String = (_, s) => s
+  ): ULayer[Logging] = {
     val annotationNames = mdcAnnotations.map(_.name).toSet
-    val filter = (renderContext: Map[String, String]) => renderContext.filterKeys(annotationNames)
+    val filter          = (renderContext: Map[String, String]) => renderContext.filterKeys(annotationNames)
     makeWithAnnotationsAsMdcWithFilter(filter, logFormat)
   }
 
@@ -88,19 +88,20 @@ object Slf4jLogger {
    * defined in `mdcAnnotations` in the MDC context
    */
   def makeWithAllAnnotationsAsMdc(
-                                  excludeMdcAnnotations: Set[String] = Set.empty,
-                                  logFormat: (LogContext, => String) => String = (_, s) => s
-                                ): ULayer[Logging] = {
-    val filter = (renderContext: Map[String, String]) => renderContext.filterNot{case (k, _) =>
-      excludeMdcAnnotations.contains(k)
-    }
+    excludeMdcAnnotations: Set[String] = Set.empty,
+    logFormat: (LogContext, => String) => String = (_, s) => s
+  ): ULayer[Logging] = {
+    val filter = (renderContext: Map[String, String]) =>
+      renderContext.filterNot { case (k, _) =>
+        excludeMdcAnnotations.contains(k)
+      }
     makeWithAnnotationsAsMdcWithFilter(filter, logFormat)
   }
 
   def makeWithAnnotationsAsMdcWithFilter(
     filter: Map[String, String] => Map[String, String],
     logFormat: (LogContext, => String) => String = (_, s) => s
-  ): ULayer[Logging] = {
+  ): ULayer[Logging] =
     LogAppender.make[Any, String](
       LogFormat.fromFunction(logFormat),
       (context, line) => {
@@ -109,23 +110,18 @@ object Slf4jLogger {
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
 
           val mdc: Map[String, String] = filter(context.renderContext)
-          val previous = Option(MDC.getCopyOfContextMap()).getOrElse(Map.empty[String, String].asJava)
+          val previous                 = Option(MDC.getCopyOfContextMap()).getOrElse(Map.empty[String, String].asJava)
           MDC.setContextMap(mdc.asJava)
-          try {
-            context.get(LogAnnotation.Level).level match {
-              case LogLevel.Off.level => ()
-              case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
-              case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
-              case LogLevel.Info.level => slf4jLogger.info(line, maybeThrowable)
-              case LogLevel.Warn.level => slf4jLogger.warn(line, maybeThrowable)
-              case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
-              case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
-            }
-          } finally {
-            MDC.setContextMap(previous)
-          }
+          try context.get(LogAnnotation.Level).level match {
+            case LogLevel.Off.level   => ()
+            case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
+            case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
+            case LogLevel.Info.level  => slf4jLogger.info(line, maybeThrowable)
+            case LogLevel.Warn.level  => slf4jLogger.warn(line, maybeThrowable)
+            case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
+            case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
+          } finally MDC.setContextMap(previous)
         }
       }
     ) >>> withLoggerNameFromLine[String] >>> Logging.make
-  }
 }
