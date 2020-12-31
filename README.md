@@ -27,7 +27,6 @@ To learn more about ZIO Logging, check out the following references:
 [badge-discord]: https://img.shields.io/discord/629491597070827530?logo=discord
 [badge-maintenance]: http://isitmaintained.com/badge/resolution/zio/zio-logging.svg
 [link-sonatype-releases]: https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-logging_2.12/ "Sonatype Releases"
-[link-circle]: https://circleci.com/gh/zio/zio-logging/tree/master
 [link-discord]: https://discord.gg/2ccFBr4
 [link-maintenance]: http://isitmaintained.com/project/zio/zio-logging
 [link-zio]: https://zio.dev
