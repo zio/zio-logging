@@ -5,7 +5,7 @@ import zio.ZIO
 import zio.logging.{ log, LogAnnotation, Logging }
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
-  private val nameList = name.split('.').toList
+  private val nameList                                  = name.split('.').toList
   private def run(f: ZIO[Logging, Nothing, Unit]): Unit =
     factory.run {
       log.locally(LogAnnotation.Name(nameList))(f)
@@ -16,13 +16,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def trace(msg: String): Unit =
     run(log.trace(msg))
 
-  override def trace(format: String, arg: Any): Unit =
+  override def trace(format: String, arg: AnyRef): Unit =
     run(log.trace(String.format(format, arg)))
 
-  override def trace(format: String, arg1: Any, arg2: Any): Unit =
+  override def trace(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.trace(String.format(format, arg1, arg2)))
 
-  override def trace(format: String, arguments: Any*): Unit =
+  override def trace(format: String, arguments: AnyRef*): Unit =
     run(log.trace(String.format(format, arguments: _*)))
 
   override def trace(msg: String, t: Throwable): Unit =
@@ -37,13 +37,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def debug(msg: String): Unit =
     run(log.debug(msg))
 
-  override def debug(format: String, arg: Any): Unit =
+  override def debug(format: String, arg: AnyRef): Unit =
     run(log.debug(String.format(format, arg)))
 
-  override def debug(format: String, arg1: Any, arg2: Any): Unit =
+  override def debug(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.debug(String.format(format, arg1, arg2)))
 
-  override def debug(format: String, arguments: Any*): Unit =
+  override def debug(format: String, arguments: AnyRef*): Unit =
     run(log.debug(String.format(format, arguments: _*)))
 
   override def debug(msg: String, t: Throwable): Unit =
@@ -58,13 +58,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def info(msg: String): Unit =
     run(log.info(msg))
 
-  override def info(format: String, arg: Any): Unit =
+  override def info(format: String, arg: AnyRef): Unit =
     run(log.info(String.format(format, arg)))
 
-  override def info(format: String, arg1: Any, arg2: Any): Unit =
+  override def info(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.info(String.format(format, arg1, arg2)))
 
-  override def info(format: String, arguments: Any*): Unit =
+  override def info(format: String, arguments: AnyRef*): Unit =
     run(log.info(String.format(format, arguments: _*)))
 
   override def info(msg: String, t: Throwable): Unit =
@@ -79,13 +79,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def warn(msg: String): Unit =
     run(log.warn(msg))
 
-  override def warn(format: String, arg: Any): Unit =
+  override def warn(format: String, arg: AnyRef): Unit =
     run(log.warn(String.format(format, arg)))
 
-  override def warn(format: String, arg1: Any, arg2: Any): Unit =
+  override def warn(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.warn(String.format(format, arg1, arg2)))
 
-  override def warn(format: String, arguments: Any*): Unit =
+  override def warn(format: String, arguments: AnyRef*): Unit =
     run(log.warn(String.format(format, arguments: _*)))
 
   override def warn(msg: String, t: Throwable): Unit =
@@ -100,13 +100,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def error(msg: String): Unit =
     run(log.error(msg))
 
-  override def error(format: String, arg: Any): Unit =
+  override def error(format: String, arg: AnyRef): Unit =
     run(log.error(String.format(format, arg)))
 
-  override def error(format: String, arg1: Any, arg2: Any): Unit =
+  override def error(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.error(String.format(format, arg1, arg2)))
 
-  override def error(format: String, arguments: Any*): Unit =
+  override def error(format: String, arguments: AnyRef*): Unit =
     run(log.error(String.format(format, arguments: _*)))
 
   override def error(msg: String, t: Throwable): Unit =
