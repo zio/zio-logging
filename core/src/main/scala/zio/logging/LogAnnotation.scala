@@ -1,9 +1,6 @@
 package zio.logging
 
 import java.time.OffsetDateTime
-
-import zio.Cause
-
 import scala.reflect.ClassTag
 
 /**
@@ -70,11 +67,11 @@ object LogAnnotation {
    * The `Cause` annotation keeps track of a Cause.
    */
   val Cause =
-    LogAnnotation[Option[Cause[Any]]](
+    LogAnnotation[Option[CapturedCause]](
       name = "cause",
       initialValue = None,
       combine = (_, t) => t,
-      _.map(_.prettyPrint).getOrElse("")
+      _.map(_.cause.prettyPrint).getOrElse("")
     )
 
   /**

@@ -1,5 +1,6 @@
 package zio.logging
 
+import zio.logging.CapturedCause.CauseToThrowable
 import zio.{ Cause, FiberRef, UIO, URIO, ZIO }
 
 trait Logger[-A] { self =>
@@ -43,15 +44,16 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the error level with cause.
    */
-  def error(line: => A, cause: Cause[Any]): UIO[Unit] =
-    self.locally(LogAnnotation.Cause(Some(cause))) {
+  def error[E: CauseToThrowable](line: => A, cause: Cause[E]): UIO[Unit] =
+    self.locally(LogAnnotation.Cause(Some(CapturedCause(cause)))) {
       self.log(LogLevel.Error)(line)
     }
 
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the error level
    */
-  def errorM[R, E](line: ZIO[R, E, A], cause: Cause[Any]): ZIO[R, E, Unit] = line.flatMap(l => error(l, cause))
+  def errorM[R, E: CauseToThrowable](line: ZIO[R, E, A], cause: Cause[E]): ZIO[R, E, Unit] =
+    line.flatMap(l => error(l, cause))
 
   /**
    * Derives a new logger from this one, by applying the specified decorator

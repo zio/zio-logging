@@ -2,10 +2,10 @@ package zio.logging
 
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
-
 import zio._
 import zio.clock._
 import zio.console.Console
+import zio.logging.CapturedCause.CauseToThrowable
 import zio.logging.Logger.LoggerWithFormat
 
 object Logging {
@@ -48,7 +48,7 @@ object Logging {
   def error(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.error(line))
 
-  def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
+  def error[E: CauseToThrowable](line: => String, cause: Cause[E]): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.error(line, cause))
 
   def file(

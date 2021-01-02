@@ -33,9 +33,9 @@ object LogFormat {
       val loggerName = context(LogAnnotation.Name)
       val maybeError = context
         .get(LogAnnotation.Throwable)
-        .map(Cause.fail)
+        .map(throwable => CapturedCause(Cause.fail(throwable)))
         .orElse(context.get(LogAnnotation.Cause))
-        .map(cause => NL + cause.prettyPrint)
+        .map(cause => NL + cause.cause.prettyPrint)
         .getOrElse("")
       date + " " + level + " " + loggerName + " " + format0(context, line) + " " + maybeError
     }
@@ -76,9 +76,9 @@ object LogFormat {
       val loggerName = context(LogAnnotation.Name)
       val maybeError = context
         .get(LogAnnotation.Throwable)
-        .map(Cause.fail)
+        .map(throwable => CapturedCause(Cause.fail(throwable)))
         .orElse(context.get(LogAnnotation.Cause))
-        .map(_.prettyPrint)
+        .map(_.cause.prettyPrint)
       format(lineFormat(context, line), date, level, loggerName, maybeError)
     }
   }

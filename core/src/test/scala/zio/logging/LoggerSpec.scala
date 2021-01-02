@@ -1,9 +1,10 @@
 package zio.logging
 
+import zio.logging.CapturedCause.CauseToThrowable
+
 import java.time.OffsetDateTime
 import java.util.UUID
-
-import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
+import zio.{ Cause, FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
 import zio.test.Assertion._
 import zio.test._
 
@@ -52,6 +53,39 @@ object LoggerSpec extends DefaultRunnableSpec {
               )
             )
           )
+      },
+      testM("log with throwable cause") {
+        for {
+          _     <- log.error("test", Cause.fail(new Exception("test exception")))
+          lines <- TestLogger.lines
+          ctx    = lines.head._1
+        } yield assert(lines.map(_._2))(
+          equalTo(Vector("test"))
+        ) && assert(
+          ctx.get(LogAnnotation.Cause).map(_.toThrowable.getMessage)
+        )(equalTo(Some("test exception")))
+      },
+      testM("log with custom cause") {
+        implicit val boolToThrowable: CauseToThrowable[Boolean] = {
+          case Cause.Fail(true)      =>
+            new RuntimeException(s"Failed with true")
+          case Cause.Fail(false)     =>
+            new RuntimeException(s"Failed with false")
+          case Cause.Die(value)      =>
+            value
+          case cause: Cause[Boolean] =>
+            new RuntimeException(cause.prettyPrint)
+        }
+
+        for {
+          _     <- log.error("test", Cause.fail(true))
+          lines <- TestLogger.lines
+          ctx    = lines.head._1
+        } yield assert(lines.map(_._2))(
+          equalTo(Vector("test"))
+        ) && assert(
+          ctx.get(LogAnnotation.Cause).map(_.toThrowable.getMessage)
+        )(equalTo(Some("Failed with true")))
       },
       testM("log annotations apply method") {
         val exampleAnnotation = LogAnnotation[String](

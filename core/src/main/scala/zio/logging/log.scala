@@ -1,5 +1,6 @@
 package zio.logging
 
+import zio.logging.CapturedCause.CauseToThrowable
 import zio.{ Cause, URIO, ZIO }
 
 object log {
@@ -19,7 +20,7 @@ object log {
   def error(line: => String): ZIO[Logging, Nothing, Unit] =
     Logging.error(line)
 
-  def error(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
+  def error[E: CauseToThrowable](line: => String, cause: Cause[E]): ZIO[Logging, Nothing, Unit] =
     Logging.error(line, cause)
 
   def info(line: => String): ZIO[Logging, Nothing, Unit] =

@@ -1,6 +1,6 @@
 package zio.logging.slf4j
 
-import zio.Tag
+import zio.{ Cause, Tag, UIO, ULayer, ZIO, ZLayer }
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
@@ -9,7 +9,6 @@ import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
 import zio.logging.LogAppender.Service
 import zio.logging.{ Logging, _ }
-import zio.{ UIO, ULayer, ZIO, ZLayer }
 
 import scala.jdk.CollectionConverters._
 
@@ -110,7 +109,13 @@ object Slf4jLogger {
       (context, line) => {
         val loggerName = context(LogAnnotation.Name)
         logger(loggerName).map { slf4jLogger =>
-          val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
+          val maybeThrowable =
+            context
+              .get(LogAnnotation.Throwable)
+              .map(t => CapturedCause(Cause.fail(t)))
+              .orElse(context.get(LogAnnotation.Cause))
+              .map(_.toThrowable)
+              .orNull
 
           val mdc: Map[String, String] = filter(context.renderContext)
           val previous                 = Option(MDC.getCopyOfContextMap()).getOrElse(Map.empty[String, String].asJava)
