@@ -82,12 +82,15 @@ lazy val slf4j = project
 
 lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
-  .dependsOn(coreJVM)
+  .dependsOn(coreJVM % "compile->compile;test->test")
   .settings(stdSettings("zio-logging-slf4j-bridge"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api" % slf4jVersion
-    )
+      "org.slf4j" % "slf4j-api"    % slf4jVersion,
+      "dev.zio"  %% "zio-test"     % ZioVersion % Test,
+      "dev.zio"  %% "zio-test-sbt" % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
 lazy val jsconsole = project
