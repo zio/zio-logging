@@ -12,7 +12,7 @@ object LogFiltering {
    *
    * {{{
    *   val filter =
-   *     filterBy(
+   *     filterBy[String](
    *      LogLevel.Debug,
    *      "io.netty"                                       -> LogLevel.Info,
    *      "io.grpc.netty"                                  -> LogLevel.Info
@@ -26,10 +26,10 @@ object LogFiltering {
    * @param mappings List of mappings, nesting defined by dot-separated strings
    * @return A filter function for customizing appenders
    */
-  def filterBy(rootLevel: LogLevel, mappings: (String, LogLevel)*): (LogContext, => String) => Boolean =
+  def filterBy[A](rootLevel: LogLevel, mappings: (String, LogLevel)*): (LogContext, => A) => Boolean =
     filterByTree(buildLogFilterTree(rootLevel, mappings))
 
-  def filterByTree(root: LogFilterNode): (LogContext, => String) => Boolean =
+  def filterByTree[A](root: LogFilterNode): (LogContext, => A) => Boolean =
     (ctx, _) => {
       val loggerName = ctx.get(LogAnnotation.Name).flatMap(_.split('.'))
       val logLevel   = findMostSpecificLogLevel(loggerName, root)
