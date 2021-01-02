@@ -2,7 +2,6 @@ package zio.logging
 
 import java.nio.charset.Charset
 import java.nio.file.Path
-
 import zio.Tag
 import zio.console._
 import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
@@ -103,4 +102,9 @@ object LogAppender {
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =
         ZIO.unit
     })
+
+  implicit class AppenderLayerOps[A: Tag, RIn, E](layer: ZLayer[RIn, E, Appender[A]]) {
+    def withFilter(filter: (LogContext, => A) => Boolean): ZLayer[RIn, E, Appender[A]] =
+      layer.map(a => Has(a.get.filter(filter)))
+  }
 }
