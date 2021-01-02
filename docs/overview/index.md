@@ -269,4 +269,18 @@ val loggerLayer = HTTPLogger.make("http://localhost:9000/event/collect")((contex
 
 ```
 
+### SLF4j bridge
+It is possible to use `zio-logging` for SLF4j loggers, usually third-party non-ZIO libraries. To do so, import
+the `zio-logging-slf4j-bridge` module:
 
+```scala
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % version
+```
+
+and use the `bindSlf4jBridge` layer when setting up logging:
+
+```scala
+import zio.logging.slf4j.bridge.bindSlf4jBridge
+
+val env = Logging.consoleErr() >>> bindSlf4jBridge
+```
