@@ -2,7 +2,7 @@ package zio.logging
 
 import org.openjdk.jmh.annotations._
 import zio.ZLayer
-import zio.logging.LogFiltering.{cachedFilterBy, filterBy}
+import zio.logging.LogFiltering.{ cachedFilterBy, filterBy }
 import zio.stm.TMap
 
 import java.util.concurrent.TimeUnit
@@ -53,10 +53,18 @@ class FilterBenchmarks {
   val cachedFilterTreeLogging: Logging =
     runtime.unsafeRun {
       for {
-        cache <- TMap.empty[(List[String], LogLevel), Boolean].commit
+        cache   <- TMap.empty[(List[String], LogLevel), Boolean].commit
         appender = LogAppender
-          .ignore[String]
-          .withFilterM(cachedFilterBy(cache, LogLevel.Debug, "a.b.c" -> LogLevel.Info, "a.b.d" -> LogLevel.Warn, "e" -> LogLevel.Info))
+                     .ignore[String]
+                     .withFilterM(
+                       cachedFilterBy(
+                         cache,
+                         LogLevel.Debug,
+                         "a.b.c" -> LogLevel.Info,
+                         "a.b.d" -> LogLevel.Warn,
+                         "e"     -> LogLevel.Info
+                       )
+                     )
         logging <- (appender >>> Logging.make).build.useNow
       } yield logging
     }
@@ -100,7 +108,7 @@ class FilterBenchmarks {
    * 3/1/2021 Initial results
    * FilterBenchmarks.handWrittenFilterEval     thrpt    5  9177150.646 ± 125715.644  ops/s
    * FilterBenchmarks.filterTreeEval            thrpt    5  7298406.870 ±  87773.959  ops/s
-
+   *
    * FilterBenchmarks.noFilteringLogging        thrpt    5   267066.692 ±   2170.339  ops/s
    * FilterBenchmarks.handWrittenFilterLogging  thrpt    5   262466.006 ±   3641.051  ops/s
    * FilterBenchmarks.filterTreeLog             thrpt    5   252841.756 ±   2912.062  ops/s
