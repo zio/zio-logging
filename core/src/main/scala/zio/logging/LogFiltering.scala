@@ -1,5 +1,8 @@
 package zio.logging
 
+import zio.stm.{ TMap, ZSTM }
+import zio.UIO
+
 import scala.annotation.tailrec
 
 object LogFiltering {
@@ -31,9 +34,37 @@ object LogFiltering {
 
   def filterByTree[A](root: LogFilterNode): (LogContext, => A) => Boolean =
     (ctx, _) => {
-      val loggerName = ctx.get(LogAnnotation.Name).flatMap(_.split('.'))
+      val loggerName = ctx.get(LogAnnotation.Name)
       val logLevel   = findMostSpecificLogLevel(loggerName, root)
       ctx.get(LogAnnotation.Level) >= logLevel
+    }
+
+  type FilterCache = TMap[(List[String], LogLevel), Boolean]
+
+  def cachedFilterBy[A](
+    cache: FilterCache,
+    rootLevel: LogLevel,
+    mappings: (String, LogLevel)*
+  ): (LogContext, => A) => UIO[Boolean] =
+    cachedFilterByTree(cache, buildLogFilterTree(rootLevel, mappings))
+
+  def cachedFilterByTree[A](cache: FilterCache, root: LogFilterNode): (LogContext, => A) => UIO[Boolean] =
+    (ctx, _) => {
+      val loggerName = ctx.get(LogAnnotation.Name)
+      val level      = ctx.get(LogAnnotation.Level)
+      val key        = (loggerName, level)
+      val stm        = for {
+        cached <- cache.get(key)
+        result <- cached match {
+                    case Some(value) =>
+                      ZSTM.succeed(value)
+                    case None        =>
+                      val mostSpecificLogLevel = findMostSpecificLogLevel(loggerName, root)
+                      val answer               = level >= mostSpecificLogLevel
+                      cache.put(key, answer).as(answer)
+                  }
+      } yield result
+      stm.commit
     }
 
   private def buildLogFilterTree(rootLevel: LogLevel, mappings: Seq[(String, LogLevel)]): LogFilterNode = {

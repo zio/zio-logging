@@ -23,6 +23,12 @@ object LogAppender {
           else
             ZIO.unit
       }
+
+    final def filterM(fn: (LogContext, => A) => UIO[Boolean]): Service[A] =
+      new Service[A] {
+        override def write(ctx: LogContext, msg: => A): zio.UIO[Unit] =
+          self.write(ctx, msg).whenM(fn(ctx, msg))
+      }
   }
 
   def make[R, A: Tag](
@@ -104,7 +110,9 @@ object LogAppender {
     })
 
   implicit class AppenderLayerOps[A: Tag, RIn, E](layer: ZLayer[RIn, E, Appender[A]]) {
-    def withFilter(filter: (LogContext, => A) => Boolean): ZLayer[RIn, E, Appender[A]] =
+    def withFilter(filter: (LogContext, => A) => Boolean): ZLayer[RIn, E, Appender[A]]       =
       layer.map(a => Has(a.get.filter(filter)))
+    def withFilterM(filter: (LogContext, => A) => UIO[Boolean]): ZLayer[RIn, E, Appender[A]] =
+      layer.map(a => Has(a.get.filterM(filter)))
   }
 }
