@@ -49,5 +49,5 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
           )
         )
       }
-    ).provideCustomLayer(TestLogger.make >>> bindSlf4jBridge)
+    ).provideCustomLayer(TestLogger.make >>> initializeSlf4jBridge)
 }
