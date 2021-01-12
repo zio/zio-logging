@@ -6,7 +6,7 @@ import zio.UIO
 import scala.annotation.tailrec
 
 object LogFiltering {
-  case class LogFilterNode(logLevel: LogLevel, children: Map[String, LogFilterNode])
+  final case class LogFilterNode(logLevel: LogLevel, children: Map[String, LogFilterNode])
 
   /**
    * Defines a filter function from a list of log-levels specified per tree node
