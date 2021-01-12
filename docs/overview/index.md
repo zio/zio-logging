@@ -277,10 +277,10 @@ the `zio-logging-slf4j-bridge` module:
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % version
 ```
 
-and use the `bindSlf4jBridge` layer when setting up logging:
+and use the `initializeSlf4jBridge` layer when setting up logging:
 
 ```scala
-import zio.logging.slf4j.bridge.bindSlf4jBridge
+import zio.logging.slf4j.bridge.initializeSlf4jBridge
 
-val env = Logging.consoleErr() >>> bindSlf4jBridge
+val env = Logging.consoleErr() >>> initializeSlf4jBridge
 ```
