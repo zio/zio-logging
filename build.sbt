@@ -50,7 +50,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.1",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.2",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),
@@ -61,6 +61,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
     fork in run := true
   )
 lazy val coreJVM = core.jvm
+  .settings(scala3Settings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test
 )
@@ -69,6 +70,7 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j"))
+  .settings(scala3Settings)
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
@@ -84,6 +86,7 @@ lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM % "compile->compile;test->test")
   .settings(stdSettings("zio-logging-slf4j-bridge"))
+  .settings(scala3Settings)
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api"    % slf4jVersion,
