@@ -40,7 +40,10 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 
 lazy val root = project
   .in(file("."))
-  .settings(skip in publish := true)
+  .settings(
+    crossScalaVersions := Nil,
+    skip in publish := true
+  )
   .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
@@ -142,6 +145,7 @@ lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
   .settings(stdSettings("zio-logging-examples"))
+  .settings(scala3Settings)
   .settings(
     skip in publish := true,
     libraryDependencies ++= Seq(

@@ -32,6 +32,7 @@ object BuildHelper {
 
   final val scala3Settings = Seq(
     crossScalaVersions += Scala3,
+    // TODO: remove override when ZIO 1.0.4 is out
     dependencyOverrides ++= {
       if (isDotty.value)
         Seq(

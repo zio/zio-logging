@@ -37,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.11.12', '2.12.10', '2.13.1']
+        scala: ['2.11.12', '2.12.10', '2.13.1', "3.0.0-M3"]
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2.3.4
@@ -57,7 +57,7 @@ jobs:
             ~/.cache
           key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Run tests
-        run: sbt ++${{ matrix.scala }}! test
+        run: sbt ++${{ matrix.scala }} test
 
   publish:
     runs-on: ubuntu-20.04
