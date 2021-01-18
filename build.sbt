@@ -44,7 +44,7 @@ lazy val root = project
   .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs, benchmarks)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .in(file("core"))
   .settings(stdSettings("zio-logging"))
   .settings(

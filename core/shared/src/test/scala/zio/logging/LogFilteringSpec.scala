@@ -1,10 +1,10 @@
 package zio.logging
 
-import zio.test._
-import zio.test.Assertion._
-import LogFiltering._
-import LogAppender._
 import zio.ZQueue
+import zio.logging.LogAppender._
+import zio.logging.LogFiltering.filterBy
+import zio.test.Assertion._
+import zio.test._
 
 object LogFilteringSpec extends DefaultRunnableSpec {
 

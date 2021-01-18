@@ -1,7 +1,7 @@
 package zio.logging
 
-import zio.stm.{ TMap, ZSTM }
 import zio.UIO
+import zio.stm.{TMap, ZSTM}
 
 import scala.annotation.tailrec
 

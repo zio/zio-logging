@@ -1,15 +1,15 @@
 package zio.logging
 
+import zio.console._
+import zio.{ Has, Tag, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
+
 import java.nio.charset.Charset
 import java.nio.file.Path
-import zio.Tag
-import zio.console._
-import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
 
 /**
  * Represents log writer function that turns A into String and put in console or save to file.
  */
-object LogAppender {
+object LogAppender extends PlatformSpecificLogAppenderModifiers {
 
   trait Service[A] { self =>
 
