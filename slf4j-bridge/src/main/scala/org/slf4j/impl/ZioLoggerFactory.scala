@@ -14,7 +14,7 @@ class ZioLoggerFactory extends ILoggerFactory {
   def attachRuntime(runtime: zio.Runtime[Logging]): Unit =
     this.runtime = runtime
 
-  private[impl] def run[A](f: ZIO[Logging, Nothing, A]): Unit =
+  private[impl] def run(f: ZIO[Logging, Nothing, Any]): Unit =
     if (runtime != null) {
       runtime.unsafeRun(f)
       ()
@@ -25,7 +25,7 @@ class ZioLoggerFactory extends ILoggerFactory {
 }
 
 object ZioLoggerFactory {
-  def bind(runtime: zio.Runtime[Logging]): Unit =
+  def initialize(runtime: zio.Runtime[Logging]): Unit =
     StaticLoggerBinder.getSingleton.getLoggerFactory
       .asInstanceOf[ZioLoggerFactory]
       .attachRuntime(runtime)

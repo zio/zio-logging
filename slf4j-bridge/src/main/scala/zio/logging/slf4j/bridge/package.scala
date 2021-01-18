@@ -5,12 +5,12 @@ import zio.{ ZIO, ZLayer }
 import zio.logging.Logging
 
 package object bridge {
-  def bindSlf4jBridge[R <: Logging]: ZLayer[R, Nothing, R] =
+  def initializeSlf4jBridge[R <: Logging]: ZLayer[R, Nothing, R] =
     ZIO
       .runtime[R]
       .flatMap { runtime =>
         ZIO.effectTotal {
-          ZioLoggerFactory.bind(runtime)
+          ZioLoggerFactory.initialize(runtime)
           runtime.environment
         }
       }.toLayerMany
