@@ -139,16 +139,16 @@ object LogFormat {
       def bracketed(inner: FormatterFunction): FormatterFunction =
         bracketStart + inner + bracketEnd
 
-      def level: FormatterFunction =
+      val level: FormatterFunction =
         renderedAnnotation(LogAnnotation.Level)
 
-      def LEVEL: FormatterFunction =
+      val LEVEL: FormatterFunction =
         renderedAnnotationF(LogAnnotation.Level, _.toUpperCase)
 
-      def name: FormatterFunction =
+      val name: FormatterFunction =
         renderedAnnotation(LogAnnotation.Name)
 
-      def error: FormatterFunction =
+      val error: FormatterFunction =
         FormatterFunction { (builder, ctx, _) =>
           ctx
             .get(LogAnnotation.Throwable)
