@@ -2,9 +2,8 @@ package zio.logging
 
 import zio.logging.LogFormat.AssembledLogFormat
 import zio.logging.LogFormat.AssembledLogFormat.DSL
-import zio.logging.LogFormat.AssembledLogFormat.DSL.{ bracketed, timestamp, LEVEL }
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
 import zio.test.environment.TestEnvironment
 
 import java.time.{ OffsetDateTime, ZoneOffset }
@@ -15,11 +14,7 @@ object LogFormatSpec extends DefaultRunnableSpec {
   def assembledFormat1: LogFormat[String] = AssembledLogFormat {
     import DSL._
 
-    bracketed(LEVEL) >+>
-      timestamp(LogDatetimeFormatter.isoLocalDateTimeFormatter) >+>
-      name >+>
-      line >>>
-      error
+    bracketed(LEVEL) <+> timestamp(LogDatetimeFormatter.isoLocalDateTimeFormatter) <+> name <+> line + error
   }
 
   object TestException extends Exception("test exception") with NoStackTrace

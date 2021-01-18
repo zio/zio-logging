@@ -86,42 +86,58 @@ object LogFormat {
   }
 
   object AssembledLogFormat {
-    type FormatterFunction = (StringBuilder, LogContext, String) => Any
+    case class FormatterFunction(private[logging] val fun: (StringBuilder, LogContext, String) => Any) {
+      def +(other: FormatterFunction): FormatterFunction =
+        FormatterFunction { (builder, ctx, line) =>
+          fun(builder, ctx, line)
+          other.fun(builder, ctx, line)
+        }
+
+      def <+>(other: FormatterFunction): FormatterFunction =
+        FormatterFunction { (builder, ctx, line) =>
+          fun(builder, ctx, line)
+          builder.append(' ')
+          other.fun(builder, ctx, line)
+        }
+
+      def concat(other: FormatterFunction): FormatterFunction =
+        this + other
+
+      def spaced(other: FormatterFunction): FormatterFunction =
+        this <+> other
+    }
 
     def apply(f: FormatterFunction): AssembledLogFormat =
       new AssembledLogFormat(f)
 
     object DSL {
-      val space: FormatterFunction        = (builder, _, _) => builder.append(' ')
-      val bracketStart: FormatterFunction = (builder, _, _) => builder.append('[')
-      val bracketEnd: FormatterFunction   = (builder, _, _) => builder.append(']')
+      val space: FormatterFunction        = FormatterFunction { (builder, _, _) =>
+        builder.append(' ')
+      }
+      val bracketStart: FormatterFunction = FormatterFunction { (builder, _, _) =>
+        builder.append('[')
+      }
+      val bracketEnd: FormatterFunction   = FormatterFunction { (builder, _, _) =>
+        builder.append(']')
+      }
 
-      def renderedAnnotation[A](annotation: LogAnnotation[A]): FormatterFunction = (builder, ctx, _) =>
-        builder.append(ctx(annotation))
+      def renderedAnnotation[A](annotation: LogAnnotation[A]): FormatterFunction =
+        FormatterFunction { (builder, ctx, _) =>
+          builder.append(ctx(annotation))
+        }
 
       def renderedAnnotationF[A](annotation: LogAnnotation[A], f: String => String): FormatterFunction =
-        (builder, ctx, _) => builder.append(f(ctx(annotation)))
+        FormatterFunction { (builder, ctx, _) =>
+          builder.append(f(ctx(annotation)))
+        }
 
-      def annotationF[A](annotation: LogAnnotation[A], f: A => String): FormatterFunction = (builder, ctx, _) =>
-        builder.append(f(ctx.get(annotation)))
+      def annotationF[A](annotation: LogAnnotation[A], f: A => String): FormatterFunction =
+        FormatterFunction { (builder, ctx, _) =>
+          builder.append(f(ctx.get(annotation)))
+        }
 
       def bracketed(inner: FormatterFunction): FormatterFunction =
-        bracketStart >>> inner >>> bracketEnd
-
-      implicit class FormatterFunctionOps(f: FormatterFunction) {
-        def >>>(g: FormatterFunction): FormatterFunction =
-          (builder, ctx, line) => {
-            f(builder, ctx, line)
-            g(builder, ctx, line)
-          }
-
-        def >+>(g: FormatterFunction): FormatterFunction =
-          (builder, ctx, line) => {
-            f(builder, ctx, line)
-            builder.append(' ')
-            g(builder, ctx, line)
-          }
-      }
+        bracketStart + inner + bracketEnd
 
       def level: FormatterFunction =
         renderedAnnotation(LogAnnotation.Level)
@@ -133,7 +149,7 @@ object LogFormat {
         renderedAnnotation(LogAnnotation.Name)
 
       def error: FormatterFunction =
-        (builder, ctx, _) =>
+        FormatterFunction { (builder, ctx, _) =>
           ctx
             .get(LogAnnotation.Throwable)
             .map(Cause.fail)
@@ -143,11 +159,15 @@ object LogFormat {
               builder.append(System.lineSeparator())
               builder.append(cause.prettyPrint)
           }
+        }
 
       def timestamp(formatter: DateTimeFormatter): FormatterFunction =
         annotationF(LogAnnotation.Timestamp, (date: OffsetDateTime) => date.format(formatter))
 
-      val line: FormatterFunction = (builder, _, line) => builder.append(line)
+      val line: FormatterFunction =
+        FormatterFunction { (builder, _, line) =>
+          builder.append(line)
+        }
     }
   }
 
@@ -156,7 +176,7 @@ object LogFormat {
 
     override def format(context: LogContext, line: String): String = {
       builder.clear()
-      formatter(builder, context, line)
+      formatter.fun(builder, context, line)
       builder.toString()
     }
   }
