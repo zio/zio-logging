@@ -41,7 +41,7 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs)
+  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs, benchmarks)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -117,6 +117,17 @@ lazy val jshttp = project
       "org.scala-js" %%% "scalajs-dom" % "1.1.0"
     )
   )
+
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .settings(stdSettings("zio-logging-benchmarks"))
+  .settings(
+    publish / skip := true,
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings"
+  )
+  .dependsOn(coreJVM)
+  .enablePlugins(JmhPlugin)
 
 lazy val docs = project
   .in(file("zio-logging-docs"))
