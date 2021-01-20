@@ -1,16 +1,15 @@
 package zio.logging
 
+import zio.console._
+import zio.{ Has, Tag, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
+
 import java.nio.charset.Charset
 import java.nio.file.Path
-
-import zio.Tag
-import zio.console._
-import zio.{ Has, Task, UIO, ULayer, URIO, ZIO, ZLayer, ZManaged, ZQueue, ZRef }
 
 /**
  * Represents log writer function that turns A into String and put in console or save to file.
  */
-object LogAppender {
+object LogAppender extends PlatformSpecificLogAppenderModifiers {
 
   trait Service[A] { self =>
 
@@ -23,6 +22,12 @@ object LogAppender {
             self.write(ctx, msg)
           else
             ZIO.unit
+      }
+
+    final def filterM(fn: (LogContext, => A) => UIO[Boolean]): Service[A] =
+      new Service[A] {
+        override def write(ctx: LogContext, msg: => A): zio.UIO[Unit] =
+          self.write(ctx, msg).whenM(fn(ctx, msg))
       }
   }
 
@@ -103,4 +108,11 @@ object LogAppender {
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =
         ZIO.unit
     })
+
+  implicit class AppenderLayerOps[A: Tag, RIn, E](layer: ZLayer[RIn, E, Appender[A]]) {
+    def withFilter(filter: (LogContext, => A) => Boolean): ZLayer[RIn, E, Appender[A]]       =
+      layer.map(a => Has(a.get.filter(filter)))
+    def withFilterM(filter: (LogContext, => A) => UIO[Boolean]): ZLayer[RIn, E, Appender[A]] =
+      layer.map(a => Has(a.get.filterM(filter)))
+  }
 }
