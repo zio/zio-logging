@@ -50,7 +50,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.1",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.2",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),
@@ -62,7 +62,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   )
 lazy val coreJVM = core.jvm
 lazy val coreJS  = core.js.settings(
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test
 )
 
 lazy val slf4j = project
@@ -75,7 +75,7 @@ lazy val slf4j = project
       "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.5"      % Test
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -154,6 +154,6 @@ lazy val examples = project
     skip in publish := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % "1.2.3",
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.5"
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
     )
   )
