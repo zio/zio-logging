@@ -33,6 +33,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 val ZioVersion           = "1.0.3"
 val scalaJavaTimeVersion = "2.0.0-RC5"
+val slf4jVersion         = "1.7.30"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
@@ -40,10 +41,10 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs)
+  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs, benchmarks)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .in(file("core"))
   .settings(stdSettings("zio-logging"))
   .settings(
@@ -70,11 +71,24 @@ lazy val slf4j = project
   .settings(stdSettings("zio-logging-slf4j"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j"            % "slf4j-api"                % "1.7.30",
+      "org.slf4j"            % "slf4j-api"                % slf4jVersion,
       "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
       "net.logstash.logback" % "logstash-logback-encoder" % "6.5"      % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
+lazy val slf4jBridge = project
+  .in(file("slf4j-bridge"))
+  .dependsOn(coreJVM % "compile->compile;test->test")
+  .settings(stdSettings("zio-logging-slf4j-bridge"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.slf4j" % "slf4j-api"    % slf4jVersion,
+      "dev.zio"  %% "zio-test"     % ZioVersion % Test,
+      "dev.zio"  %% "zio-test-sbt" % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -103,6 +117,17 @@ lazy val jshttp = project
       "org.scala-js" %%% "scalajs-dom" % "1.1.0"
     )
   )
+
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .settings(stdSettings("zio-logging-benchmarks"))
+  .settings(
+    publish / skip := true,
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings"
+  )
+  .dependsOn(coreJVM)
+  .enablePlugins(JmhPlugin)
 
 lazy val docs = project
   .in(file("zio-logging-docs"))

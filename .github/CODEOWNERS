@@ -1,0 +1,5 @@
+* @zio/zio-logging
+.github/workflows/ @softinio @mijicd
+build.sbt @softinio @mijicd
+project/BuildHelper.scala @softinio @mijicd
+

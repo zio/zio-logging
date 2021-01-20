@@ -1,51 +1,19 @@
 package zio.logging.slf4j
 
-import zio.Tag
 import org.slf4j.{ LoggerFactory, MDC }
-import zio.internal.Tracing
-import zio.internal.stacktracer.Tracer
-import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
-import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
-import zio.internal.tracing.TracingConfig
-import zio.logging.LogAppender.Service
+import zio.logging.LogAppender._
 import zio.logging.{ Logging, _ }
-import zio.{ UIO, ULayer, ZIO, ZLayer }
+import zio.{ ULayer, ZIO }
 
 import scala.jdk.CollectionConverters._
 
 object Slf4jLogger {
-
-  private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
-
-  private def classNameForLambda(lambda: => AnyRef) =
-    tracing.tracer.traceLocation(() => lambda) match {
-      case SourceLocation(_, clazz, _, _) => Some(clazz)
-      case NoLocation(_)                  => None
-    }
 
   private def logger(name: String) =
     ZIO.effectTotal(
       LoggerFactory.getLogger(
         name
       )
-    )
-
-  private def withLoggerNameFromLine[A <: AnyRef: Tag]: ZLayer[Appender[A], Nothing, Appender[A]] =
-    ZLayer.fromFunction[Appender[A], LogAppender.Service[A]](appender =>
-      new Service[A] {
-
-        override def write(ctx: LogContext, msg: => A): UIO[Unit] = {
-          val ctxWithName = ctx.get(LogAnnotation.Name) match {
-            case Nil =>
-              ctx.annotate(
-                LogAnnotation.Name,
-                classNameForLambda(msg).getOrElse("ZIO.defaultLogger") :: Nil
-              )
-            case _   => ctx
-          }
-          appender.get.write(ctxWithName, msg)
-        }
-      }
     )
 
   def make(
