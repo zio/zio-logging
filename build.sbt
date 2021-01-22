@@ -31,7 +31,7 @@ inThisBuild(
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val ZioVersion           = "1.0.3"
+val ZioVersion           = "1.0.4"
 val scalaJavaTimeVersion = "2.0.0-RC5"
 val slf4jVersion         = "1.7.30"
 
@@ -41,7 +41,7 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root = project
   .in(file("."))
   .settings(skip in publish := true)
-  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs)
+  .aggregate(coreJVM, coreJS, slf4j, jsconsole, jshttp, examples, docs, benchmarks)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -50,7 +50,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.1",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.2",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),
@@ -62,7 +62,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   )
 lazy val coreJVM = core.jvm
 lazy val coreJS  = core.js.settings(
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.0.0" % Test
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test
 )
 
 lazy val slf4j = project
@@ -75,7 +75,7 @@ lazy val slf4j = project
       "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.5"      % Test
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -118,6 +118,17 @@ lazy val jshttp = project
     )
   )
 
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .settings(stdSettings("zio-logging-benchmarks"))
+  .settings(
+    publish / skip := true,
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings"
+  )
+  .dependsOn(coreJVM)
+  .enablePlugins(JmhPlugin)
+
 lazy val docs = project
   .in(file("zio-logging-docs"))
   .settings(
@@ -143,6 +154,6 @@ lazy val examples = project
     skip in publish := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % "1.2.3",
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.5"
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
     )
   )
