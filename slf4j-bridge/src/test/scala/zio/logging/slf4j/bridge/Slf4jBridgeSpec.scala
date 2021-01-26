@@ -11,12 +11,12 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
     suite("Slf4jBridge")(
       testM("logs through slf4j") {
         for {
-          logger <- ZIO.effect(org.slf4j.LoggerFactory.getLogger("test.logger"))
-          _      <- ZIO.effect(logger.debug("test debug message"))
-          _      <- ZIO.effect(logger.warn("hello %s", "world"))
+          logger     <- ZIO.effect(org.slf4j.LoggerFactory.getLogger("test.logger"))
+          _          <- ZIO.effect(logger.debug("test debug message"))
+          _          <- ZIO.effect(logger.warn("hello %s", "world"))
           testFailure = new RuntimeException("test error")
-          _      <- ZIO.effect(logger.error("error", testFailure))
-          lines  <- TestLogger.lines
+          _          <- ZIO.effect(logger.error("error", testFailure))
+          lines      <- TestLogger.lines
         } yield assert(lines)(
           equalTo(
             /*
