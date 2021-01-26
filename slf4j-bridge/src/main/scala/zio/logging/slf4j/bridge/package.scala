@@ -13,5 +13,6 @@ package object bridge {
           ZioLoggerFactory.initialize(runtime)
           runtime.environment
         }
-      }.toLayerMany
+      }
+      .toLayerMany
 }
