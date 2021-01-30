@@ -11,5 +11,5 @@ class StaticMDCBinder {
 
 object StaticMDCBinder {
   private val singleton: MDCAdapter = new BasicMDCAdapter
-  private val className: String = classOf[BasicMDCAdapter].getName
+  private val className: String     = classOf[BasicMDCAdapter].getName
 }

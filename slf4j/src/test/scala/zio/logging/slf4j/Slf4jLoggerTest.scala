@@ -7,7 +7,7 @@ import zio.test.DefaultRunnableSpec
 import zio.logging._
 import zio.test._
 import zio.test.Assertion._
-import zio.test.TestAspect.sequential
+import zio.test.TestAspect.{ exceptDotty, sequential }
 
 import scala.jdk.CollectionConverters._
 
@@ -37,6 +37,7 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
                      log.info("log stmt 2")
         } yield {
           val testEvs = TestAppender.events
+          println(testEvs.map(_.getLoggerName))
           assert(testEvs.size)(equalTo(4)) &&
           assert(testEvs.map(_.getMessage))(
             equalTo(List("log stmt 1", "log stmt 1_1", "log stmt 1_2", "log stmt 2"))
@@ -48,7 +49,7 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
             equalTo(List(uuid1.toString, uuid2.toString, uuid2.toString, uuid1.toString))
           )
         }
-      }.provideCustomLayer(logLayerOptIn),
+      }.provideCustomLayer(logLayerOptIn) @@ exceptDotty,
       testM("test with opt-out annotations") {
         for {
           uuid2 <- UIO(UUID.randomUUID())
@@ -75,6 +76,6 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
             equalTo(List(None, None, None, None))
           )
         }
-      }.provideCustomLayer(logLayerOptOut)
+      }.provideCustomLayer(logLayerOptOut) @@ exceptDotty
     ) @@ sequential
 }

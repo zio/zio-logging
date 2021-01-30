@@ -26,26 +26,15 @@ object BuildHelper {
     )
 
   final private val Scala211 = "2.11.12"
-  final private val Scala212 = "2.12.10"
-  final private val Scala213 = "2.13.1"
+  final private val Scala212 = "2.12.13"
+  final private val Scala213 = "2.13.4"
   final private val Scala3   = "3.0.0-M3"
 
   final val scala3Settings = Seq(
-    crossScalaVersions += Scala3,
-    // TODO: remove override when ZIO 1.0.4 is out
-    dependencyOverrides ++= {
-      if (isDotty.value)
-        Seq(
-          "dev.zio" %% "zio"          % "1.0.3+130-a21e83b8-SNAPSHOT",
-          "dev.zio" %% "zio-test"     % "1.0.3+130-a21e83b8-SNAPSHOT",
-          "dev.zio" %% "zio-test-sbt" % "1.0.3+130-a21e83b8-SNAPSHOT"
-        )
-      else Seq.empty
-    },
-    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    crossScalaVersions += Scala3
   )
 
-  final val SilencerVersion = "1.4.4"
+  final val SilencerVersion = "1.7.1"
 
   final private val CommonOpts =
     Seq(

@@ -23,12 +23,18 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
           else
             ZIO.unit
       }
+
+    final def filterM(fn: (LogContext, => A) => UIO[Boolean]): Service[A] =
+      new Service[A] {
+        override def write(ctx: LogContext, msg: => A): zio.UIO[Unit] =
+          self.write(ctx, msg).whenM(fn(ctx, msg))
+      }
   }
 
-  def make[R, A: Tag](
+  def make[R, A](
     format0: LogFormat[A],
     write0: (LogContext, => String) => URIO[R, Unit]
-  ): ZLayer[R, Nothing, Appender[A]] =
+  )(implicit tag: Tag[LogAppender.Service[A]]): ZLayer[R, Nothing, Appender[A]] =
     ZIO
       .access[R](env =>
         new Service[A] {
@@ -39,7 +45,9 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
       )
       .toLayer[LogAppender.Service[A]]
 
-  def async[A: Tag](logEntryBufferSize: Int): ZLayer[Appender[A], Nothing, Appender[A]] = {
+  def async[A](
+    logEntryBufferSize: Int
+  )(implicit tag: Tag[LogAppender.Service[A]]): ZLayer[Appender[A], Nothing, Appender[A]] = {
     case class LogEntry(ctx: LogContext, line: () => A)
     ZManaged.accessManaged[Appender[A]](env =>
       ZQueue
@@ -56,12 +64,16 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
     )
   }.toLayer[LogAppender.Service[A]]
 
-  def console[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, Appender[A]] =
+  def console[A](logLevel: LogLevel, format: LogFormat[A])(implicit
+    tag: Tag[LogAppender.Service[A]]
+  ): ZLayer[Console, Nothing, Appender[A]] =
     make[Console, A](format, (_, line) => putStrLn(line)).map(appender =>
       Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel))
     )
 
-  def consoleErr[A: Tag](logLevel: LogLevel, format: LogFormat[A]): ZLayer[Console, Nothing, Appender[A]] =
+  def consoleErr[A](logLevel: LogLevel, format: LogFormat[A])(implicit
+    tag: Tag[LogAppender.Service[A]]
+  ): ZLayer[Console, Nothing, Appender[A]] =
     make[Console, A](
       format,
       (ctx, msg) =>
@@ -71,13 +83,13 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
           putStrLn(msg)
     ).map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
 
-  def file[A: Tag](
+  def file[A](
     destination: Path,
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
     format0: LogFormat[A]
-  ): ZLayer[Any, Throwable, Appender[A]] =
+  )(implicit tag: Tag[LogAppender.Service[A]]): ZLayer[Any, Throwable, Appender[A]] =
     ZManaged
       .fromAutoCloseable(UIO(new LogWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)))
       .zip(ZRef.makeManaged(false))
@@ -96,10 +108,20 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
       }
       .toLayer[LogAppender.Service[A]]
 
-  def ignore[A: Tag]: ULayer[Appender[A]] =
+  def ignore[A](implicit tag: Tag[LogAppender.Service[A]]): ULayer[Appender[A]] =
     ZLayer.succeed[LogAppender.Service[A]](new Service[A] {
 
       override def write(ctx: LogContext, msg: => A): UIO[Unit] =
         ZIO.unit
     })
+
+  implicit class AppenderLayerOps[A, RIn, E](layer: ZLayer[RIn, E, Appender[A]])(implicit
+    tag: Tag[LogAppender.Service[A]]
+  ) {
+    def withFilter(filter: (LogContext, => A) => Boolean): ZLayer[RIn, E, Appender[A]]       =
+      layer
+        .map(a => Has(a.get.filter(filter)))
+    def withFilterM(filter: (LogContext, => A) => UIO[Boolean]): ZLayer[RIn, E, Appender[A]] =
+      layer.map(a => Has(a.get.filterM(filter)))
+  }
 }
