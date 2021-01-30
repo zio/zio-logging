@@ -38,10 +38,23 @@ val slf4jVersion         = "1.7.30"
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
+addCommandAlias(
+  "testJVM",
+  ";coreJVM/test;slf4j/test;slf4jBridge/test"
+)
+
+addCommandAlias(
+  "testJS",
+  ";coreJS/test;jsconsole/test;jshttp/test"
+)
+
 lazy val root = project
   .in(file("."))
-  .settings(skip in publish := true)
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jsconsole, jshttp, examples, docs, benchmarks)
+  .settings(
+    crossScalaVersions := Nil,
+    skip in publish := true
+  )
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jsconsole, jshttp)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -61,6 +74,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
     fork in run := true
   )
 lazy val coreJVM = core.jvm
+  .settings(scala3Settings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test
 )
@@ -69,6 +83,7 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j"))
+  .settings(scala3Settings)
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
@@ -84,6 +99,7 @@ lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM % "compile->compile;test->test")
   .settings(stdSettings("zio-logging-slf4j-bridge"))
+  .settings(scala3Settings)
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api"    % slf4jVersion,
@@ -150,6 +166,7 @@ lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
   .settings(stdSettings("zio-logging-examples"))
+  .settings(scala3Settings)
   .settings(
     skip in publish := true,
     libraryDependencies ++= Seq(

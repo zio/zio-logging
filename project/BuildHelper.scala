@@ -1,5 +1,6 @@
 import sbt._
 import sbt.Keys._
+import dotty.tools.sbtplugin.DottyPlugin.autoImport._
 
 object BuildHelper {
 
@@ -9,20 +10,29 @@ object BuildHelper {
       crossScalaVersions := Seq(Scala211, Scala212, Scala213),
       scalaVersion in ThisBuild := Scala212,
       scalacOptions := CommonOpts ++ extraOptions(scalaVersion.value),
-      libraryDependencies ++= Seq(
-        ("com.github.ghik"   % "silencer-lib"    % SilencerVersion % Provided)
-          .cross(CrossVersion.full),
-        compilerPlugin(
-          ("com.github.ghik" % "silencer-plugin" % SilencerVersion)
-            .cross(CrossVersion.full)
-        )
-      ),
+      libraryDependencies ++= {
+        if (isDotty.value)
+          Seq(
+            ("com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided)
+              .withDottyCompat(scalaVersion.value)
+          )
+        else
+          Seq(
+            "com.github.ghik" % "silencer-lib" % SilencerVersion % Provided cross CrossVersion.full,
+            compilerPlugin("com.github.ghik" % "silencer-plugin" % SilencerVersion cross CrossVersion.full)
+          )
+      },
       incOptions ~= (_.withLogRecompileOnMacro(false))
     )
 
   final private val Scala211 = "2.11.12"
   final private val Scala212 = "2.12.13"
   final private val Scala213 = "2.13.4"
+  final private val Scala3   = "3.0.0-M3"
+
+  final val scala3Settings = Seq(
+    crossScalaVersions += Scala3
+  )
 
   final val SilencerVersion = "1.7.1"
 
@@ -30,23 +40,27 @@ object BuildHelper {
     Seq(
       "-encoding",
       "UTF-8",
-      "-explaintypes",
-      "-Yrangepos",
       "-feature",
       "-language:higherKinds",
       "-language:existentials",
-      "-Xlint:_,-type-parameter-shadow",
-      "-Xsource:2.13",
-      "-Ywarn-dead-code",
-      "-Ywarn-numeric-widen",
-      "-Ywarn-value-discard",
       "-unchecked",
       "-deprecation",
       "-Xfatal-warnings"
     )
 
-  final private val Opts213 =
+  final private val CommonOpts2x =
     Seq(
+      "-explaintypes",
+      "-Yrangepos",
+      "-Xlint:_,-type-parameter-shadow",
+      "-Xsource:2.13",
+      "-Ywarn-dead-code",
+      "-Ywarn-numeric-widen",
+      "-Ywarn-value-discard"
+    )
+
+  final private val Opts213 =
+    CommonOpts2x ++ Seq(
       "-Wunused:imports",
       "-Wvalue-discard",
       "-Wunused:patvars",
@@ -58,7 +72,7 @@ object BuildHelper {
     )
 
   final private val OptsTo212 =
-    Seq(
+    CommonOpts2x ++ Seq(
       "-Xfuture",
       "-Ypartial-unification",
       "-Ywarn-nullary-override",
@@ -67,6 +81,11 @@ object BuildHelper {
       "-Ywarn-inaccessible",
       "-Ywarn-nullary-unit",
       "-Ywarn-unused-import"
+    )
+
+  final private val OptsTo3 =
+    Seq(
+      "-noindent"
     )
 
   private def extraOptions(scalaVersion: String) =
@@ -82,6 +101,8 @@ object BuildHelper {
           "-opt:l:inline",
           "-opt-inline-from:<source>"
         ) ++ OptsTo212
+      case Some((3, 0))  =>
+        OptsTo3
       case _             =>
         Seq("-Xexperimental") ++ OptsTo212
     }

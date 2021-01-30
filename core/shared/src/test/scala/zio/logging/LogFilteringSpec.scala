@@ -47,6 +47,7 @@ object LogFilteringSpec extends DefaultRunnableSpec {
           baseAppender     = make(LogFormat.fromFunction((_, str) => str), (_, str) => queue.offer(str).unit)
           filteredAppender = baseAppender.withFilter(filter)
           _               <- filteredAppender.build.use { appender =>
+                               println(appender)
                                appender.get.write(makeCtx("a.b.c", LogLevel.Debug), "a.b.c") *>
                                  appender.get.write(makeCtx("x", LogLevel.Debug), "x")
                              }
