@@ -38,6 +38,16 @@ val slf4jVersion         = "1.7.30"
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
+addCommandAlias(
+  "testJVM",
+  ";coreJVM/test;slf4j/test;slf4jBridge/test"
+)
+
+addCommandAlias(
+  "testJS",
+  ";coreJS/test;jsconsole/test;jshttp/test"
+)
+
 lazy val root = project
   .in(file("."))
   .settings(
