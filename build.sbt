@@ -44,7 +44,7 @@ lazy val root = project
     crossScalaVersions := Nil,
     skip in publish := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jsconsole, jshttp, examples, docs, benchmarks)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jsconsole, jshttp)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
