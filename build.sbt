@@ -31,7 +31,7 @@ inThisBuild(
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val ZioVersion           = "1.0.4"
+val ZioVersion           = "1.0.4-1"
 val scalaJavaTimeVersion = "2.0.0-RC5"
 val slf4jVersion         = "1.7.30"
 
