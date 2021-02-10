@@ -93,7 +93,7 @@ object LogFormat {
           other.fun(builder, ctx, line)
         }
 
-      def <+>(other: FormatterFunction): FormatterFunction =
+      def |-|(other: FormatterFunction): FormatterFunction =
         FormatterFunction { (builder, ctx, line) =>
           fun(builder, ctx, line)
           builder.append(' ')
@@ -104,7 +104,7 @@ object LogFormat {
         this + other
 
       def spaced(other: FormatterFunction): FormatterFunction =
-        this <+> other
+        this |-| other
     }
 
     def apply(f: FormatterFunction): AssembledLogFormat =

@@ -14,7 +14,7 @@ object LogFormatSpec extends DefaultRunnableSpec {
   def assembledFormat1: LogFormat[String] = AssembledLogFormat {
     import DSL._
 
-    bracketed(LEVEL) <+> timestamp(LogDatetimeFormatter.isoLocalDateTimeFormatter) <+> name <+> line + error
+    bracketed(LEVEL) |-| timestamp(LogDatetimeFormatter.isoLocalDateTimeFormatter) |-| name |-| line + error
   }
 
   object TestException extends Exception("test exception") with NoStackTrace
