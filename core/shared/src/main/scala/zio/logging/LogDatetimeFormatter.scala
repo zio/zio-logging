@@ -1,6 +1,6 @@
 package zio.logging
 
-import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
+import java.time.format.{ DateTimeFormatter, DateTimeFormatterBuilder, SignStyle }
 import java.time.temporal.ChronoField._
 import java.util.Locale
 
@@ -22,4 +22,6 @@ object LogDatetimeFormatter {
     .appendValue(MILLI_OF_SECOND, 3)
     .appendOffset("+HHMM", "Z")
     .toFormatter(Locale.US)
+
+  val isoLocalDateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 }

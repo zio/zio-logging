@@ -2,6 +2,8 @@ package zio.logging
 
 import zio.Cause
 
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import scala.Console._
 
 /**
@@ -80,6 +82,102 @@ object LogFormat {
         .orElse(context.get(LogAnnotation.Cause))
         .map(_.prettyPrint)
       format(lineFormat(context, line), date, level, loggerName, maybeError)
+    }
+  }
+
+  object AssembledLogFormat {
+    case class FormatterFunction(private[logging] val fun: (StringBuilder, LogContext, String) => Any) {
+      def +(other: FormatterFunction): FormatterFunction =
+        FormatterFunction { (builder, ctx, line) =>
+          fun(builder, ctx, line)
+          other.fun(builder, ctx, line)
+        }
+
+      def |-|(other: FormatterFunction): FormatterFunction =
+        FormatterFunction { (builder, ctx, line) =>
+          fun(builder, ctx, line)
+          builder.append(' ')
+          other.fun(builder, ctx, line)
+        }
+
+      def concat(other: FormatterFunction): FormatterFunction =
+        this + other
+
+      def spaced(other: FormatterFunction): FormatterFunction =
+        this |-| other
+    }
+
+    def apply(f: FormatterFunction): AssembledLogFormat =
+      new AssembledLogFormat(f)
+
+    object DSL {
+      val space: FormatterFunction        = FormatterFunction { (builder, _, _) =>
+        builder.append(' ')
+      }
+      val bracketStart: FormatterFunction = FormatterFunction { (builder, _, _) =>
+        builder.append('[')
+      }
+      val bracketEnd: FormatterFunction   = FormatterFunction { (builder, _, _) =>
+        builder.append(']')
+      }
+
+      def renderedAnnotation[A](annotation: LogAnnotation[A]): FormatterFunction =
+        FormatterFunction { (builder, ctx, _) =>
+          builder.append(ctx(annotation))
+        }
+
+      def renderedAnnotationF[A](annotation: LogAnnotation[A], f: String => String): FormatterFunction =
+        FormatterFunction { (builder, ctx, _) =>
+          builder.append(f(ctx(annotation)))
+        }
+
+      def annotationF[A](annotation: LogAnnotation[A], f: A => String): FormatterFunction =
+        FormatterFunction { (builder, ctx, _) =>
+          builder.append(f(ctx.get(annotation)))
+        }
+
+      def bracketed(inner: FormatterFunction): FormatterFunction =
+        bracketStart + inner + bracketEnd
+
+      val level: FormatterFunction =
+        renderedAnnotation(LogAnnotation.Level)
+
+      val LEVEL: FormatterFunction =
+        renderedAnnotationF(LogAnnotation.Level, _.toUpperCase)
+
+      val name: FormatterFunction =
+        renderedAnnotation(LogAnnotation.Name)
+
+      val error: FormatterFunction =
+        FormatterFunction { (builder, ctx, _) =>
+          ctx
+            .get(LogAnnotation.Throwable)
+            .map(Cause.fail)
+            .orElse(ctx.get(LogAnnotation.Cause)) match {
+            case None        =>
+            case Some(cause) =>
+              builder.append(System.lineSeparator())
+              builder.append(cause.prettyPrint)
+          }
+        }
+
+      def timestamp(formatter: DateTimeFormatter): FormatterFunction =
+        annotationF(LogAnnotation.Timestamp, (date: OffsetDateTime) => date.format(formatter))
+
+      val line: FormatterFunction =
+        FormatterFunction { (builder, _, line) =>
+          builder.append(line)
+        }
+    }
+  }
+
+  final class AssembledLogFormat private (formatter: AssembledLogFormat.FormatterFunction) extends LogFormat[String] {
+    private val builder = new StringBuilder()
+
+    override def format(context: LogContext, line: String): String = {
+      builder.clear()
+      formatter.fun(builder, context, line)
+      builder.toString()
     }
   }
 }
