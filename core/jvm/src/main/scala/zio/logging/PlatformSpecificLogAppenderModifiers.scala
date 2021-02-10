@@ -17,7 +17,9 @@ trait PlatformSpecificLogAppenderModifiers {
       case NoLocation(_)                  => None
     }
 
-  def withLoggerNameFromLine[A <: AnyRef: Tag]: ZLayer[Appender[A], Nothing, Appender[A]] =
+  def withLoggerNameFromLine[A <: AnyRef](implicit
+    tag: Tag[LogAppender.Service[A]]
+  ): ZLayer[Appender[A], Nothing, Appender[A]] =
     ZLayer.fromFunction[Appender[A], LogAppender.Service[A]](appender =>
       new Service[A] {
         override def write(ctx: LogContext, msg: => A): UIO[Unit] = {

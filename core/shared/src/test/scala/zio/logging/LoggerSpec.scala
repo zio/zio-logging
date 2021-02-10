@@ -35,7 +35,7 @@ object LoggerSpec extends DefaultRunnableSpec {
 
       } yield Has.allOf[Logger[String], TestLogger.Service](logger, logger))
 
-    def lines = ZIO.accessM[TestLogging](_.get.lines)
+    def lines: ZIO[TestLogging, Nothing, Vector[(LogContext, String)]] = ZIO.accessM[TestLogging](_.get.lines)
   }
 
   def spec =
