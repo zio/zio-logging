@@ -34,7 +34,7 @@ object BuildHelper {
     crossScalaVersions += Scala3
   )
 
-  final val SilencerVersion = "1.7.1"
+  final val SilencerVersion = "1.7.2"
 
   final private val CommonOpts =
     Seq(

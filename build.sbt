@@ -31,7 +31,7 @@ inThisBuild(
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val ZioVersion           = "1.0.4"
+val ZioVersion           = "1.0.4-2"
 val scalaJavaTimeVersion = "2.0.0-RC5"
 val slf4jVersion         = "1.7.30"
 
@@ -63,7 +63,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.0",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),
