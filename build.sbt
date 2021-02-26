@@ -63,7 +63,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.2",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),
@@ -76,7 +76,7 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
 lazy val coreJVM = core.jvm
   .settings(scala3Settings)
 lazy val coreJS  = core.js.settings(
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.1.0" % Test
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.2.0" % Test
 )
 
 lazy val slf4j = project
