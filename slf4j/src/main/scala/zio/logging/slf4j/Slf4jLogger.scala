@@ -27,12 +27,12 @@ object Slf4jLogger {
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
           context.get(LogAnnotation.Level).level match {
             case LogLevel.Off.level   => ()
-            case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
-            case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
-            case LogLevel.Info.level  => slf4jLogger.info(line, maybeThrowable)
-            case LogLevel.Warn.level  => slf4jLogger.warn(line, maybeThrowable)
-            case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
-            case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
+            case LogLevel.Debug.level => if (slf4jLogger.isDebugEnabled) slf4jLogger.debug(line, maybeThrowable)
+            case LogLevel.Trace.level => if (slf4jLogger.isTraceEnabled) slf4jLogger.trace(line, maybeThrowable)
+            case LogLevel.Info.level  => if (slf4jLogger.isInfoEnabled) slf4jLogger.info(line, maybeThrowable)
+            case LogLevel.Warn.level  => if (slf4jLogger.isWarnEnabled) slf4jLogger.warn(line, maybeThrowable)
+            case LogLevel.Error.level => if (slf4jLogger.isErrorEnabled) slf4jLogger.error(line, maybeThrowable)
+            case LogLevel.Fatal.level => if (slf4jLogger.isErrorEnabled) slf4jLogger.error(line, maybeThrowable)
           }
         }
       }
