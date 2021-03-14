@@ -28,7 +28,7 @@ object BuildHelper {
   final private val Scala211 = "2.11.12"
   final private val Scala212 = "2.12.13"
   final private val Scala213 = "2.13.4"
-  final private val Scala3   = "3.0.0-M3"
+  final private val Scala3   = "3.0.0-RC1"
 
   final val scala3Settings = Seq(
     crossScalaVersions += Scala3
