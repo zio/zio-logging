@@ -17,13 +17,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(log.trace(msg))
 
   override def trace(format: String, arg: AnyRef): Unit =
-    run(log.trace(String.format(format, arg)))
+    run(log.trace(MessageFormatter.format(format, arg)))
 
   override def trace(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(log.trace(String.format(format, arg1, arg2)))
+    run(log.trace(MessageFormatter.format(format, arg1, arg2)))
 
   override def trace(format: String, arguments: Array[? <: Object]): Unit =
-    run(log.trace(String.format(format, arguments: _*)))
+    run(log.trace(MessageFormatter.format(format, arguments: _*)))
 
   override def trace(msg: String, t: Throwable): Unit =
     run(
@@ -38,13 +38,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(log.debug(msg))
 
   override def debug(format: String, arg: AnyRef): Unit =
-    run(log.debug(String.format(format, arg)))
+    run(log.debug(MessageFormatter.format(format, arg)))
 
   override def debug(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(log.debug(String.format(format, arg1, arg2)))
+    run(log.debug(MessageFormatter.format(format, arg1, arg2)))
 
   override def debug(format: String, arguments: Array[? <: Object]): Unit =
-    run(log.debug(String.format(format, arguments: _*)))
+    run(log.debug(MessageFormatter.format(format, arguments: _*)))
 
   override def debug(msg: String, t: Throwable): Unit =
     run(
@@ -59,13 +59,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(log.info(msg))
 
   override def info(format: String, arg: AnyRef): Unit =
-    run(log.info(String.format(format, arg)))
+    run(log.info(MessageFormatter.format(format, arg)))
 
   override def info(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(log.info(String.format(format, arg1, arg2)))
+    run(log.info(MessageFormatter.format(format, arg1, arg2)))
 
   override def info(format: String, arguments: Array[? <: Object]): Unit =
-    run(log.info(String.format(format, arguments: _*)))
+    run(log.info(MessageFormatter.format(format, arguments: _*)))
 
   override def info(msg: String, t: Throwable): Unit =
     run(
@@ -80,13 +80,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(log.warn(msg))
 
   override def warn(format: String, arg: AnyRef): Unit =
-    run(log.warn(String.format(format, arg)))
+    run(log.warn(MessageFormatter.format(format, arg)))
 
   override def warn(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(log.warn(String.format(format, arg1, arg2)))
+    run(log.warn(MessageFormatter.format(format, arg1, arg2)))
 
   override def warn(format: String, arguments: Array[? <: Object]): Unit =
-    run(log.warn(String.format(format, arguments: _*)))
+    run(log.warn(MessageFormatter.format(format, arguments: _*)))
 
   override def warn(msg: String, t: Throwable): Unit =
     run(
@@ -101,13 +101,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(log.error(msg))
 
   override def error(format: String, arg: AnyRef): Unit =
-    run(log.error(String.format(format, arg)))
+    run(log.error(MessageFormatter.format(format, arg)))
 
   override def error(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(log.error(String.format(format, arg1, arg2)))
+    run(log.error(MessageFormatter.format(format, arg1, arg2)))
 
   override def error(format: String, arguments: Array[? <: Object]): Unit =
-    run(log.error(String.format(format, arguments: _*)))
+    run(log.error(MessageFormatter.format(format, arguments: _*)))
 
   override def error(msg: String, t: Throwable): Unit =
     run(
