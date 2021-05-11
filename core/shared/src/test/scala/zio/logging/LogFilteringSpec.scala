@@ -1,15 +1,14 @@
 package zio.logging
 
-import zio.ZQueue
-import zio.logging.LogAppender._
-import zio.logging.LogFiltering.filterBy
-import zio.test.Assertion._
-import zio.test._
-import zio.Has
 import zio.blocking.Blocking
 import zio.clock.Clock
+import zio.logging.LogAppender._
+import zio.logging.LogFiltering.filterBy
 import zio.random.Random
+import zio.test.Assertion._
+import zio.test._
 import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.{ Has, ZQueue }
 
 object LogFilteringSpec extends DefaultRunnableSpec {
 

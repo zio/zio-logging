@@ -3,12 +3,12 @@ package zio.logging.slf4j
 import zio.logging._
 import zio.test.Assertion._
 import zio.test.TestAspect.{ exceptDotty, sequential }
+import zio.test.environment.TestEnvironment
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ UIO, ULayer }
 
 import java.util.UUID
 import scala.jdk.CollectionConverters._
-import zio.test.environment.TestEnvironment
 
 object Slf4jLoggerTest extends DefaultRunnableSpec {
 

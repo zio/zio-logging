@@ -2,12 +2,11 @@ package zio.logging
 
 import zio.test.Assertion._
 import zio.test._
+import zio.test.environment.TestEnvironment
 import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
 
-import java.time.OffsetDateTime
+import java.time.{ DateTimeException, OffsetDateTime }
 import java.util.UUID
-import java.time.DateTimeException
-import zio.test.environment.TestEnvironment
 
 object LoggerSpec extends DefaultRunnableSpec {
 

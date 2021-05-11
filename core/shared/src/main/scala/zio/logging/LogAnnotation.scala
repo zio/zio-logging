@@ -3,8 +3,8 @@ package zio.logging
 import zio.Cause
 
 import java.time.OffsetDateTime
-import scala.reflect.ClassTag
 import java.{ util => ju }
+import scala.reflect.ClassTag
 
 /**
  * A `LogAnnotation` describes a particular type of annotation applied to log
