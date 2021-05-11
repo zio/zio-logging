@@ -1,19 +1,18 @@
 package zio.logging.slf4j
 
-import java.util.UUID
-
-import zio.{ UIO, ULayer }
-import zio.test.DefaultRunnableSpec
 import zio.logging._
-import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect.{ exceptDotty, sequential }
+import zio.test.{ DefaultRunnableSpec, _ }
+import zio.{ UIO, ULayer }
 
+import java.util.UUID
 import scala.jdk.CollectionConverters._
+import zio.test.environment.TestEnvironment
 
 object Slf4jLoggerTest extends DefaultRunnableSpec {
 
-  val uuid1                          = UUID.randomUUID()
+  val uuid1: UUID                    = UUID.randomUUID()
   val logLayerOptIn: ULayer[Logging] =
     Slf4jLogger.makeWithAnnotationsAsMdc(
       mdcAnnotations = List(LogAnnotation.CorrelationId, LogAnnotation.Level)
@@ -23,7 +22,7 @@ object Slf4jLoggerTest extends DefaultRunnableSpec {
     Slf4jLogger.makeWithAllAnnotationsAsMdc(Set(LogAnnotation.Level.name)) >>>
       Logging.withContext(LogContext.empty.annotate(LogAnnotation.CorrelationId, Some(uuid1)))
 
-  def spec =
+  def spec: ZSpec[TestEnvironment, Any] =
     suite("slf4j logger")(
       testM("logger name from stack trace") {
         for {

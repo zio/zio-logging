@@ -16,27 +16,18 @@ inThisBuild(
         "rzbikson@gmail.com",
         url("https://github.com/pshemass")
       )
-    ),
-    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
-    pgpPublicRing := file("/tmp/public.asc"),
-    pgpSecretRing := file("/tmp/secret.asc"),
-    scmInfo := Some(
-      ScmInfo(
-        url("https://github.com/zio/zio-logging/"),
-        "scm:git:git@github.com:zio/zio-logging.git"
-      )
     )
   )
 )
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val ZioVersion           = "1.0.5"
+val ZioVersion           = "1.0.7"
 val scalaJavaTimeVersion = "2.0.0-RC5"
 val slf4jVersion         = "1.7.30"
 
-addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
-addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
+addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
+addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 
 addCommandAlias(
   "testJVM",
@@ -51,8 +42,7 @@ addCommandAlias(
 lazy val root = project
   .in(file("."))
   .settings(
-    crossScalaVersions := Nil,
-    skip in publish := true
+    publish / skip := true
   )
   .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jsconsole, jshttp)
 
@@ -62,19 +52,19 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %%% "zio"                     % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3",
-      "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
-      "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio"                 %% "zio"                     % ZioVersion,
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                 %% "zio-test"                % ZioVersion % Test,
+      "dev.zio"                 %% "zio-test-sbt"            % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
   .jvmSettings(
-    fork in Test := true,
-    fork in run := true
+    Test / fork := true,
+    run / fork := true
   )
 lazy val coreJVM = core.jvm
-  .settings(scala3Settings)
+  .settings(dottySettings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.2.2" % Test
 )
@@ -83,12 +73,12 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j"))
-  .settings(scala3Settings)
+  .settings(dottySettings)
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
-      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
+      "dev.zio"             %% "zio-test"                 % ZioVersion % Test,
+      "dev.zio"             %% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
@@ -99,7 +89,7 @@ lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM % "compile->compile;test->test")
   .settings(stdSettings("zio-logging-slf4j-bridge"))
-  .settings(scala3Settings)
+  .settings(dottySettings)
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api"    % slf4jVersion,
@@ -148,27 +138,26 @@ lazy val benchmarks = project
 lazy val docs = project
   .in(file("zio-logging-docs"))
   .settings(
-    skip in publish := true,
-    moduleName := "docs",
-//    unusedCompileDependenciesFilter -= moduleFilter("org.scalameta", "mdoc"),
+    publish / skip := true,
+    moduleName := "zio-logging-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    scalacOptions ~= { _.filterNot(_.startsWith("-Ywarn")) },
-    scalacOptions ~= { _.filterNot(_.startsWith("-Xlint")) },
-    libraryDependencies ++= Seq(
-      ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided).cross(CrossVersion.full)
-    )
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j),
+    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+    cleanFiles += (ScalaUnidoc / unidoc / target).value,
+    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
+    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
   .dependsOn(coreJVM, slf4j)
-  .enablePlugins(MdocPlugin, DocusaurusPlugin)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
   .settings(stdSettings("zio-logging-examples"))
-  .settings(scala3Settings)
+  .settings(dottySettings)
   .settings(
-    skip in publish := true,
+    publish / skip := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % "1.2.3",
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"

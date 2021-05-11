@@ -1,11 +1,13 @@
 package zio.logging
 
-import java.time.OffsetDateTime
-import java.util.UUID
-
-import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
 import zio.test.Assertion._
 import zio.test._
+import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
+
+import java.time.OffsetDateTime
+import java.util.UUID
+import java.time.DateTimeException
+import zio.test.environment.TestEnvironment
 
 object LoggerSpec extends DefaultRunnableSpec {
 
@@ -38,7 +40,7 @@ object LoggerSpec extends DefaultRunnableSpec {
     def lines: ZIO[TestLogging, Nothing, Vector[(LogContext, String)]] = ZIO.accessM[TestLogging](_.get.lines)
   }
 
-  def spec =
+  def spec: Spec[TestEnvironment, TestFailure[DateTimeException], TestSuccess] =
     suite("logger")(
       testM("log with log level") {
         log.debug("test") *>

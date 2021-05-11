@@ -1,12 +1,12 @@
 package zio.logging
 
-import java.nio.charset.{ Charset, StandardCharsets }
-import java.nio.file.Path
-
 import zio._
 import zio.clock._
 import zio.console.Console
 import zio.logging.Logger.LoggerWithFormat
+
+import java.nio.charset.{ Charset, StandardCharsets }
+import java.nio.file.Path
 
 object Logging {
 

@@ -5,7 +5,7 @@ import java.time.temporal.ChronoField._
 import java.util.Locale
 
 object LogDatetimeFormatter {
-  val humanReadableDateTimeFormatter = new DateTimeFormatterBuilder()
+  val humanReadableDateTimeFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
     .parseCaseInsensitive()
     .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
     .appendLiteral('-')

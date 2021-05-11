@@ -1,12 +1,12 @@
 package zio.logging
 
-import zio.{ Tag, UIO, ZLayer }
 import zio.internal.Tracing
 import zio.internal.stacktracer.Tracer
 import zio.internal.stacktracer.ZTraceElement.{ NoLocation, SourceLocation }
 import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
 import zio.internal.tracing.TracingConfig
 import zio.logging.LogAppender.Service
+import zio.{ Tag, UIO, ZLayer }
 
 trait PlatformSpecificLogAppenderModifiers {
   private val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)

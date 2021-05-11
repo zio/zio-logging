@@ -5,6 +5,11 @@ import zio.logging.LogAppender._
 import zio.logging.LogFiltering.filterBy
 import zio.test.Assertion._
 import zio.test._
+import zio.Has
+import zio.blocking.Blocking
+import zio.clock.Clock
+import zio.random.Random
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
 
 object LogFilteringSpec extends DefaultRunnableSpec {
 
@@ -21,14 +26,20 @@ object LogFilteringSpec extends DefaultRunnableSpec {
   ): TestResult =
     assert(filter(makeCtx(name, level), ""))(expectation ?? s"$name with $level")
 
-  val filter = filterBy(
+  val filter: (LogContext, => Any) => Boolean = filterBy(
     LogLevel.Debug,
     "a"     -> LogLevel.Info,
     "a.b.c" -> LogLevel.Warn,
     "e.f"   -> LogLevel.Error
   )
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("Log filtering")(
       test("can be built from list of nodes") {
         testFilter(filter, "x", LogLevel.Debug, isTrue) &&
