@@ -52,10 +52,10 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                 %% "zio"                     % ZioVersion,
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3").cross(CrossVersion.for3Use2_13),
-      "dev.zio"                 %% "zio-test"                % ZioVersion % Test,
-      "dev.zio"                 %% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio"                 %%% "zio"                     % ZioVersion,
+      ("org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                 %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"                 %%% "zio-test-sbt"            % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -77,8 +77,8 @@ lazy val slf4j = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "dev.zio"             %% "zio-test"                 % ZioVersion % Test,
-      "dev.zio"             %% "zio-test-sbt"             % ZioVersion % Test,
+      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
+      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
