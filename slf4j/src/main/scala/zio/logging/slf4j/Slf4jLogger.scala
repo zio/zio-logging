@@ -25,7 +25,7 @@ object Slf4jLogger {
         val loggerName = context(LogAnnotation.Name)
         logger(loggerName).map { slf4jLogger =>
           val maybeThrowable = context.get(LogAnnotation.Throwable).orNull
-          context.get(LogAnnotation.Level).level match {
+          (context.get(LogAnnotation.Level).level: @unchecked) match {
             case LogLevel.Off.level   => ()
             case LogLevel.Debug.level => if (slf4jLogger.isDebugEnabled) slf4jLogger.debug(line, maybeThrowable)
             case LogLevel.Trace.level => if (slf4jLogger.isTraceEnabled) slf4jLogger.trace(line, maybeThrowable)
@@ -83,7 +83,7 @@ object Slf4jLogger {
           val mdc: Map[String, String] = filter(context.renderContext)
           val previous                 = Option(MDC.getCopyOfContextMap()).getOrElse(Map.empty[String, String].asJava)
           MDC.setContextMap(mdc.asJava)
-          try context.get(LogAnnotation.Level).level match {
+          try (context.get(LogAnnotation.Level).level: @unchecked) match {
             case LogLevel.Off.level   => ()
             case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
             case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
