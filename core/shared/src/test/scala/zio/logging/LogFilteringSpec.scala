@@ -1,14 +1,10 @@
 package zio.logging
 
-import zio.blocking.Blocking
-import zio.clock.Clock
+import zio.ZQueue
 import zio.logging.LogAppender._
 import zio.logging.LogFiltering.filterBy
-import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
-import zio.{ Has, ZQueue }
 
 object LogFilteringSpec extends DefaultRunnableSpec {
 
@@ -32,13 +28,7 @@ object LogFilteringSpec extends DefaultRunnableSpec {
     "e.f"   -> LogLevel.Error
   )
 
-  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  override def spec: Spec[Environment, TestFailure[Nothing], TestSuccess] =
     suite("Log filtering")(
       test("can be built from list of nodes") {
         testFilter(filter, "x", LogLevel.Debug, isTrue) &&

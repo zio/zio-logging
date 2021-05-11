@@ -83,14 +83,16 @@ object Slf4jLogger {
           val mdc: Map[String, String] = filter(context.renderContext)
           val previous                 = Option(MDC.getCopyOfContextMap()).getOrElse(Map.empty[String, String].asJava)
           MDC.setContextMap(mdc.asJava)
-          try (context.get(LogAnnotation.Level).level: @unchecked) match {
-            case LogLevel.Off.level   => ()
-            case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
-            case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
-            case LogLevel.Info.level  => slf4jLogger.info(line, maybeThrowable)
-            case LogLevel.Warn.level  => slf4jLogger.warn(line, maybeThrowable)
-            case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
-            case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
+          try {
+            (context.get(LogAnnotation.Level).level: @unchecked) match {
+              case LogLevel.Off.level   => ()
+              case LogLevel.Debug.level => slf4jLogger.debug(line, maybeThrowable)
+              case LogLevel.Trace.level => slf4jLogger.trace(line, maybeThrowable)
+              case LogLevel.Info.level  => slf4jLogger.info(line, maybeThrowable)
+              case LogLevel.Warn.level  => slf4jLogger.warn(line, maybeThrowable)
+              case LogLevel.Error.level => slf4jLogger.error(line, maybeThrowable)
+              case LogLevel.Fatal.level => slf4jLogger.error(line, maybeThrowable)
+            }
           } finally MDC.setContextMap(previous)
         }
       }
