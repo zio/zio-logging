@@ -62,13 +62,13 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Run tests
-        if: matrix.scala != '3.0.0-RC1'
+        if: !startsWith(matrix.scala, '3.0.')
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
       - name: Run dotty tests
-        if: matrix.scala == '3.0.0-RC1' && matrix.platform == 'JVM'
+        if: startsWith(matrix.scala, '3.0.') && matrix.platform == 'JVM'
         run: sbt ++${{ matrix.scala }}! testJVM
       - name: Compile additional subprojects
-        if: matrix.scala != '3.0.0-RC1'
+        if: !startsWith(matrix.scala, '3.0.')
         run: sbt ++${{ matrix.scala }}! examples/compile docs/compile benchmarks/compile
 
   ci:
