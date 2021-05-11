@@ -77,8 +77,8 @@ lazy val slf4j = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "dev.zio"             %% "zio-test"                 % ZioVersion % Test,
-      "dev.zio"             %% "zio-test-sbt"             % ZioVersion % Test,
+      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
+      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.3"    % Test,
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
