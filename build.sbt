@@ -52,10 +52,10 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                 %% "zio"                     % ZioVersion,
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3").cross(CrossVersion.for3Use2_13),
-      "dev.zio"                 %% "zio-test"                % ZioVersion % Test,
-      "dev.zio"                 %% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio"                 %%% "zio"                     % ZioVersion,
+      ("org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                 %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"                 %%% "zio-test-sbt"            % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
