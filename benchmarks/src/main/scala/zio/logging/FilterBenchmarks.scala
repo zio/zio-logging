@@ -38,7 +38,7 @@ class FilterBenchmarks {
       (handWrittenFilteredAppender >>> Logging.make).build.useNow
     }
 
-  val filterTreeFunction                                         =
+  val filterTreeFunction: (LogContext, => Any) => Boolean        =
     filterBy(LogLevel.Debug, "a.b.c" -> LogLevel.Info, "a.b.d" -> LogLevel.Warn, "e" -> LogLevel.Info)
   val filterTreeAppender: ZLayer[Any, Nothing, Appender[String]] =
     LogAppender
@@ -69,7 +69,7 @@ class FilterBenchmarks {
       } yield logging
     }
 
-  val names = List(
+  val names: List[List[String]] = List(
     List("a"),
     List("a", "b"),
     List("a", "b", "c"),

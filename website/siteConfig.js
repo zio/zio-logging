@@ -32,8 +32,12 @@ const siteConfig = {
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    {doc: 'overview/overview_index', label: 'Overview'}
+    {doc: 'overview/overview_index', label: 'Overview'},
+    {href: 'api', label: 'API'},
   ],
+
+  // by default Docusaurus combines CSS files in a way that doesn't play nicely with Scaladoc
+  separateCss: ["api"],
 
   // If you have users set above, you add it here:
   users,
@@ -79,6 +83,8 @@ const siteConfig = {
   scrollToTopOptions: {
     cornerOffset: 100,
   },
+
+  customDocsPath: 'zio-logging-docs/target/mdoc',
 };
 
 module.exports = siteConfig;

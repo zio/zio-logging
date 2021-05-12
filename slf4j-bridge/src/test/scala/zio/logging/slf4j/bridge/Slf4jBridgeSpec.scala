@@ -5,9 +5,10 @@ import zio.logging.LoggerSpec.TestLogger
 import zio.logging.{ LogAnnotation, LogContext, LogLevel }
 import zio.test.Assertion._
 import zio.test._
+import zio.test.environment.TestEnvironment
 
 object Slf4jBridgeSpec extends DefaultRunnableSpec {
-  override def spec =
+  override def spec: Spec[TestEnvironment, TestFailure[Throwable], TestSuccess] =
     suite("Slf4jBridge")(
       testM("logs through slf4j") {
         for {

@@ -4,7 +4,7 @@ import zio._
 import zio.logging.slf4j.Slf4jLogger
 
 object Examples extends zio.App {
-  val correlationId = LogAnnotation[String](
+  val correlationId: LogAnnotation[String] = LogAnnotation[String](
     name = "correlationId",
     initialValue = "undefined-correlation-id",
     combine = (_, newValue) => newValue,
@@ -13,11 +13,11 @@ object Examples extends zio.App {
 
   val logFormat = "[correlation-id = %s] %s"
 
-  val env =
+  val env: ULayer[Logging] =
     Slf4jLogger.make((context, message) => logFormat.format(context(correlationId), message))
 
   import zio.duration._
-  override def run(args: List[String]) =
+  override def run(args: List[String]): URIO[ZEnv, ExitCode] =
     (for {
       fiber <- log.locally(correlationId("1234"))(ZIO.unit).fork
       _     <- log.info("info message with correlation id from modifyLogger")

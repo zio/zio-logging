@@ -54,6 +54,17 @@ class Footer extends React.Component {
                 <img src={this.props.config.baseUrl + "img/discord.png"} width="120" alt="discord"/>
               </a>
           </div>
+          <div>
+            <h5>Additional resources</h5>
+            <a
+                href="https://zio.dev">
+              ZIO Homepage
+            </a>
+            <a
+              href="/zio-logging/api">
+              Scaladoc
+            </a>
+          </div>
         </section>
         <section className="copyright">{this.props.config.copyright}</section>
       </footer>
