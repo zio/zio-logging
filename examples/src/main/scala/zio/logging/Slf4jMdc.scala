@@ -1,23 +1,23 @@
 package zio.logging
 
-import java.util.UUID
-
-import zio.logging.slf4j.Slf4jLogger
-import zio.clock.Clock
 import zio._
+import zio.clock.Clock
 import zio.duration._
+import zio.logging.slf4j.Slf4jLogger
+
+import java.util.UUID
 
 object Slf4jMdc extends App {
 
-  val userId = LogAnnotation[UUID](
+  val userId: LogAnnotation[UUID] = LogAnnotation[UUID](
     name = "user-id",
     initialValue = UUID.fromString("0-0-0-0-0"),
     combine = (_, newValue) => newValue,
     render = _.toString
   )
 
-  val logLayer = Slf4jLogger.makeWithAnnotationsAsMdc(List(userId))
-  val users    = List.fill(2)(UUID.randomUUID())
+  val logLayer: ULayer[Logging] = Slf4jLogger.makeWithAnnotationsAsMdc(List(userId))
+  val users: List[UUID]         = List.fill(2)(UUID.randomUUID())
 
   override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, ExitCode] =
     (for {

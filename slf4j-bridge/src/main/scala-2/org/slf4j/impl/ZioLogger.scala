@@ -2,7 +2,7 @@ package org.slf4j.impl
 
 import org.slf4j.helpers.MarkerIgnoringBase
 import zio.ZIO
-import zio.logging.{ log, LogAnnotation, Logging }
+import zio.logging.{ LogAnnotation, Logging, log }
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
   private val nameList                                  = name.split('.').toList
