@@ -1,8 +1,8 @@
 # ZIO logging
 
-| CI                                       | Release                                                               |  Issues                                                     | Discord                                   |
-|------------------------------------------|-----------------------------------------------------------------------|--------------------------------------------------------------|-------------------------------------------|
-| ![CI][badge-CI] | [![Release Artifacts][badge-sonatype-releases]][link-sonatype-releases] | [![Is it maintained?][badge-maintenance]][link-maintenance] | [![Discord][badge-discord]][link-discord] |
+| Project Stage | CI                                       | Release                                                               |  Issues                                                     | Discord                                   |
+| --- |------------------------------------------|-----------------------------------------------------------------------|--------------------------------------------------------------|-------------------------------------------|
+| [![Project stage][Stage]][Stage-Page] | ![CI][badge-CI] | [![Release Artifacts][badge-sonatype-releases]][link-sonatype-releases] | [![Is it maintained?][badge-maintenance]][link-maintenance] | [![Discord][badge-discord]][link-discord] |
 
 
 An environmental effect for adding logging into any ZIO application.
@@ -30,4 +30,5 @@ To learn more about ZIO Logging, check out the following references:
 [link-discord]: https://discord.gg/2ccFBr4
 [link-maintenance]: http://isitmaintained.com/project/zio/zio-logging
 [link-zio]: https://zio.dev
-
+[Stage]: https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg
+[Stage-Page]: https://github.com/zio/zio/wiki/Project-Stages
