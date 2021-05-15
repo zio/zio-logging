@@ -296,7 +296,7 @@ object BuildHelper {
 
   def jsSettings =
     Seq(
-      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % "2.2.2",
+      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % "2.3.0",
       libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.2"
     )
 
