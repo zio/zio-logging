@@ -67,7 +67,7 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
   def console[A](logLevel: LogLevel, format: LogFormat[A])(implicit
     tag: Tag[LogAppender.Service[A]]
   ): ZLayer[Console, Nothing, Appender[A]] =
-    make[Console, A](format, (_, line) => putStrLn(line)).map(appender =>
+    make[Console, A](format, (_, line) => putStrLn(line).ignore).map(appender =>
       Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel))
     )
 
@@ -78,9 +78,9 @@ object LogAppender extends PlatformSpecificLogAppenderModifiers {
       format,
       (ctx, msg) =>
         if (ctx.get(LogAnnotation.Level) == LogLevel.Error)
-          putStrLnErr(msg)
+          putStrLnErr(msg).ignore
         else
-          putStrLn(msg)
+          putStrLn(msg).ignore
     ).map(appender => Has(appender.get.filter((ctx, _) => ctx.get(LogAnnotation.Level) >= logLevel)))
 
   def file[A](
