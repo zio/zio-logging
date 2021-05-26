@@ -1,6 +1,7 @@
 package zio.logging
 
-import zio.{ Cause, URIO, ZIO }
+import zio.stream.ZStream
+import zio.{ Cause, URIO, ZIO, ZManaged }
 
 object log {
 
@@ -28,10 +29,20 @@ object log {
   def locally[R <: Logging, E, A1](fn: LogContext => LogContext)(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     Logging.locally(fn)(zio)
 
+  def locallyManaged[R <: Logging, E, A1](fn: LogContext => LogContext)(
+    managed: ZManaged[R, E, A1]
+  ): ZManaged[Logging with R, E, A1] =
+    Logging.locallyManaged(fn)(managed)
+
   def locallyM[R <: Logging, E, A1](
     fn: LogContext => URIO[R, LogContext]
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     Logging.locallyM(fn)(zio)
+
+  def locallyZStream[R <: Logging, E, A1](fn: LogContext => LogContext)(
+    stream: ZStream[R, E, A1]
+  ): ZStream[Logging with R, E, A1] =
+    Logging.locallyZStream(fn)(stream)
 
   def throwable(line: => String, t: Throwable): ZIO[Logging, Nothing, Unit] =
     Logging.throwable(line, t)

@@ -1,6 +1,7 @@
 package zio.logging
 
-import zio.{ Cause, FiberRef, UIO, URIO, ZIO }
+import zio.stream.ZStream
+import zio.{ Cause, FiberRef, UIO, URIO, ZIO, ZManaged }
 
 trait Logger[-A] { self =>
 
@@ -108,6 +109,18 @@ trait Logger[-A] { self =>
    */
   def locallyM[R1, E, A1](f: LogContext => URIO[R1, LogContext])(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
     logContext.flatMap(ctx => f(ctx)).flatMap(ctx => locally(_ => ctx)(zio))
+
+  /**
+   * Modify log context in scope of Managed operation.
+   */
+  def locallyManaged[R1, E, A1](f: LogContext => LogContext)(managed: ZManaged[R1, E, A1]): ZManaged[R1, E, A1] =
+    ZManaged.makeReserve(managed.reserve.map(r => r.copy(locally(f)(r.acquire), exit => locally(f)(r.release(exit)))))
+
+  /**
+   * Modify log context in scope of ZStream.
+   */
+  def locallyZStream[R1, E, A1](f: LogContext => LogContext)(stream: ZStream[R1, E, A1]): ZStream[R1, E, A1] =
+    ZStream(stream.process.map(p => locally(f)(p)))
 
   /**
    * Modifies the annotate in the scope of the specified effect.
