@@ -1,10 +1,10 @@
 package zio.logging
 
 import zio._
+import zio.clock.Clock
 import zio.stream.ZStream
 
 import java.util.UUID
-import zio.clock.Clock
 
 object ZStreamExample extends zio.App {
 
