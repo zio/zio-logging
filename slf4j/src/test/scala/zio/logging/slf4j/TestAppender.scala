@@ -1,10 +1,9 @@
 package zio.logging.slf4j
 
-import java.util.concurrent.atomic.AtomicReference
-
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
 
+import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 
 class TestAppender extends AppenderBase[ILoggingEvent] {

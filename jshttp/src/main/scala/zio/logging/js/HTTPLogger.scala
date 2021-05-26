@@ -1,13 +1,12 @@
 package zio.logging.js
 
+import org.scalajs.dom.ext.Ajax
+import zio.clock.{ Clock, currentDateTime }
+import zio.logging.{ LogAnnotation, LogAppender, LogContext, LogFormat, LogLevel, Logging }
+import zio.{ ZIO, ZLayer }
+
 import java.time.OffsetDateTime
 import java.util.UUID
-
-import org.scalajs.dom.ext.Ajax
-import zio.{ ZIO, ZLayer }
-import zio.clock.{ currentDateTime, Clock }
-import zio.logging.{ LogAnnotation, LogAppender, LogContext, LogFormat, LogLevel, Logging }
-
 import scala.scalajs.js
 import scala.scalajs.js.JSON
 

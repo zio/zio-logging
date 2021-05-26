@@ -21,14 +21,14 @@ object LogFilteringSpec extends DefaultRunnableSpec {
   ): TestResult =
     assert(filter(makeCtx(name, level), ""))(expectation ?? s"$name with $level")
 
-  val filter = filterBy(
+  val filter: (LogContext, => Any) => Boolean = filterBy(
     LogLevel.Debug,
     "a"     -> LogLevel.Info,
     "a.b.c" -> LogLevel.Warn,
     "e.f"   -> LogLevel.Error
   )
 
-  override def spec =
+  override def spec: Spec[Environment, TestFailure[Nothing], TestSuccess] =
     suite("Log filtering")(
       test("can be built from list of nodes") {
         testFilter(filter, "x", LogLevel.Debug, isTrue) &&

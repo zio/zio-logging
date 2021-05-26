@@ -1,9 +1,9 @@
 package zio.logging
 
-import java.time.OffsetDateTime
-
 import zio.Cause
 
+import java.time.OffsetDateTime
+import java.{ util => ju }
 import scala.reflect.ClassTag
 
 /**
@@ -38,7 +38,7 @@ object LogAnnotation {
   /**
    * The `CorrelationId` annotation keeps track of correlation id.
    */
-  val CorrelationId = LogAnnotation[Option[java.util.UUID]](
+  val CorrelationId: LogAnnotation[Option[ju.UUID]] = LogAnnotation[Option[java.util.UUID]](
     name = "correlation-id",
     initialValue = None,
     combine = (_, r) => r,
@@ -48,17 +48,17 @@ object LogAnnotation {
   /**
    * The `Level` annotation keeps track of log levels.
    */
-  val Level = LogAnnotation[LogLevel]("level", LogLevel.Info, (_, r) => r, _.render)
+  val Level: LogAnnotation[LogLevel] = LogAnnotation[LogLevel]("level", LogLevel.Info, (_, r) => r, _.render)
 
   /**
    * The `Name` annotation keeps track of logger names.
    */
-  val Name = LogAnnotation[List[String]]("name", Nil, _ ++ _, _.mkString("."))
+  val Name: LogAnnotation[List[String]] = LogAnnotation[List[String]]("name", Nil, _ ++ _, _.mkString("."))
 
   /**
    * The `Throwable` annotation keeps track of a throwable.
    */
-  val Throwable =
+  val Throwable: LogAnnotation[Option[Throwable]] =
     LogAnnotation[Option[Throwable]](
       name = "throwable",
       initialValue = None,
@@ -69,7 +69,7 @@ object LogAnnotation {
   /**
    * The `Cause` annotation keeps track of a Cause.
    */
-  val Cause =
+  val Cause: LogAnnotation[Option[Cause[Any]]] =
     LogAnnotation[Option[Cause[Any]]](
       name = "cause",
       initialValue = None,
@@ -80,7 +80,7 @@ object LogAnnotation {
   /**
    * Log timestamp
    */
-  val Timestamp = LogAnnotation[OffsetDateTime](
+  val Timestamp: LogAnnotation[OffsetDateTime] = LogAnnotation[OffsetDateTime](
     name = "timestamp",
     initialValue = OffsetDateTime.MIN,
     combine = (_, newValue) => newValue,
