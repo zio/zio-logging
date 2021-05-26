@@ -4,6 +4,7 @@ import zio._
 import zio.clock._
 import zio.console.Console
 import zio.logging.Logger.LoggerWithFormat
+import zio.stream.ZStream
 
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
@@ -15,6 +16,8 @@ object Logging {
    */
   def addTimestamp[A](self: Logger[A]): URIO[Clock, Logger[A]] =
     self.deriveM(ctx => currentDateTime.orDie.map(time => LogAnnotation.Timestamp(time)(ctx)))
+
+  val any: ZLayer[Logging, Nothing, Logging] = ZLayer.requires[Logging]
 
   def console(
     logLevel: LogLevel = LogLevel.Info,
@@ -96,6 +99,16 @@ object Logging {
     fn: LogContext => URIO[R, LogContext]
   )(zio: ZIO[R, E, A1]): ZIO[Logging with R, E, A1] =
     ZIO.accessM(_.get.locallyM(fn)(zio))
+
+  def locallyManaged[A, R <: Logging, E, A1](fn: LogContext => LogContext)(
+    zio: ZManaged[R, E, A1]
+  ): ZManaged[Logging with R, E, A1] =
+    ZManaged.accessManaged(_.get.locallyManaged(fn)(zio))
+
+  def locallyZStream[A, R <: Logging, E, A1](fn: LogContext => LogContext)(
+    stream: ZStream[R, E, A1]
+  ): ZStream[Logging with R, E, A1] =
+    ZStream.accessStream(_.get.locallyZStream(fn)(stream))
 
   def make: URLayer[Appender[String], Logging] =
     ZLayer.fromFunctionM((appender: Appender[String]) =>

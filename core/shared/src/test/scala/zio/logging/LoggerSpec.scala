@@ -1,9 +1,10 @@
 package zio.logging
 
+import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.TestEnvironment
-import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer }
+import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer, ZManaged }
 
 import java.time.{ DateTimeException, OffsetDateTime }
 import java.util.UUID
@@ -138,6 +139,66 @@ object LoggerSpec extends DefaultRunnableSpec {
                 )
               )
             )
+      },
+      testM("locally for Managed") {
+
+        log
+          .locallyManaged(LogAnnotation.Name("level-1" :: Nil)) {
+            ZManaged.make(log.info("acquire"))(_ => log.info("release"))
+          }
+          .use(_ => log.info("use")) *>
+          assertM(TestLogger.lines)(
+            equalTo(
+              Vector(
+                (
+                  LogContext.empty
+                    .annotate(LogAnnotation.Name, "level-1" :: Nil)
+                    .annotate(LogAnnotation.Level, LogLevel.Info),
+                  "acquire"
+                ),
+                (
+                  LogContext.empty
+                    .annotate(LogAnnotation.Level, LogLevel.Info),
+                  "use"
+                ),
+                (
+                  LogContext.empty
+                    .annotate(LogAnnotation.Name, "level-1" :: Nil)
+                    .annotate(LogAnnotation.Level, LogLevel.Info),
+                  "release"
+                )
+              )
+            )
+          )
+
+      },
+      testM("locally for Stream") {
+
+        log
+          .locallyZStream(LogAnnotation.Name("level-1" :: Nil)) {
+            ZStream.fromEffect(log.info("line1")) *>
+              ZStream.fromEffect(log.info("line2"))
+          }
+          .runDrain *>
+          assertM(TestLogger.lines)(
+            equalTo(
+              Vector(
+                (
+                  LogContext.empty
+                    .annotate(LogAnnotation.Name, "level-1" :: Nil)
+                    .annotate(LogAnnotation.Level, LogLevel.Info),
+                  "line1"
+                ),
+                (
+                  LogContext.empty
+                    .annotate(LogAnnotation.Name, "level-1" :: Nil)
+                    .annotate(LogAnnotation.Level, LogLevel.Info),
+                  "line2"
+                )
+              )
+            )
+          )
+
       },
       test("LogContext render") {
         val correlationId = UUID.randomUUID()
