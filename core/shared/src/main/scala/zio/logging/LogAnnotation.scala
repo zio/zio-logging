@@ -36,6 +36,22 @@ final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combi
 object LogAnnotation {
 
   /**
+   * Creates a LogAnnotation that is represented as an optional value and initialized with `None`.
+   * If a value for the annotation is present, it will be rendered using the provided function. When
+   * absent, it will be rendered as an empty string.
+   */
+  def optional[A: ClassTag](name: String, render: A => String): LogAnnotation[Option[A]] =
+    LogAnnotation(
+      name = name,
+      initialValue = None,
+      combine = (_, a) => a,
+      render = {
+        case None    => ""
+        case Some(a) => render(a)
+      }
+    )
+
+  /**
    * The `CorrelationId` annotation keeps track of correlation id.
    */
   val CorrelationId: LogAnnotation[Option[ju.UUID]] = LogAnnotation[Option[java.util.UUID]](
@@ -59,22 +75,18 @@ object LogAnnotation {
    * The `Throwable` annotation keeps track of a throwable.
    */
   val Throwable: LogAnnotation[Option[Throwable]] =
-    LogAnnotation[Option[Throwable]](
+    optional[Throwable](
       name = "throwable",
-      initialValue = None,
-      combine = (_, t) => t,
-      _.map(ex => zio.Cause.fail(ex).prettyPrint).getOrElse("")
+      zio.Cause.fail(_).prettyPrint
     )
 
   /**
    * The `Cause` annotation keeps track of a Cause.
    */
   val Cause: LogAnnotation[Option[Cause[Any]]] =
-    LogAnnotation[Option[Cause[Any]]](
+    optional[Cause[Any]](
       name = "cause",
-      initialValue = None,
-      combine = (_, t) => t,
-      _.map(_.prettyPrint).getOrElse("")
+      _.prettyPrint
     )
 
   /**
