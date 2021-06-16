@@ -33,7 +33,7 @@ const siteConfig = {
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     {doc: 'overview/overview_index', label: 'Overview'},
-    {href: 'api', label: 'API'},
+    {href: '/zio-logging/api', label: 'API'},
   ],
 
   // by default Docusaurus combines CSS files in a way that doesn't play nicely with Scaladoc
