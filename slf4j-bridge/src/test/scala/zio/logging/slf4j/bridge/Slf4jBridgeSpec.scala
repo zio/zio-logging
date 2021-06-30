@@ -49,6 +49,11 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
             )
           )
         )
+      },
+      testM("Initialize MDC") {
+        for {
+          _ <- ZIO.effect(org.slf4j.MDC.clear())
+        } yield assert(true)(equalTo(true))
       }
     ).provideCustomLayer(TestLogger.make >>> initializeSlf4jBridge)
 }
