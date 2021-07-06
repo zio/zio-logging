@@ -4,6 +4,7 @@ import zio.ZIO
 import zio.logging.LoggerSpec.TestLogger
 import zio.logging.{ LogAnnotation, LogContext, LogLevel }
 import zio.test.Assertion._
+import zio.test.TestAspect.sequential
 import zio.test._
 import zio.test.environment.TestEnvironment
 
@@ -49,6 +50,11 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
             )
           )
         )
+      },
+      testM("Initialize MDC") {
+        for {
+          _ <- ZIO.effect(org.slf4j.MDC.clear())
+        } yield assert(true)(equalTo(true))
       }
-    ).provideCustomLayer(TestLogger.make >>> initializeSlf4jBridge)
+    ) @@ sequential provideCustomLayer (TestLogger.make >>> initializeSlf4jBridge)
 }
