@@ -20,7 +20,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion           = "1.0.11"
+val ZioVersion           = "1.0.12"
 val scalaJavaTimeVersion = "2.3.0"
 val slf4jVersion         = "1.7.32"
 
@@ -78,7 +78,7 @@ lazy val slf4j = project
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
       "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
-      "ch.qos.logback"       % "logback-classic"          % "1.2.5"    % Test,
+      "ch.qos.logback"       % "logback-classic"          % "1.2.6"    % Test,
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
@@ -119,7 +119,7 @@ lazy val jshttp = project
   .settings(stdSettings("zio-logging-jshttp"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "1.1.0"
+      "org.scala-js" %%% "scalajs-dom" % "1.2.0"
     )
   )
 
@@ -158,7 +158,7 @@ lazy val examples = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "ch.qos.logback"       % "logback-classic"          % "1.2.5",
+      "ch.qos.logback"       % "logback-classic"          % "1.2.6",
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
     )
   )

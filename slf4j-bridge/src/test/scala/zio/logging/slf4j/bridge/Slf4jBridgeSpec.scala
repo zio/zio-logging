@@ -17,6 +17,7 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
           _          <- ZIO.effect(logger.debug("test debug message"))
           _          <- ZIO.effect(logger.warn("hello %s", "world"))
           testFailure = new RuntimeException("test error")
+          _          <- ZIO.effect(logger.warn("warn cause", testFailure))
           _          <- ZIO.effect(logger.error("error", testFailure))
           lines      <- TestLogger.lines
         } yield assert(lines)(
@@ -39,6 +40,13 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
                   .annotate(LogAnnotation.Level, LogLevel.Warn)
                   .annotate(LogAnnotation.Name, List("test", "logger")),
                 "hello world"
+              ),
+              (
+                LogContext.empty
+                  .annotate(LogAnnotation.Level, LogLevel.Warn)
+                  .annotate(LogAnnotation.Name, List("test", "logger"))
+                  .annotate(LogAnnotation.Throwable, Some(testFailure)),
+                "warn cause"
               ),
               (
                 LogContext.empty
