@@ -180,6 +180,19 @@ trait Logger[-A] { self =>
    * Evaluates the specified element based on the LogLevel set and logs at the warn level
    */
   def warnM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (warn(_))
+
+  /**
+   * Logs the specified element at the warn level with cause.
+   */
+  def warn(line: => A, cause: Cause[Any]): UIO[Unit] =
+    self.locally(LogAnnotation.Cause(Some(cause))) {
+      self.log(LogLevel.Warn)(line)
+    }
+
+  /**
+   * Evaluates the specified element based on the LogLevel set and logs at the warn level with cause
+   */
+  def warnM[R, E](line: ZIO[R, E, A], cause: Cause[Any]): ZIO[R, E, Unit] = line >>= (warn(_, cause))
 }
 
 object Logger {

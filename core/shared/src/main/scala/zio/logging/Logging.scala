@@ -134,6 +134,9 @@ object Logging {
   def warn(line: => String): ZIO[Logging, Nothing, Unit] =
     ZIO.accessM[Logging](_.get.warn(line))
 
+  def warn(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
+    ZIO.accessM[Logging](_.get.warn(line, cause))
+
   /**
    * Adds root logger name
    */
