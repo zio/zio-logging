@@ -109,7 +109,7 @@ class FilterBenchmarks {
    * FilterBenchmarks.handWrittenFilterEval     thrpt    5  9177150.646 ± 125715.644  ops/s
    * FilterBenchmarks.filterTreeEval            thrpt    5  7298406.870 ±  87773.959  ops/s
    *
-   * FilterBenchmarks.noFilteringLogging        thrpt    5   267066.692 ±   2170.339  ops/s
+   * FilterBenchmarks.noFilteringLogging        thrpt    5   267066.692 ±   2170.1439  ops/s
    * FilterBenchmarks.handWrittenFilterLogging  thrpt    5   262466.006 ±   3641.051  ops/s
    * FilterBenchmarks.filterTreeLog             thrpt    5   252841.756 ±   2912.062  ops/s
    * FilterBenchmarks.cachedFilterTreeLog       thrpt    5   260752.769 ±   2625.707  ops/s
