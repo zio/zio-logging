@@ -53,4 +53,7 @@ object log {
   def warn(line: => String): ZIO[Logging, Nothing, Unit] =
     Logging.warn(line)
 
+  def warn(line: => String, cause: Cause[Any]): ZIO[Logging, Nothing, Unit] =
+    Logging.warn(line, cause)
+
 }
