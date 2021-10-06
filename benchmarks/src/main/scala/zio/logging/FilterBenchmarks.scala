@@ -15,11 +15,11 @@ class FilterBenchmarks {
 
   val runtime: zio.Runtime[zio.ZEnv] = zio.Runtime.default
 
-  val unfilteredLogging: Logging                                          = runtime.unsafeRun {
+  val unfilteredLogging: Logging = runtime.unsafeRun {
     (LogAppender.ignore[String] >>> Logging.make).build.useNow
   }
 
-  val handWrittenFilterFunction: (LogContext, => String) => Boolean = { (ctx, _) =>
+  val handWrittenFilterFunction: (LogContext, => String) => Boolean       = { (ctx, _) =>
     val level = ctx.get(LogAnnotation.Level)
     ctx.get(LogAnnotation.Name) match {
       case List("a", "b", "c") => level >= LogLevel.Info
