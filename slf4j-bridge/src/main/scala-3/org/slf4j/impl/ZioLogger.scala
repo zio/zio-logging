@@ -22,7 +22,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def trace(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.trace(MessageFormatter.format(format, arg1, arg2).getMessage))
 
-  override def trace(format: String, arguments: AnyRef*): Unit =
+  override def trace(format: String, arguments: Array[? <: Object]): Unit =
     run(log.trace(MessageFormatter.format(format, arguments.toArray).getMessage))
 
   override def trace(msg: String, t: Throwable): Unit =
@@ -43,7 +43,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def debug(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.debug(MessageFormatter.format(format, arg1, arg2).getMessage))
 
-  override def debug(format: String, arguments: AnyRef*): Unit =
+  override def debug(format: String, arguments: Array[? <: Object]): Unit =
     run(log.debug(MessageFormatter.format(format, arguments.toArray).getMessage))
 
   override def debug(msg: String, t: Throwable): Unit =
@@ -64,7 +64,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def info(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.info(MessageFormatter.format(format, arg1, arg2).getMessage))
 
-  override def info(format: String, arguments: AnyRef*): Unit =
+  override def info(format: String, arguments: Array[? <: Object]): Unit =
     run(log.info(MessageFormatter.format(format, arguments.toArray).getMessage))
 
   override def info(msg: String, t: Throwable): Unit =
@@ -85,7 +85,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def warn(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.warn(MessageFormatter.format(format, arg1, arg2).getMessage))
 
-  override def warn(format: String, arguments: AnyRef*): Unit =
+  override def warn(format: String, arguments: Array[? <: Object]): Unit =
     run(log.warn(MessageFormatter.format(format, arguments.toArray).getMessage))
 
   override def warn(msg: String, t: Throwable): Unit =
@@ -106,7 +106,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def error(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.error(MessageFormatter.format(format, arg1, arg2).getMessage))
 
-  override def error(format: String, arguments: AnyRef*): Unit =
+  override def error(format: String, arguments: Array[? <: Object]): Unit =
     run(log.error(MessageFormatter.format(format, arguments.toArray).getMessage))
 
   override def error(msg: String, t: Throwable): Unit =
