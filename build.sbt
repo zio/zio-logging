@@ -119,7 +119,7 @@ lazy val jshttp = project
   .settings(stdSettings("zio-logging-jshttp"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "1.2.0"
+      "org.scala-js" %%% "scalajs-dom" % "2.0.0"
     )
   )
 
