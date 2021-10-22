@@ -79,8 +79,9 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
   override def warn(msg: String): Unit =
     run(log.warn(msg))
 
-  override def warn(format: String, arg: AnyRef): Unit =
+  override def warn(format: String, arg: AnyRef): Unit = {
     run(log.warn(MessageFormatter.format(format, arg).getMessage))
+  }
 
   override def warn(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
     run(log.warn(MessageFormatter.format(format, arg1, arg2).getMessage))

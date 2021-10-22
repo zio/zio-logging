@@ -12,13 +12,15 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
   case class Positional(msg: String)
 
   override def spec: Spec[TestEnvironment, TestFailure[Throwable], TestSuccess] =
+
     suite("Slf4jBridge")(
       testM("logs through slf4j") {
         for {
           logger     <- ZIO.effect(org.slf4j.LoggerFactory.getLogger("test.logger"))
           _          <- ZIO.effect(logger.debug("test debug message"))
-          _          <- ZIO.effect(logger.warn("hello %s", "world"))
+          _          <- ZIO.effect(logger.warn("hello {}", "world"))
           _          <- ZIO.effect(logger.info("testing {} arguments", Positional("positional")))
+          _          <- ZIO.effect(logger.info("Hi {}. My name is {}.", "Alice", "Bob"))
           testFailure = new RuntimeException("test error")
           _          <- ZIO.effect(logger.warn("warn cause", testFailure))
           _          <- ZIO.effect(logger.error("error", testFailure))
@@ -49,6 +51,12 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
                   .annotate(LogAnnotation.Level, LogLevel.Info)
                   .annotate(LogAnnotation.Name, List("test", "logger")),
                 "testing Positional(positional) arguments"
+              ),
+              (
+                LogContext.empty
+                  .annotate(LogAnnotation.Level, LogLevel.Info)
+                  .annotate(LogAnnotation.Name, List("test", "logger")),
+                "Hi Alice. My name is Bob."
               ),
               (
                 LogContext.empty
