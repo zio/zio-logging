@@ -1,6 +1,6 @@
 package zio.logging.js
 
-import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.{ Fetch, HttpMethod, RequestInit }
 import zio.clock.{ Clock, currentDateTime }
 import zio.logging.{ LogAnnotation, LogAppender, LogContext, LogFormat, LogLevel, Logging }
 import zio.{ ZIO, ZLayer }
@@ -13,7 +13,14 @@ import scala.scalajs.js.JSON
 object HTTPLogger {
 
   private def sendMessage(url: String, msg: js.Object) =
-    Ajax.post(url, JSON.stringify(msg), headers = Map("Content-Type" -> "application/json"))
+    Fetch.fetch(
+      url,
+      new RequestInit {
+        method = HttpMethod.POST
+        body = JSON.stringify(msg)
+        headers = js.Dictionary("Content-Type" -> "application/json")
+      }
+    )
 
   /**
    * Parameters:
