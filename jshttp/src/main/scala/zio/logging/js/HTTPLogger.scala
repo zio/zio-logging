@@ -1,9 +1,8 @@
 package zio.logging.js
 
 import org.scalajs.dom.{ Fetch, HttpMethod, RequestInit }
-import zio.clock.{ Clock, currentDateTime }
 import zio.logging.{ LogAnnotation, LogAppender, LogContext, LogFormat, LogLevel, Logging }
-import zio.{ ZIO, ZLayer }
+import zio.{ Clock, Has, ZIO, ZLayer }
 
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -56,23 +55,23 @@ object HTTPLogger {
     url: String,
     clientId: String = UUID.randomUUID().toString,
     formatter: MessageFormatter = defaultFormatter
-  )(name: String)(logFormat: (LogContext, => String) => String): ZLayer[Clock, Nothing, Logging] =
+  )(name: String)(logFormat: (LogContext, => String) => String): ZLayer[Has[Clock], Nothing, Logging] =
     make(url, clientId, formatter)((context, line) =>
       logFormat(context.annotate(LogAnnotation.Name, name :: Nil), line)
     )
 
   def make(url: String, clientId: String = UUID.randomUUID().toString, formatter: MessageFormatter = defaultFormatter)(
     logFormat: (LogContext, => String) => String
-  ): ZLayer[Clock, Nothing, Logging] =
-    LogAppender.make[Clock, String](
+  ): ZLayer[Has[Clock], Nothing, Logging] =
+    LogAppender.make[Has[Clock], String](
       LogFormat.fromFunction(logFormat),
       (context, line) =>
         for {
-          date      <- currentDateTime.orDie
+          date      <- Clock.currentDateTime
           level      = context.get(LogAnnotation.Level)
           loggerName = LogAnnotation.Name.render(context.get(LogAnnotation.Name))
           msg        = formatter(date, clientId, level, loggerName, logFormat(context, line), null)
-          _         <- ZIO.effectTotal(sendMessage(url, msg))
+          _         <- ZIO.succeed(sendMessage(url, msg))
         } yield ()
     ) >>> Logging.make
 

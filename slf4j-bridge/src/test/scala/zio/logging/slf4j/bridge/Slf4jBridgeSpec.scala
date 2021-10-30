@@ -11,14 +11,14 @@ import zio.test.environment.TestEnvironment
 object Slf4jBridgeSpec extends DefaultRunnableSpec {
   override def spec: Spec[TestEnvironment, TestFailure[Throwable], TestSuccess] =
     suite("Slf4jBridge")(
-      testM("logs through slf4j") {
+      test("logs through slf4j") {
         for {
-          logger     <- ZIO.effect(org.slf4j.LoggerFactory.getLogger("test.logger"))
-          _          <- ZIO.effect(logger.debug("test debug message"))
-          _          <- ZIO.effect(logger.warn("hello %s", "world"))
+          logger     <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
+          _          <- ZIO.attempt(logger.debug("test debug message"))
+          _          <- ZIO.attempt(logger.warn("hello %s", "world"))
           testFailure = new RuntimeException("test error")
-          _          <- ZIO.effect(logger.warn("warn cause", testFailure))
-          _          <- ZIO.effect(logger.error("error", testFailure))
+          _          <- ZIO.attempt(logger.warn("warn cause", testFailure))
+          _          <- ZIO.attempt(logger.error("error", testFailure))
           lines      <- TestLogger.lines
         } yield assert(lines)(
           equalTo(
@@ -59,9 +59,9 @@ object Slf4jBridgeSpec extends DefaultRunnableSpec {
           )
         )
       },
-      testM("Initialize MDC") {
+      test("Initialize MDC") {
         for {
-          _ <- ZIO.effect(org.slf4j.MDC.clear())
+          _ <- ZIO.attempt(org.slf4j.MDC.clear())
         } yield assert(true)(equalTo(true))
       }
     ) @@ sequential provideCustomLayer (TestLogger.make >>> initializeSlf4jBridge)

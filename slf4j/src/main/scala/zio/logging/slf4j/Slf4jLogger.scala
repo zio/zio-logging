@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters._
 object Slf4jLogger {
 
   private def logger(name: String) =
-    ZIO.effectTotal(
+    ZIO.succeed(
       LoggerFactory.getLogger(
         name
       )

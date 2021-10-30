@@ -2,14 +2,14 @@ package zio.logging.slf4j
 
 import org.slf4j.impl.ZioLoggerFactory
 import zio.logging.Logging
-import zio.{ ZIO, ZLayer }
+import zio.{ Tag, ZIO, ZLayer }
 
 package object bridge {
-  def initializeSlf4jBridge[R <: Logging]: ZLayer[R, Nothing, R] =
+  def initializeSlf4jBridge[R <: Logging: Tag]: ZLayer[R, Nothing, R] =
     ZIO
       .runtime[R]
       .flatMap { runtime =>
-        ZIO.effectTotal {
+        ZIO.succeed {
           ZioLoggerFactory.initialize(runtime)
           runtime.environment
         }

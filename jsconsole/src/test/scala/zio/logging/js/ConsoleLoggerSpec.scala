@@ -9,7 +9,7 @@ object ConsoleLoggerSpec extends DefaultRunnableSpec {
 
   override def spec: ZSpec[environment.TestEnvironment, Any] =
     suite("logger")(
-      testM("simple log") {
+      test("simple log") {
         log(LogLevel.Trace)("test Trace") *>
           log(LogLevel.Debug)("test Debug") *>
           log(LogLevel.Info)("test Info") *>

@@ -1,10 +1,10 @@
 package zio.logging
 
-import zio.ZQueue
 import zio.logging.LogAppender._
 import zio.logging.LogFiltering.filterBy
 import zio.test.Assertion._
 import zio.test._
+import zio.{ Chunk, ZQueue, ZTraceElement }
 
 object LogFilteringSpec extends DefaultRunnableSpec {
 
@@ -41,18 +41,18 @@ object LogFilteringSpec extends DefaultRunnableSpec {
         testFilter(filter, "e", LogLevel.Debug, isTrue) &&
         testFilter(filter, "e.f", LogLevel.Debug, isFalse)
       },
-      testM("can be applied on appenders") {
+      test("can be applied on appenders") {
         for {
           queue           <- ZQueue.unbounded[String]
           baseAppender     = make(LogFormat.fromFunction((_, str) => str), (_, str) => queue.offer(str).unit)
           filteredAppender = baseAppender.withFilter(filter)
           _               <- filteredAppender.build.use { appender =>
                                println(appender)
-                               appender.get.write(makeCtx("a.b.c", LogLevel.Debug), "a.b.c") *>
-                                 appender.get.write(makeCtx("x", LogLevel.Debug), "x")
+                               appender.get.write(makeCtx("a.b.c", LogLevel.Debug), "a.b.c", ZTraceElement.empty) *>
+                                 appender.get.write(makeCtx("x", LogLevel.Debug), "x", ZTraceElement.empty)
                              }
           result          <- queue.takeAll
-        } yield assert(result)(equalTo(List("x")))
+        } yield assert(result)(equalTo(Chunk("x")))
       }
     )
 }

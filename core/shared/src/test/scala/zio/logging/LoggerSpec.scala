@@ -4,7 +4,7 @@ import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.TestEnvironment
-import zio.{ FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer, ZManaged }
+import zio.{ Clock, FiberRef, Has, Layer, Ref, UIO, ZIO, ZLayer, ZManaged, ZTraceElement }
 
 import java.time.{ DateTimeException, OffsetDateTime }
 import java.util.UUID
@@ -17,7 +17,7 @@ object LoggerSpec extends DefaultRunnableSpec {
       def lines: UIO[Vector[(LogContext, String)]]
     }
     def make: Layer[Nothing, TestLogging with Logging] =
-      ZLayer.fromEffectMany(for {
+      ZLayer.fromZIOMany(for {
         data   <- Ref.make(Vector.empty[(LogContext, String)])
         logger <- FiberRef
                     .make(LogContext.empty)
@@ -26,7 +26,7 @@ object LoggerSpec extends DefaultRunnableSpec {
                         def locally[R1, E, A](f: LogContext => LogContext)(zio: ZIO[R1, E, A]): ZIO[R1, E, A] =
                           ref.get.flatMap(context => ref.locally(f(context))(zio))
 
-                        def log(line: => String): UIO[Unit] =
+                        def log(line: => String)(implicit trace: ZTraceElement): UIO[Unit] =
                           ref.get.flatMap(context => data.update(_ :+ ((context, line))).unit)
 
                         def logContext: UIO[LogContext] = ref.get
@@ -37,12 +37,12 @@ object LoggerSpec extends DefaultRunnableSpec {
 
       } yield Has.allOf[Logger[String], TestLogger.Service](logger, logger))
 
-    def lines: ZIO[TestLogging, Nothing, Vector[(LogContext, String)]] = ZIO.accessM[TestLogging](_.get.lines)
+    def lines: ZIO[TestLogging, Nothing, Vector[(LogContext, String)]] = ZIO.serviceWith(_.lines)
   }
 
   def spec: Spec[TestEnvironment, TestFailure[DateTimeException], TestSuccess] =
     suite("logger")(
-      testM("log with log level") {
+      test("log with log level") {
         log.debug("test") *>
           assertM(TestLogger.lines)(
             equalTo(
@@ -55,7 +55,7 @@ object LoggerSpec extends DefaultRunnableSpec {
             )
           )
       },
-      testM("log annotations apply method") {
+      test("log annotations apply method") {
         val exampleAnnotation = LogAnnotation[String](
           name = "annotation-name",
           initialValue = "unknown-annotation-value",
@@ -80,7 +80,7 @@ object LoggerSpec extends DefaultRunnableSpec {
             )
           )
       },
-      testM("named logger") {
+      test("named logger") {
         ZIO
           .access[Logging](_.get.named("first"))
           .flatMap(logger => logger.locally(LogAnnotation.Name(List("second")))(logger.log("line1"))) *>
@@ -96,7 +96,7 @@ object LoggerSpec extends DefaultRunnableSpec {
             )
           )
       },
-      testM("derive") {
+      test("derive") {
         val counter = LogAnnotation[Int](
           name = "counter",
           initialValue = 0,
@@ -114,17 +114,16 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
         )
       },
-      testM("locallyM") {
+      test("locallyM") {
         val timely = LogAnnotation[OffsetDateTime](
           name = "time",
           initialValue = OffsetDateTime.MIN,
           combine = (_, newVal) => newVal,
           render = _.toString
         )
-        import zio.clock._
-        log.locallyM(ctx => currentDateTime.orDie.map(now => ctx.annotate(timely, now)))(log.info("line1")) *>
+        log.locallyM(ctx => Clock.currentDateTime.map(now => ctx.annotate(timely, now)))(log.info("line1")) *>
           ZIO
-            .accessM[Clock](_.get.currentDateTime)
+            .serviceWith[Clock](_.currentDateTime)
             .flatMap(now =>
               assertM(TestLogger.lines)(
                 equalTo(
@@ -140,11 +139,11 @@ object LoggerSpec extends DefaultRunnableSpec {
               )
             )
       },
-      testM("locally for Managed") {
+      test("locally for Managed") {
 
         log
           .locallyManaged(LogAnnotation.Name("level-1" :: Nil)) {
-            ZManaged.make(log.info("acquire"))(_ => log.info("release"))
+            ZManaged.acquireReleaseWith(log.info("acquire"))(_ => log.info("release"))
           }
           .use(_ => log.info("use")) *>
           assertM(TestLogger.lines)(
@@ -172,12 +171,12 @@ object LoggerSpec extends DefaultRunnableSpec {
           )
 
       },
-      testM("locally for Stream") {
+      test("locally for Stream") {
 
         log
           .locallyZStream(LogAnnotation.Name("level-1" :: Nil)) {
-            ZStream.fromEffect(log.info("line1")) *>
-              ZStream.fromEffect(log.info("line2"))
+            ZStream.fromZIO(log.info("line1")) *>
+              ZStream.fromZIO(log.info("line2"))
           }
           .runDrain *>
           assertM(TestLogger.lines)(
