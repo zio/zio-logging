@@ -1,12 +1,11 @@
 package zio.logging
 
-import zio._
-import zio.clock.Clock
 import zio.stream.ZStream
+import zio.{ Clock, Console, ExitCode, Has, URIO, ZIOAppDefault, ZLayer }
 
 import java.util.UUID
 
-object ZStreamExample extends zio.App {
+object ZStreamExample extends ZIOAppDefault {
 
   final val CalculationId: LogAnnotation[Option[UUID]] = LogAnnotation[Option[UUID]](
     name = "calculation-id",
@@ -22,22 +21,22 @@ object ZStreamExample extends zio.App {
     render = _.toString
   )
 
-  final val env: ZLayer[zio.console.Console with Clock, Nothing, Logging] =
+  final val env: ZLayer[Has[Console] with Has[Clock], Nothing, Logging] =
     Logging.console(
       logLevel = LogLevel.Debug,
       format = LogFormat.ColoredLogFormat((ctx, line) => s"${ctx(CalculationId)} ${ctx(CalculationNumber)} $line")
     ) >>>
       Logging.withRootLoggerName("my-logger")
 
-  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = {
+  override def run: URIO[zio.ZEnv, ExitCode] = {
 
     val stream = for {
       calcNumber <- ZStream(1, 2, 3, 4, 5)
 
       subStream <-
         log.locallyZStream(CalculationId(Some(UUID.randomUUID())).andThen(CalculationNumber(calcNumber)))(
-          ZStream.fromEffect(log.debug(s"would log first line for calculation# ${calcNumber}")) *>
-            ZStream.fromEffect(log.debug(s"would log second line for calculation# ${calcNumber}"))
+          ZStream.fromZIO(log.debug(s"would log first line for calculation# ${calcNumber}")) *>
+            ZStream.fromZIO(log.debug(s"would log second line for calculation# ${calcNumber}"))
         )
 
     } yield subStream

@@ -1,13 +1,11 @@
 package zio.logging
 
-import zio._
-import zio.clock.Clock
-import zio.duration._
 import zio.logging.slf4j.Slf4jLogger
+import zio.{ Clock, ExitCode, Has, UIO, ULayer, ZIO, ZIOAppDefault, durationInt }
 
 import java.util.UUID
 
-object Slf4jMdc extends App {
+object Slf4jMdc extends ZIOAppDefault {
 
   val userId: LogAnnotation[UUID] = LogAnnotation[UUID](
     name = "user-id",
@@ -19,7 +17,7 @@ object Slf4jMdc extends App {
   val logLayer: ULayer[Logging] = Slf4jLogger.makeWithAnnotationsAsMdc(List(userId))
   val users: List[UUID]         = List.fill(2)(UUID.randomUUID())
 
-  override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, ExitCode] =
+  override def run: ZIO[zio.ZEnv, Nothing, ExitCode] =
     (for {
       _             <- log.info("Start...")
       correlationId <- UIO.some(UUID.randomUUID())
@@ -30,5 +28,5 @@ object Slf4jMdc extends App {
                              log.info("Stopping operation")
                          }
                        }
-    } yield ExitCode.success).provideSomeLayer[Clock](logLayer)
+    } yield ExitCode.success).provideSomeLayer[Has[Clock]](logLayer)
 }

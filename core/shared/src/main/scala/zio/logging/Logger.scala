@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio.stream.ZStream
-import zio.{ Cause, FiberRef, UIO, URIO, ZIO, ZManaged }
+import zio.{ Cause, FiberRef, UIO, URIO, ZIO, ZManaged, ZTraceElement }
 
 trait Logger[-A] { self =>
 
@@ -14,7 +14,7 @@ trait Logger[-A] { self =>
       def locally[R1, E, A2](f: LogContext => LogContext)(zio: ZIO[R1, E, A2]): ZIO[R1, E, A2] =
         self.locally(f)(zio)
 
-      def log(line: => A1): UIO[Unit] = self.log(f(line))
+      def log(line: => A1)(implicit trace: ZTraceElement): UIO[Unit] = self.log(f(line))
 
       def logContext: UIO[LogContext] = self.logContext
     }
@@ -22,29 +22,29 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the debug level.
    */
-  def debug(line: => A): UIO[Unit] =
+  def debug(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
     self.log(LogLevel.Debug)(line)
 
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the debug level
    */
-  def debugM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (debug(_))
+  def debugM[R, E](line: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, Unit] = line.flatMap(debug(_))
 
   /**
    * Logs the specified element at the error level.
    */
-  def error(line: => A): UIO[Unit] =
+  def error(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
     self.log(LogLevel.Error)(line)
 
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the error level
    */
-  def errorM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (error(_))
+  def errorM[R, E](line: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, Unit] = line.flatMap(error(_))
 
   /**
    * Logs the specified element at the error level with cause.
    */
-  def error(line: => A, cause: Cause[Any]): UIO[Unit] =
+  def error(line: => A, cause: Cause[Any])(implicit trace: ZTraceElement): UIO[Unit] =
     self.locally(LogAnnotation.Cause(Some(cause))) {
       self.log(LogLevel.Error)(line)
     }
@@ -63,7 +63,7 @@ trait Logger[-A] { self =>
       def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
         self.locally(f)(zio)
 
-      def log(line: => A): UIO[Unit] =
+      def log(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
         locally(ctx => f(LogContext.empty).merge(ctx))(self.log(line))
 
       def logContext: UIO[LogContext] =
@@ -80,7 +80,7 @@ trait Logger[-A] { self =>
         def locally[R1, E, A1](f: LogContext => LogContext)(zio: ZIO[R1, E, A1]): ZIO[R1, E, A1] =
           self.locally(f)(zio)
 
-        def log(line: => A): UIO[Unit] =
+        def log(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
           locallyM(ctx => f(LogContext.empty).map(_.merge(ctx)).provide(env))(self.log(line))
 
         def logContext: UIO[LogContext] =
@@ -91,13 +91,13 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the info level
    */
-  def info(line: => A): UIO[Unit] =
+  def info(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
     self.log(LogLevel.Info)(line)
 
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the info level
    */
-  def infoM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (info(_))
+  def infoM[R, E](line: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, Unit] = line.flatMap(info(_))
 
   /**
    * Modifies the log context in the scope of the specified effect.
@@ -114,7 +114,9 @@ trait Logger[-A] { self =>
    * Modify log context in scope of Managed operation.
    */
   def locallyManaged[R1, E, A1](f: LogContext => LogContext)(managed: ZManaged[R1, E, A1]): ZManaged[R1, E, A1] =
-    ZManaged.makeReserve(managed.reserve.map(r => r.copy(locally(f)(r.acquire), exit => locally(f)(r.release(exit)))))
+    ZManaged.fromReservationZIO(
+      managed.reserve.map(r => r.copy(locally(f)(r.acquire), exit => locally(f)(r.release(exit))))
+    )
 
   /**
    * Modify log context in scope of ZStream.
@@ -131,7 +133,7 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element using an inherited log level.
    */
-  def log(line: => A): UIO[Unit]
+  def log(line: => A)(implicit trace: ZTraceElement): UIO[Unit]
 
   /**
    * Retrieves the log context.
@@ -142,7 +144,7 @@ trait Logger[-A] { self =>
    * Logs the specified element at the specified level. Implementations may
    * override this for greater efficiency.
    */
-  def log(level: LogLevel)(line: => A): UIO[Unit] =
+  def log(level: LogLevel)(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
     locally(_.annotate(LogAnnotation.Level, level))(log(line))
 
   /**
@@ -154,7 +156,7 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the error level with exception.
    */
-  def throwable(line: => A, t: Throwable): UIO[Unit] =
+  def throwable(line: => A, t: Throwable)(implicit trace: ZTraceElement): UIO[Unit] =
     self.locally(LogAnnotation.Throwable(Some(t))) {
       self.error(line)
     }
@@ -162,29 +164,29 @@ trait Logger[-A] { self =>
   /**
    * Logs the specified element at the trace level.
    */
-  def trace(line: => A): UIO[Unit] =
+  def trace(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
     self.log(LogLevel.Trace)(line)
 
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the trace level
    */
-  def traceM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (trace(_))
+  def traceM[R, E](line: ZIO[R, E, A])(implicit _trace: ZTraceElement): ZIO[R, E, Unit] = line.flatMap(trace(_))
 
   /**
    * Logs the specified element at the warn level.
    */
-  def warn(line: => A): UIO[Unit] =
+  def warn(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
     self.log(LogLevel.Warn)(line)
 
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the warn level
    */
-  def warnM[R, E](line: ZIO[R, E, A]): ZIO[R, E, Unit] = line >>= (warn(_))
+  def warnM[R, E](line: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, Unit] = line.flatMap(warn(_))
 
   /**
    * Logs the specified element at the warn level with cause.
    */
-  def warn(line: => A, cause: Cause[Any]): UIO[Unit] =
+  def warn(line: => A, cause: Cause[Any])(implicit trace: ZTraceElement): UIO[Unit] =
     self.locally(LogAnnotation.Cause(Some(cause))) {
       self.log(LogLevel.Warn)(line)
     }
@@ -192,7 +194,8 @@ trait Logger[-A] { self =>
   /**
    * Evaluates the specified element based on the LogLevel set and logs at the warn level with cause
    */
-  def warnM[R, E](line: ZIO[R, E, A], cause: Cause[Any]): ZIO[R, E, Unit] = line >>= (warn(_, cause))
+  def warnM[R, E](line: ZIO[R, E, A], cause: Cause[Any])(implicit trace: ZTraceElement): ZIO[R, E, Unit] =
+    line.flatMap(warn(_, cause))
 }
 
 object Logger {
@@ -208,8 +211,8 @@ object Logger {
     /**
      * Logs the specified element using an inherited log level.
      */
-    override def log(line: => A): UIO[Unit] =
-      contextRef.get.flatMap(context => appender.write(context, line))
+    override def log(line: => A)(implicit trace: ZTraceElement): UIO[Unit] =
+      contextRef.get.flatMap(context => appender.write(context, line, trace))
 
     /**
      * Retrieves the log context.
