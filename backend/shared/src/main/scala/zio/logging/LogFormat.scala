@@ -1,5 +1,6 @@
 package zio.logging
 
+import zio.logging.LogFormat.string
 import zio.{ FiberId, LogLevel, LogSpan, ZFiberRef, ZLogger, ZTraceElement }
 
 import java.time.ZonedDateTime
@@ -18,6 +19,10 @@ trait LogFormat { self =>
     builder: String => Unit
   ): ZLogger[Unit]
 
+  private[logging] def unsafeEncodeJson(
+    builder: String => Unit
+  ): ZLogger[Unit] = unsafeFormat(builder)
+
   final def +(other: LogFormat): LogFormat =
     LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
       self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
@@ -25,18 +30,10 @@ trait LogFormat { self =>
     }
 
   final def |-|(other: LogFormat): LogFormat =
-    LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
-      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
-      builder(" ")
-      other.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
-    }
+    self + string(" ") + other
 
   final def color(color: LogColor): LogFormat =
-    LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
-      builder(color.ansi)
-      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
-      builder(LogColor.RESET.ansi)
-    }
+    string(color.ansi) + self + string(LogColor.RESET.ansi)
 
   final def concat(other: LogFormat): LogFormat =
     this + other
@@ -113,8 +110,20 @@ object LogFormat {
       Map[ZFiberRef.Runtime[_], AnyRef],
       List[LogSpan]
     ) => Any
-  ): LogFormat = (builder: String => Unit) =>
-    (
+  ): LogFormat = string(format)
+
+  private[logging] def string(
+    format: (
+      String => Unit,
+      ZTraceElement,
+      FiberId,
+      LogLevel,
+      () => String,
+      Map[ZFiberRef.Runtime[_], AnyRef],
+      List[LogSpan]
+    ) => Any
+  ): LogFormat = new LogFormat {
+    override private[logging] def unsafeFormat(builder: String => Unit) = (
       trace: ZTraceElement,
       fiberId: FiberId,
       logLevel: LogLevel,
@@ -126,6 +135,89 @@ object LogFormat {
       ()
     }
 
+    override private[logging] def unsafeEncodeJson(builder: String => Unit) =
+      unsafeFormat(str => unsafeEncodeString(str, builder))
+
+  }
+
+  private[logging] def int(
+    format: (
+      Int => Unit,
+      ZTraceElement,
+      FiberId,
+      LogLevel,
+      () => String,
+      Map[ZFiberRef.Runtime[_], AnyRef],
+      List[LogSpan]
+    ) => Any
+  ): LogFormat = new LogFormat {
+
+    override private[logging] def unsafeFormat(builder: String => Unit) = (
+      trace: ZTraceElement,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      context: Map[ZFiberRef.Runtime[_], AnyRef],
+      spans: List[LogSpan]
+    ) => {
+      format(builder.compose(_.toString), trace, fiberId, logLevel, message, context, spans)
+      ()
+    }
+  }
+
+  private[logging] def json(
+    format: (
+      List[(String, LogFormat)] => Unit,
+      ZTraceElement,
+      FiberId,
+      LogLevel,
+      () => String,
+      Map[ZFiberRef.Runtime[_], AnyRef],
+      List[LogSpan]
+    ) => Any
+  ): LogFormat = new LogFormat {
+
+    override private[logging] def unsafeFormat(builder: String => Unit) = (
+      trace: ZTraceElement,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      context: Map[ZFiberRef.Runtime[_], AnyRef],
+      spans: List[LogSpan]
+    ) => {
+      val newBuilder = { (fields: List[(String, LogFormat)]) =>
+        if (fields.isEmpty) {
+          builder("{}")
+        } else {
+          val tempBuilder = new StringBuilder
+          builder("{")
+
+          var first = true
+          fields.foreach { case (name, format) =>
+            format.unsafeEncodeJson(tempBuilder.append(_: String))(trace, fiberId, logLevel, message, context, spans)
+            val stringValue = tempBuilder.toString()
+            tempBuilder.clear()
+            if (!stringValue.isBlank) {
+              if (first)
+                first = false
+              else {
+                builder(",")
+              }
+
+              unsafeEncodeString(name, builder)
+              builder(":")
+
+              builder(stringValue)
+            }
+          }
+          builder("}")
+        }
+      }
+      format(newBuilder, trace, fiberId, logLevel, message, context, spans)
+      ()
+    }
+  }
+
   def annotation(name: String): LogFormat =
     LogFormat { (builder, _, _, _, _, fiberRefs, _) =>
       fiberRefs
@@ -134,13 +226,14 @@ object LogFormat {
     }
 
   val annotations: LogFormat =
-    LogFormat { (builder, trace, fiberId, logLevel, message, context, spans) =>
-      json(
+    LogFormat.json { (builder, _, _, _, _, context, _) =>
+      builder(
         context
           .get(logAnnotation)
           .toList
-          .flatMap(value => value.asInstanceOf[Map[String, String]].view.mapValues(string).toList): _*
-      ).unsafeFormat(builder)(trace, fiberId, logLevel, message, context, spans)
+          .flatMap(value => value.asInstanceOf[Map[String, String]].view.mapValues(string).toList)
+      )
+
     }
 
   def bracketed(inner: LogFormat): LogFormat =
@@ -171,8 +264,8 @@ object LogFormat {
     }
 
   val level_value: LogFormat =
-    LogFormat { (builder, _, _, level, _, _, _) =>
-      builder(level.syslog.toString)
+    LogFormat.int { (builder, _, _, level, _, _, _) =>
+      builder(level.syslog)
     }
 
   val line: LogFormat =
@@ -206,32 +299,8 @@ object LogFormat {
     }
 
   def json(fields: (String, LogFormat)*): LogFormat =
-    LogFormat { (builder, trace, fiberId, logLevel, message, context, spans) =>
-      if (fields.isEmpty) {
-        builder("{}")
-      } else {
-        val tempBuilder = new StringBuilder
-        builder("{")
-        var first       = true
-        fields.foreach { case (name, format) =>
-          format.unsafeFormat(tempBuilder.append(_: String))(trace, fiberId, logLevel, message, context, spans)
-          val stringValue = tempBuilder.toString()
-          tempBuilder.clear()
-          if (!stringValue.isBlank) {
-            if (first)
-              first = false
-            else {
-              builder(",")
-            }
-
-            unsafeEncodeString(name, builder)
-            builder(":")
-
-            unsafeEncodeString(stringValue, builder)
-          }
-        }
-        builder("}")
-      }
+    LogFormat.json { (builder, _, _, _, _, _, _) =>
+      builder(fields.toList)
     }
 
   private def unsafeEncodeString(value: String, builder: String => Unit) = {
