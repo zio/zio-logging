@@ -6,13 +6,13 @@ package object backend extends PlatformSpecificBackends {
 
   def consoleLogger(
     logLevel: zio.LogLevel,
-    format: LogFormat[String]
+    format: LogFormat
   ): RuntimeConfigAspect =
     RuntimeConfigAspect.addLogger(simpleLogger(format, (_, line) => println(line), logLevel))
 
   def consoleErrLogger(
     logLevel: zio.LogLevel,
-    format: LogFormat[String]
+    format: LogFormat
   ): RuntimeConfigAspect =
     RuntimeConfigAspect.addLogger(simpleLogger(format, (_, line) => Console.err.println(line), logLevel))
 
@@ -23,7 +23,7 @@ package object backend extends PlatformSpecificBackends {
     consoleLogger(level, LogFormat.default)
 
   private[logging] def simpleLogger(
-    format: LogFormat[String],
+    format: LogFormat,
     writer: (LogLevel, String) => Unit,
     logLevel: zio.LogLevel
   ): ZLogger[Unit] =
@@ -35,8 +35,7 @@ package object backend extends PlatformSpecificBackends {
       context: Map[ZFiberRef.Runtime[_], AnyRef],
       spans: List[LogSpan]
     ) =>
-      format
-        .toLogger(LogFormatType.string)
+      format.toLogger
         .filterLogLevel(_ >= logLevel)(trace, fiberId, level, message, context, spans)
         .foreach(writer(level, _))
 

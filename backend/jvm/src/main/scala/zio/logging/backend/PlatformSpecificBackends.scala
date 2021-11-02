@@ -1,7 +1,7 @@
 package zio.logging.backend
 
 import org.slf4j.{ LoggerFactory, MDC }
-import zio.logging.{ LogFormat, LogFormatType, logAnnotation }
+import zio.logging.{ LogFormat, logAnnotation }
 import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
 
 import scala.jdk.CollectionConverters._
@@ -10,14 +10,14 @@ trait PlatformSpecificBackends {
 
   def slf4j(
     logLevel: zio.LogLevel,
-    format: LogFormat[String],
+    format: LogFormat,
     rootLoggerName: ZTraceElement => String
   ): RuntimeConfigAspect =
     RuntimeConfigAspect.addLogger(slf4jLogger(rootLoggerName, logLevel, format))
 
   def slf4j(
     logLevel: zio.LogLevel,
-    format: LogFormat[String]
+    format: LogFormat
   ): RuntimeConfigAspect =
     slf4j(logLevel, format, _ => "zio-slf4j-logger")
 
@@ -29,11 +29,11 @@ trait PlatformSpecificBackends {
   private def slf4jLogger(
     rootLoggerName: ZTraceElement => String,
     logLevel: LogLevel,
-    format: LogFormat[String]
+    format: LogFormat
   ): ZLogger[Unit] =
     new ZLogger[Unit] {
       val formatLogger: ZLogger[Option[String]] =
-        format.toLogger(LogFormatType.string).filterLogLevel(_ >= logLevel)
+        format.toLogger.filterLogLevel(_ >= logLevel)
 
       override def apply(
         trace: ZTraceElement,
