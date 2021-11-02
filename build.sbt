@@ -77,6 +77,7 @@ lazy val backend = crossProject(JSPlatform, JVMPlatform)
       "dev.zio"                %%% "zio"                     % ZioVersion,
       "dev.zio"                %%% "zio-streams"             % ZioVersion,
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0",
+      "dev.zio"                %%% "zio-json"                % "0.2.0-M1",
       "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
     ),

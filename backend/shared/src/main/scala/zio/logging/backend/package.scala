@@ -35,7 +35,8 @@ package object backend extends PlatformSpecificBackends {
       context: Map[ZFiberRef.Runtime[_], AnyRef],
       spans: List[LogSpan]
     ) =>
-      format.toLogger
+      format
+        .toLogger(LogFormatType.string)
         .filterLogLevel(_ >= logLevel)(trace, fiberId, level, message, context, spans)
         .foreach(writer(level, _))
 

@@ -1,7 +1,7 @@
 package zio.logging.backend
 
 import org.slf4j.{ LoggerFactory, MDC }
-import zio.logging.{ LogFormat, logAnnotation }
+import zio.logging.{ LogFormat, LogFormatType, logAnnotation }
 import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
 
 import scala.jdk.CollectionConverters._
@@ -32,7 +32,8 @@ trait PlatformSpecificBackends {
     format: LogFormat[String]
   ): ZLogger[Unit] =
     new ZLogger[Unit] {
-      val formatLogger: ZLogger[Option[String]] = format.toLogger.filterLogLevel(_ >= logLevel)
+      val formatLogger: ZLogger[Option[String]] =
+        format.toLogger(LogFormatType.string).filterLogLevel(_ >= logLevel)
 
       override def apply(
         trace: ZTraceElement,
@@ -48,8 +49,10 @@ trait PlatformSpecificBackends {
           val previous =
             context.get(logAnnotation) match {
               case Some(annotations: Map[String, String] @unchecked) if annotations.nonEmpty =>
+                val previous =
+                  Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
                 MDC.setContextMap(annotations.asJava)
-                Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
+                previous
               case _                                                                         =>
                 None
             }

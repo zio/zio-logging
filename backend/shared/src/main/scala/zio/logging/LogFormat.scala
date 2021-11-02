@@ -51,7 +51,11 @@ trait LogFormat[+Out] { self =>
     val self = this.map(ev)
     LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
       val tempBuilder = new StringBuilder
-      self.unsafeFormat(tempBuilder.append(_: String))(trace, fiberId, level, line, fiberRefs, spans)
+      val append      = (line: String) => {
+        tempBuilder.append(line)
+        ()
+      }
+      self.unsafeFormat(append)(trace, fiberId, level, line, fiberRefs, spans)
 
       val messageSize = tempBuilder.size
       if (messageSize < size) {
@@ -77,14 +81,24 @@ trait LogFormat[+Out] { self =>
   final def map[Out2](fn: Out => Out2): LogFormat[Out2] = new LogFormat[Out2] {
     override private[logging] def unsafeFormat(builder: Out2 => Unit) =
       self.unsafeFormat((out: Out) => builder(fn(out)))
-
-    override def toLogger: ZLogger[Out2] = self.toLogger.map(fn)
   }
 
   final def spaced(other: LogFormat[String])(implicit ev: Out <:< String): LogFormat[String] =
     this |-| other
 
-  def toLogger: ZLogger[Out]
+  final def toLogger[Out1 >: Out](lft: LogFormatType[Out1]): ZLogger[Out1] = (
+    trace: ZTraceElement,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => String,
+    context: Map[ZFiberRef.Runtime[_], AnyRef],
+    spans: List[LogSpan]
+  ) => {
+    val builder = lft.unsafeMake()
+    unsafeFormat(builder.unsafeAppend)(trace, fiberId, logLevel, message, context, spans)
+    builder.unsafeResult()
+  }
+
 }
 
 object LogFormat {
@@ -101,64 +115,42 @@ object LogFormat {
       Map[ZFiberRef.Runtime[_], AnyRef],
       List[LogSpan]
     ) => Any
-  ): LogFormat[String] = new LogFormat[String] {
-    override private[logging] def unsafeFormat(builder: String => Unit) = new ZLogger[Unit] {
-      override def apply(
-        trace: ZTraceElement,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => String,
-        context: Map[ZFiberRef.Runtime[_], AnyRef],
-        spans: List[LogSpan]
-      ): Unit = {
-        format(builder, trace, fiberId, logLevel, message, context, spans)
-        ()
-      }
+  ): LogFormat[String] = (builder: String => Unit) =>
+    (
+      trace: ZTraceElement,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      context: Map[ZFiberRef.Runtime[_], AnyRef],
+      spans: List[LogSpan]
+    ) => {
+      format(builder, trace, fiberId, logLevel, message, context, spans)
+      ()
     }
-
-    override def toLogger: ZLogger[String] = new ZLogger[String] {
-      override def apply(
-        trace: ZTraceElement,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => String,
-        context: Map[ZFiberRef.Runtime[_], AnyRef],
-        spans: List[LogSpan]
-      ): String = {
-        val builder = new StringBuilder()
-        //FIXME this should not be required when core will handle exception properly.
-        try unsafeFormat(builder.append(_: String))(trace, fiberId, logLevel, message, context, spans)
-        catch {
-          case ex: Throwable => ex.printStackTrace()
-        }
-
-        builder.toString()
-      }
-    }
-  }
 
   val bracketStart: LogFormat[String] = string("[")
 
   val bracketEnd: LogFormat[String] = string("]")
 
+  def bracketed(inner: LogFormat[String]): LogFormat[String] =
+    bracketStart + inner + bracketEnd
+
   val quote: LogFormat[String] = string("\"")
 
   def quoted(inner: LogFormat[String]): LogFormat[String] = quote + inner + quote
 
-  val newLine: LogFormat[String] = string(NL)
+  val fiberNumber: LogFormat[String] =
+    LogFormat { (builder, _, fiberId, _, _, _, _) =>
+      builder("zio-fiber-<")
+      builder(fiberId.seqNumber.toString)
+      builder(">")
+    }
 
-  def bracketed(inner: LogFormat[String]): LogFormat[String] =
-    bracketStart + inner + bracketEnd
+  val newLine: LogFormat[String] = string(NL)
 
   val level: LogFormat[String] =
     LogFormat { (builder, _, _, level, _, _, _) =>
       builder(level.label)
-    }
-
-  val fiberNumber: LogFormat[String] =
-    LogFormat { (builder, _, fiberId, _, _, _, _) =>
-      builder("#")
-      builder(fiberId.seqNumber.toString)
     }
 
   def annotation(name: String): LogFormat[String] =
