@@ -1,11 +1,12 @@
 package zio.logging
 
 import zio.test._
-import LogFormat.{ level, line, _ }
 import zio.{ FiberId, LogLevel, ZTraceElement }
 
+import LogFormat.{ level, line, _ }
+
 object LogFormatSpec extends DefaultRunnableSpec {
-  val spec = suite("log format")(
+  val spec: ZSpec[Environment, Failure] = suite("log format")(
     test("line") {
       val format = line
       check(Gen.string) { line =>
