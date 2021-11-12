@@ -5,7 +5,6 @@ import zio.{ FiberId, LogLevel, LogSpan, ZFiberRef, ZLogger, ZTraceElement }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import scala.annotation.switch
 
 /**
  * Represents DSL to build log format.
@@ -19,12 +18,8 @@ trait LogFormat { self =>
     builder: String => Unit
   ): ZLogger[Unit]
 
-  private[logging] def unsafeEncodeJson(
-    builder: String => Unit
-  ): ZLogger[Unit] = unsafeFormat(builder)
-
   final def +(other: LogFormat): LogFormat =
-    LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
+    LogFormat.string { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
       self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
       other.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
     }
@@ -47,7 +42,7 @@ trait LogFormat { self =>
   }
 
   final def fixed(size: Int): LogFormat =
-    LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
+    LogFormat.string { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
       val tempBuilder = new StringBuilder
       val append      = (line: String) => {
         tempBuilder.append(line)
@@ -64,7 +59,7 @@ trait LogFormat { self =>
     }
 
   final def highlight(fn: LogLevel => LogColor): LogFormat =
-    LogFormat { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
+    LogFormat.string { (builder, trace, fiberId, level, line, fiberRefs, spans) =>
       builder(fn(level).ansi)
       self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans)
       builder(LogColor.RESET.ansi)
@@ -100,18 +95,6 @@ object LogFormat {
 
   private val NL = System.lineSeparator()
 
-  private[logging] def apply(
-    format: (
-      String => Unit,
-      ZTraceElement,
-      FiberId,
-      LogLevel,
-      () => String,
-      Map[ZFiberRef.Runtime[_], AnyRef],
-      List[LogSpan]
-    ) => Any
-  ): LogFormat = string(format)
-
   private[logging] def string(
     format: (
       String => Unit,
@@ -122,8 +105,8 @@ object LogFormat {
       Map[ZFiberRef.Runtime[_], AnyRef],
       List[LogSpan]
     ) => Any
-  ): LogFormat = new LogFormat {
-    override private[logging] def unsafeFormat(builder: String => Unit) = (
+  ): LogFormat = (builder: String => Unit) =>
+    (
       trace: ZTraceElement,
       fiberId: FiberId,
       logLevel: LogLevel,
@@ -135,12 +118,7 @@ object LogFormat {
       ()
     }
 
-    override private[logging] def unsafeEncodeJson(builder: String => Unit) =
-      unsafeFormat(str => unsafeEncodeString(str, builder))
-
-  }
-
-  private[logging] def int(
+  private[logging] def number[A: Numeric](
     format: (
       Int => Unit,
       ZTraceElement,
@@ -150,9 +128,8 @@ object LogFormat {
       Map[ZFiberRef.Runtime[_], AnyRef],
       List[LogSpan]
     ) => Any
-  ): LogFormat = new LogFormat {
-
-    override private[logging] def unsafeFormat(builder: String => Unit) = (
+  ): LogFormat = (builder: String => Unit) =>
+    (
       trace: ZTraceElement,
       fiberId: FiberId,
       logLevel: LogLevel,
@@ -163,77 +140,12 @@ object LogFormat {
       format(builder.compose(_.toString), trace, fiberId, logLevel, message, context, spans)
       ()
     }
-  }
-
-  private[logging] def json(
-    format: (
-      List[(String, LogFormat)] => Unit,
-      ZTraceElement,
-      FiberId,
-      LogLevel,
-      () => String,
-      Map[ZFiberRef.Runtime[_], AnyRef],
-      List[LogSpan]
-    ) => Any
-  ): LogFormat = new LogFormat {
-
-    override private[logging] def unsafeFormat(builder: String => Unit) = (
-      trace: ZTraceElement,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => String,
-      context: Map[ZFiberRef.Runtime[_], AnyRef],
-      spans: List[LogSpan]
-    ) => {
-      val newBuilder = { (fields: List[(String, LogFormat)]) =>
-        if (fields.isEmpty) {
-          builder("{}")
-        } else {
-          val tempBuilder = new StringBuilder
-          builder("{")
-
-          var first = true
-          fields.foreach { case (name, format) =>
-            format.unsafeEncodeJson(tempBuilder.append(_: String))(trace, fiberId, logLevel, message, context, spans)
-            val stringValue = tempBuilder.toString()
-            tempBuilder.clear()
-            if (!stringValue.isBlank) {
-              if (first)
-                first = false
-              else {
-                builder(",")
-              }
-
-              unsafeEncodeString(name, builder)
-              builder(":")
-
-              builder(stringValue)
-            }
-          }
-          builder("}")
-        }
-      }
-      format(newBuilder, trace, fiberId, logLevel, message, context, spans)
-      ()
-    }
-  }
 
   def annotation(name: String): LogFormat =
-    LogFormat { (builder, _, _, _, _, fiberRefs, _) =>
+    LogFormat.string { (builder, _, _, _, _, fiberRefs, _) =>
       fiberRefs
         .get(logAnnotation)
         .foreach(value => value.asInstanceOf[Map[String, String]].get(name).foreach(builder(_)))
-    }
-
-  val annotations: LogFormat =
-    LogFormat.json { (builder, _, _, _, _, context, _) =>
-      builder(
-        context
-          .get(logAnnotation)
-          .toList
-          .flatMap(value => value.asInstanceOf[Map[String, String]].view.mapValues(string).toList)
-      )
-
     }
 
   def bracketed(inner: LogFormat): LogFormat =
@@ -244,7 +156,7 @@ object LogFormat {
   val bracketEnd: LogFormat = string("]")
 
   val enclosingClass: LogFormat =
-    LogFormat { (builder, trace, _, _, _, _, _) =>
+    LogFormat.string { (builder, trace, _, _, _, _, _) =>
       trace match {
         case ZTraceElement.SourceLocation(_, clazz, _, _) => builder(clazz)
         case _                                            => builder("not-available")
@@ -252,24 +164,24 @@ object LogFormat {
     }
 
   val fiberNumber: LogFormat =
-    LogFormat { (builder, _, fiberId, _, _, _, _) =>
+    LogFormat.string { (builder, _, fiberId, _, _, _, _) =>
       builder("zio-fiber-<")
       builder(fiberId.seqNumber.toString)
       builder(">")
     }
 
   val level: LogFormat =
-    LogFormat { (builder, _, _, level, _, _, _) =>
+    LogFormat.string { (builder, _, _, level, _, _, _) =>
       builder(level.label)
     }
 
   val level_value: LogFormat =
-    LogFormat.int { (builder, _, _, level, _, _, _) =>
+    LogFormat.number[Int] { (builder, _, _, level, _, _, _) =>
       builder(level.syslog)
     }
 
   val line: LogFormat =
-    LogFormat { (builder, _, _, _, line, _, _) =>
+    LogFormat.string { (builder, _, _, _, line, _, _) =>
       builder(line())
     }
 
@@ -286,7 +198,7 @@ object LogFormat {
   def quoted(inner: LogFormat): LogFormat = quote + inner + quote
 
   def string(label: String): LogFormat =
-    LogFormat { (builder, _, _, _, _, _, _) =>
+    LogFormat.string { (builder, _, _, _, _, _, _) =>
       builder(label)
     }
 
@@ -297,33 +209,6 @@ object LogFormat {
       val now = ZonedDateTime.now()
       formatter.format(now)
     }
-
-  def json(fields: (String, LogFormat)*): LogFormat =
-    LogFormat.json { (builder, _, _, _, _, _, _) =>
-      builder(fields.toList)
-    }
-
-  private def unsafeEncodeString(value: String, builder: String => Unit) = {
-    builder("\"")
-    var i   = 0
-    val len = value.length
-    while (i < len) {
-      (value.charAt(i): @switch) match {
-        case '"'  => builder("\\\"")
-        case '\\' => builder("\\\\")
-        case '\b' => builder("\\b")
-        case '\f' => builder("\\f")
-        case '\n' => builder("\\n")
-        case '\r' => builder("\\r")
-        case '\t' => builder("\\t")
-        case c    =>
-          if (c < ' ') builder("\\u%04x".format(c.toInt))
-          else builder(c.toString)
-      }
-      i += 1
-    }
-    builder("\"")
-  }
 
   val default: LogFormat =
     label("timestamp", timestamp.fixed(32)) |-|
@@ -336,17 +221,5 @@ object LogFormat {
       label("level", level).highlight |-|
       label("thread", fiberNumber).color(LogColor.WHITE) |-|
       label("message", quoted(line)).highlight
-
-  val logStash: LogFormat = json(
-    "@timestamp"  -> timestamp,
-    "@version"    -> string("1"),
-    "level"       -> level,
-    "level_value" -> level_value,
-    "logger_name" -> enclosingClass,
-    "thread_name" -> fiberNumber,
-    "message"     -> line,
-    //"stack_trace" -> ???,
-    "tags"        -> annotations
-  )
 
 }
