@@ -11,7 +11,7 @@ private[logging] class LogWriter(
   bufferedIOSize: Option[Int]
 ) extends Writer {
   private val writer: Writer = {
-    val output = new OutputStreamWriter(new FileOutputStream(destination.toFile), charset)
+    val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
     bufferedIOSize match {
       case Some(bufferSize) => new BufferedWriter(output, bufferSize)
       case None             => output
