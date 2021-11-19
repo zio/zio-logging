@@ -79,7 +79,7 @@ lazy val slf4j = project
       "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.6"    % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
+      "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"    % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -159,6 +159,6 @@ lazy val examples = project
     publish / skip := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % "1.2.6",
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
+      "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"
     )
   )
