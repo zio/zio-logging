@@ -1,5 +1,5 @@
-import sbtcrossproject.CrossPlugin.autoImport.{ crossProject, CrossType }
 import BuildHelper._
+import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 
 name := "zio-logging"
 
@@ -42,7 +42,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jsconsole, jshttp, benchmarks, docs, examples)
+  .aggregate(coreJVM, coreJS, backendJVM, backendJS, slf4j, slf4jBridge, jsconsole, jshttp, benchmarks, docs, examples)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -66,6 +66,41 @@ lazy val coreJVM = core.jvm
   .settings(dottySettings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test
+)
+
+lazy val backend = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Full)
+  .in(file("backend"))
+  .settings(stdSettings("zio-logging"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio"                %%% "zio"                     % ZioVersion,
+      "dev.zio"                %%% "zio-streams"             % ZioVersion,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0",
+      "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+  .jvmSettings(
+    Test / fork := true,
+    run / fork  := true
+  )
+
+lazy val backendJVM = backend.jvm
+  .settings(
+    dottySettings,
+    libraryDependencies ++= Seq(
+      "org.slf4j"            % "slf4j-api"                % slf4jVersion,
+      "ch.qos.logback"       % "logback-classic"          % "1.2.6" % Test,
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"   % Test
+    )
+  )
+lazy val backendJS  = backend.js.settings(
+  libraryDependencies ++= Seq(
+    "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
+    "org.scala-js"      %%% "scalajs-dom"     % "2.0.0"
+  )
 )
 
 lazy val slf4j = project
