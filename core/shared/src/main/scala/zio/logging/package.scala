@@ -1,23 +1,5 @@
 package zio
 
-import zio.Clock._
-import zio.stream.ZStream
-import zio.{
-  Cause,
-  Clock,
-  Console,
-  FiberRef,
-  Layer,
-  RuntimeConfigAspect,
-  URIO,
-  URLayer,
-  ZEnvironment,
-  ZIO,
-  ZLayer,
-  ZManaged,
-  ZTraceElement
-}
-
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
 
@@ -43,16 +25,18 @@ package object logging {
   def console(
     logLevel: LogLevel = LogLevel.Info,
     format: LogFormat = LogFormat.colored
-  ): RuntimeConfigAspect =
-    RuntimeConfigAspect.addLogger(
-      ???
-    )
+  ): RuntimeConfigAspect = {
+    val _ = (logLevel, format)
+    ???
+  }
 
   def consoleErr(
     logLevel: LogLevel = LogLevel.Info,
     format: LogFormat = LogFormat.default
-  ): RuntimeConfigAspect =
+  ): RuntimeConfigAspect = {
+    val _ = (logLevel, format)
     ???
+  }
 
   def file(
     destination: Path,
@@ -61,10 +45,10 @@ package object logging {
     bufferedIOSize: Option[Int] = None,
     logLevel: LogLevel = LogLevel.Info,
     format: LogFormat = LogFormat.default
-  ): RuntimeConfigAspect =
-    RuntimeConfigAspect.addLogger(
-      ???
-    )
+  ): RuntimeConfigAspect = {
+    val _ = (destination, charset, autoFlushBatchSize, bufferedIOSize, logLevel, format)
+    ???
+  }
 
   def fileAsync(
     destination: Path,
@@ -73,8 +57,8 @@ package object logging {
     bufferedIOSize: Option[Int] = Some(8192),
     logLevel: LogLevel = LogLevel.Info,
     format: LogFormat = LogFormat.default
-  ): RuntimeConfigAspect =
-    RuntimeConfigAspect.addLogger(
-      ???
-    )
+  ): RuntimeConfigAspect = {
+    val _ = (destination, charset, autoFlushBatchSize, bufferedIOSize, logLevel, format)
+    ???
+  }
 }

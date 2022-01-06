@@ -1,8 +1,5 @@
 package zio.logging
 
-import zio.Cause
-
-import java.time.OffsetDateTime
 import java.{ util => ju }
 import scala.reflect.ClassTag
 
