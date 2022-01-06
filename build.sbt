@@ -29,12 +29,12 @@ addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix
 
 addCommandAlias(
   "testJVM",
-  ";coreJVM/test;slf4j/test;slf4jBridge/test"
+  ";coreJVM/test;slf4j/test"
 )
 
 addCommandAlias(
   "testJS",
-  ";coreJS/test;jsconsole/test;jshttp/test"
+  ";coreJS/test"
 )
 
 lazy val root = project
