@@ -6,7 +6,7 @@ import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger
 
 import scala.jdk.CollectionConverters._
 
-trait PlatformSpecificBackends {
+object SLF4J {
 
   def slf4j(
     logLevel: zio.LogLevel,
@@ -30,9 +30,9 @@ trait PlatformSpecificBackends {
     rootLoggerName: ZTraceElement => String,
     logLevel: LogLevel,
     format: LogFormat
-  ): ZLogger[Unit] =
-    new ZLogger[Unit] {
-      val formatLogger: ZLogger[Option[String]] =
+  ): ZLogger[String, Unit] =
+    new ZLogger[String, Unit] {
+      val formatLogger: ZLogger[String, Option[String]] =
         format.toLogger.filterLogLevel(_ >= logLevel)
 
       override def apply(
@@ -41,9 +41,10 @@ trait PlatformSpecificBackends {
         logLevel: LogLevel,
         message: () => String,
         context: Map[ZFiberRef.Runtime[_], AnyRef],
-        spans: List[LogSpan]
+        spans: List[LogSpan],
+        location: ZTraceElement
       ): Unit =
-        formatLogger(trace, fiberId, logLevel, message, context, spans).foreach { message =>
+        formatLogger(trace, fiberId, logLevel, message, context, spans, location).foreach { message =>
           val slf4jLogger = LoggerFactory.getLogger(rootLoggerName(trace))
 
           val previous =

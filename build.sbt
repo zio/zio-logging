@@ -20,7 +20,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion           = "2.0.0-M4"
+val ZioVersion           = "2.0.0-RC1"
 val scalaJavaTimeVersion = "2.3.0"
 val slf4jVersion         = "1.7.32"
 
@@ -42,7 +42,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, backendJVM, backendJS, slf4j, slf4jBridge, jsconsole, jshttp, benchmarks, docs, examples)
+  .aggregate(coreJVM, coreJS, slf4j, benchmarks, docs, examples)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -68,41 +68,6 @@ lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test
 )
 
-lazy val backend = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Full)
-  .in(file("backend"))
-  .settings(stdSettings("zio-logging"))
-  .settings(
-    libraryDependencies ++= Seq(
-      "dev.zio"                %%% "zio"                     % ZioVersion,
-      "dev.zio"                %%% "zio-streams"             % ZioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0",
-      "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
-      "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
-  .jvmSettings(
-    Test / fork := true,
-    run / fork  := true
-  )
-
-lazy val backendJVM = backend.jvm
-  .settings(
-    dottySettings,
-    libraryDependencies ++= Seq(
-      "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "ch.qos.logback"       % "logback-classic"          % "1.2.6" % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"   % Test
-    )
-  )
-lazy val backendJS  = backend.js.settings(
-  libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
-    "org.scala-js"      %%% "scalajs-dom"     % "2.0.0"
-  )
-)
-
 lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
@@ -117,45 +82,6 @@ lazy val slf4j = project
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
-
-lazy val slf4jBridge = project
-  .in(file("slf4j-bridge"))
-  .dependsOn(coreJVM % "compile->compile;test->test")
-  .settings(stdSettings("zio-logging-slf4j-bridge"))
-  .settings(dottySettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api"    % slf4jVersion,
-      "dev.zio"  %% "zio-test"     % ZioVersion % Test,
-      "dev.zio"  %% "zio-test-sbt" % ZioVersion % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
-
-lazy val jsconsole = project
-  .in(file("jsconsole"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(coreJS)
-  .settings(stdSettings("zio-logging-jsconsole"))
-  .settings(
-    libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test,
-      "dev.zio"           %%% "zio-test"        % ZioVersion           % Test,
-      "dev.zio"           %%% "zio-test-sbt"    % ZioVersion           % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
-
-lazy val jshttp = project
-  .in(file("jshttp"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(coreJS)
-  .settings(stdSettings("zio-logging-jshttp"))
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "2.0.0"
-    )
   )
 
 lazy val benchmarks = project
@@ -176,13 +102,13 @@ lazy val docs = project
     moduleName                                 := "zio-logging-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j, slf4jBridge),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j),
     ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
     cleanFiles += (ScalaUnidoc / unidoc / target).value,
     docusaurusCreateSite                       := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
     docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
-  .dependsOn(coreJVM, slf4j, slf4jBridge)
+  .dependsOn(coreJVM, slf4j)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project

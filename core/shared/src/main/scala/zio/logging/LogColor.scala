@@ -2,7 +2,8 @@ package zio.logging
 
 import scala.io.AnsiColor
 
-case class LogColor private (private[logging] val ansi: String) extends AnyVal
+final case class LogColor private (private[logging] val ansi: String) extends AnyVal
+
 object LogColor {
   val RED: LogColor     = LogColor(AnsiColor.RED)
   val BLUE: LogColor    = LogColor(AnsiColor.BLUE)

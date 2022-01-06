@@ -1,183 +1,230 @@
 package zio.logging
 
-import zio.Cause
+import zio.logging.LogFormat.string
+import zio.{ FiberId, LogLevel, LogSpan, ZFiberRef, ZLogger, ZTraceElement }
 
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import scala.Console._
 
 /**
- *  Log Format represents function that that take context with all log annotations and string line and produce final log entry.
- *
- *  Idea is that those format should be composed by decoration.
+ * Represents DSL to build log format.
+ * {{{
+ * import zio.logging.LogFormat._
+ * timestamp.fixed(32) |-| level |-| label("message", quoted(line))
+ * }}}
  */
-trait LogFormat[A] {
-  def format(context: LogContext, line: A): String
+trait LogFormat { self =>
+  private[logging] def unsafeFormat(
+    builder: String => Unit
+  ): ZLogger[String, Unit]
+
+  final def +(other: LogFormat): LogFormat =
+    LogFormat.string { (builder, trace, fiberId, level, line, fiberRefs, spans, location) =>
+      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location)
+      other.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location)
+    }
+
+  final def |-|(other: LogFormat): LogFormat =
+    self + string(" ") + other
+
+  final def color(color: LogColor): LogFormat =
+    string(color.ansi) + self + string(LogColor.RESET.ansi)
+
+  final def concat(other: LogFormat): LogFormat =
+    this + other
+
+  private def defaultHighlighter(level: LogLevel) = level match {
+    case LogLevel.Error   => LogColor.RED
+    case LogLevel.Warning => LogColor.YELLOW
+    case LogLevel.Info    => LogColor.CYAN
+    case LogLevel.Debug   => LogColor.GREEN
+    case _                => LogColor.WHITE
+  }
+
+  final def fixed(size: Int): LogFormat =
+    LogFormat.string { (builder, trace, fiberId, level, line, fiberRefs, spans, location) =>
+      val tempBuilder = new StringBuilder
+      val append      = (line: String) => {
+        tempBuilder.append(line)
+        ()
+      }
+      self.unsafeFormat(append)(trace, fiberId, level, line, fiberRefs, spans, location)
+
+      val messageSize = tempBuilder.size
+      if (messageSize < size) {
+        builder(tempBuilder.take(size).appendAll(Array.fill(size - messageSize)(' ')).toString())
+      } else {
+        builder(tempBuilder.take(size).toString())
+      }
+    }
+
+  final def highlight(fn: LogLevel => LogColor): LogFormat =
+    LogFormat.string { (builder, trace, fiberId, level, line, fiberRefs, spans, location) =>
+      builder(fn(level).ansi)
+      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location)
+      builder(LogColor.RESET.ansi)
+    }
+
+  def highlight: LogFormat =
+    highlight(defaultHighlighter(_))
+
+  final def spaced(other: LogFormat): LogFormat =
+    this |-| other
+
+  final def toLogger: ZLogger[String, String] = (
+    trace: ZTraceElement,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => String,
+    context: Map[ZFiberRef.Runtime[_], AnyRef],
+    spans: List[LogSpan],
+    location: ZTraceElement
+  ) => {
+
+    val builder = new StringBuilder()
+    val append  = (line: String) => {
+      builder.append(line)
+      ()
+    }
+    unsafeFormat(append)(trace, fiberId, logLevel, message, context, spans, location)
+    builder.toString()
+  }
+
 }
 
 object LogFormat {
 
   private val NL = System.lineSeparator()
 
-  type LineFormatter = (LogContext, => String) => String
-
-  def fromFunction(fn: LineFormatter): LogFormat[String] =
-    new LogFormat[String] {
-      override def format(context: LogContext, line: String): String =
-        fn(context, line)
+  private[logging] def string(
+    format: (
+      String => Unit,
+      ZTraceElement,
+      FiberId,
+      LogLevel,
+      () => String,
+      Map[ZFiberRef.Runtime[_], AnyRef],
+      List[LogSpan],
+      ZTraceElement
+    ) => Any
+  ): LogFormat = (builder: String => Unit) =>
+    (
+      trace: ZTraceElement,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      context: Map[ZFiberRef.Runtime[_], AnyRef],
+      spans: List[LogSpan],
+      location: ZTraceElement
+    ) => {
+      format(builder, trace, fiberId, logLevel, message, context, spans, location)
+      ()
     }
 
-  final case class SimpleConsoleLogFormat(format0: LineFormatter = (_, line) => line) extends LogFormat[String] {
-    override def format(context: LogContext, line: String): String = {
-
-      val date       = context(LogAnnotation.Timestamp)
-      val level      = context(LogAnnotation.Level)
-      val loggerName = context(LogAnnotation.Name)
-      val maybeError = context
-        .get(LogAnnotation.Throwable)
-        .map(Cause.fail)
-        .orElse(context.get(LogAnnotation.Cause))
-        .map(cause => NL + cause.prettyPrint)
-        .getOrElse("")
-      date + " " + level + " " + loggerName + " " + format0(context, line) + " " + maybeError
+  private[logging] def number[A: Numeric](
+    format: (
+      Int => Unit,
+      ZTraceElement,
+      FiberId,
+      LogLevel,
+      () => String,
+      Map[ZFiberRef.Runtime[_], AnyRef],
+      List[LogSpan],
+      ZTraceElement
+    ) => Any
+  ): LogFormat = (builder: String => Unit) =>
+    (
+      trace: ZTraceElement,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      context: Map[ZFiberRef.Runtime[_], AnyRef],
+      spans: List[LogSpan],
+      location: ZTraceElement
+    ) => {
+      format(builder.compose(_.toString), trace, fiberId, logLevel, message, context, spans, location)
+      ()
     }
-  }
 
-  final case class ColoredLogFormat(lineFormat: LineFormatter = (_, line) => line) extends LogFormat[String] {
-    private def withColor(color: String, s: String): String = s"$color$s$RESET"
+  def annotation(name: String): LogFormat =
+    LogFormat.string { (builder, _, _, _, _, fiberRefs, _, _) =>
+      fiberRefs
+        .get(logAnnotation)
+        .foreach(value => value.asInstanceOf[Map[String, String]].get(name).foreach(builder(_)))
+    }
 
-    private def highlightLog(level: LogLevel, message: String): String = {
-      val color = level match {
-        case LogLevel.Error => RED
-        case LogLevel.Warn  => YELLOW
-        case LogLevel.Info  => CYAN
-        case LogLevel.Debug => GREEN
-        case LogLevel.Trace => MAGENTA
-        case _              => RESET
+  def bracketed(inner: LogFormat): LogFormat =
+    bracketStart + inner + bracketEnd
+
+  val bracketStart: LogFormat = string("[")
+
+  val bracketEnd: LogFormat = string("]")
+
+  val enclosingClass: LogFormat =
+    LogFormat.string { (builder, trace, _, _, _, _, _, _) =>
+      trace match {
+        case ZTraceElement(_, file, _) => builder(file)
+        case _                         => builder("not-available")
       }
-      withColor(color, message)
     }
 
-    private def format(
-      line: String,
-      time: String,
-      level: LogLevel,
-      loggerName: String,
-      maybeError: Option[String]
-    ): String = {
-      val logTag  = highlightLog(level, level.render)
-      val logTime = withColor(BLUE, time)
-      val logMsg  =
-        f"$logTime $logTag%14s [${withColor(WHITE, loggerName)}] ${highlightLog(level, line)}"
-      maybeError.fold(logMsg)(err => s"$logMsg$NL${highlightLog(level, err)}")
+  val fiberNumber: LogFormat =
+    LogFormat.string { (builder, _, fiberId, _, _, _, _, _) =>
+      builder("zio-fiber-<")
+      builder(fiberId.ids.mkString(","))
+      builder(">")
     }
 
-    override def format(context: LogContext, line: String): String = {
-      val date       = context(LogAnnotation.Timestamp)
-      val level      = context.get(LogAnnotation.Level)
-      val loggerName = context(LogAnnotation.Name)
-      val maybeError = context
-        .get(LogAnnotation.Throwable)
-        .map(Cause.fail)
-        .orElse(context.get(LogAnnotation.Cause))
-        .map(_.prettyPrint)
-      format(lineFormat(context, line), date, level, loggerName, maybeError)
-    }
-  }
-
-  object AssembledLogFormat {
-    case class FormatterFunction(private[logging] val fun: (StringBuilder, LogContext, String) => Any) {
-      def +(other: FormatterFunction): FormatterFunction =
-        FormatterFunction { (builder, ctx, line) =>
-          fun(builder, ctx, line)
-          other.fun(builder, ctx, line)
-        }
-
-      def |-|(other: FormatterFunction): FormatterFunction =
-        FormatterFunction { (builder, ctx, line) =>
-          fun(builder, ctx, line)
-          builder.append(' ')
-          other.fun(builder, ctx, line)
-        }
-
-      def concat(other: FormatterFunction): FormatterFunction =
-        this + other
-
-      def spaced(other: FormatterFunction): FormatterFunction =
-        this |-| other
+  val level: LogFormat =
+    LogFormat.string { (builder, _, _, level, _, _, _, _) =>
+      builder(level.label)
     }
 
-    def apply(f: FormatterFunction): AssembledLogFormat =
-      new AssembledLogFormat(f)
-
-    object DSL {
-      val space: FormatterFunction        = FormatterFunction { (builder, _, _) =>
-        builder.append(' ')
-      }
-      val bracketStart: FormatterFunction = FormatterFunction { (builder, _, _) =>
-        builder.append('[')
-      }
-      val bracketEnd: FormatterFunction   = FormatterFunction { (builder, _, _) =>
-        builder.append(']')
-      }
-
-      def renderedAnnotation[A](annotation: LogAnnotation[A]): FormatterFunction =
-        FormatterFunction { (builder, ctx, _) =>
-          builder.append(ctx(annotation))
-        }
-
-      def renderedAnnotationF[A](annotation: LogAnnotation[A], f: String => String): FormatterFunction =
-        FormatterFunction { (builder, ctx, _) =>
-          builder.append(f(ctx(annotation)))
-        }
-
-      def annotationF[A](annotation: LogAnnotation[A], f: A => String): FormatterFunction =
-        FormatterFunction { (builder, ctx, _) =>
-          builder.append(f(ctx.get(annotation)))
-        }
-
-      def bracketed(inner: FormatterFunction): FormatterFunction =
-        bracketStart + inner + bracketEnd
-
-      val level: FormatterFunction =
-        renderedAnnotation(LogAnnotation.Level)
-
-      val LEVEL: FormatterFunction =
-        renderedAnnotationF(LogAnnotation.Level, _.toUpperCase)
-
-      val name: FormatterFunction =
-        renderedAnnotation(LogAnnotation.Name)
-
-      val error: FormatterFunction =
-        FormatterFunction { (builder, ctx, _) =>
-          ctx
-            .get(LogAnnotation.Throwable)
-            .map(Cause.fail)
-            .orElse(ctx.get(LogAnnotation.Cause)) match {
-            case None        =>
-            case Some(cause) =>
-              builder.append(System.lineSeparator())
-              builder.append(cause.prettyPrint)
-          }
-        }
-
-      def timestamp(formatter: DateTimeFormatter): FormatterFunction =
-        annotationF(LogAnnotation.Timestamp, (date: OffsetDateTime) => date.format(formatter))
-
-      val line: FormatterFunction =
-        FormatterFunction { (builder, _, line) =>
-          builder.append(line)
-        }
+  val level_value: LogFormat =
+    LogFormat.number[Int] { (builder, _, _, level, _, _, _, _) =>
+      builder(level.syslog)
     }
-  }
 
-  final class AssembledLogFormat private (formatter: AssembledLogFormat.FormatterFunction) extends LogFormat[String] {
-    private val builder = new StringBuilder()
-
-    override def format(context: LogContext, line: String): String = {
-      builder.clear()
-      formatter.fun(builder, context, line)
-      builder.toString()
+  val line: LogFormat =
+    LogFormat.string { (builder, _, _, _, line, _, _, _) =>
+      builder(line())
     }
-  }
+
+  def label(label: String): LogFormat =
+    string(label) + string("=")
+
+  def label(label: String, value: LogFormat): LogFormat =
+    string(label) + string("=") + value
+
+  val newLine: LogFormat = string(NL)
+
+  val quote: LogFormat = string("\"")
+
+  def quoted(inner: LogFormat): LogFormat = quote + inner + quote
+
+  def string(label: String): LogFormat =
+    LogFormat.string { (builder, _, _, _, _, _, _, _) =>
+      builder(label)
+    }
+
+  val timestamp: LogFormat = timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+
+  def timestamp(formatter: DateTimeFormatter): LogFormat =
+    string {
+      val now = ZonedDateTime.now()
+      formatter.format(now)
+    }
+
+  val default: LogFormat =
+    label("timestamp", timestamp.fixed(32)) |-|
+      label("level", level) |-|
+      label("thread", fiberNumber) |-|
+      label("message", quoted(line))
+
+  val colored: LogFormat =
+    label("timestamp", timestamp.fixed(32)).color(LogColor.BLUE) |-|
+      label("level", level).highlight |-|
+      label("thread", fiberNumber).color(LogColor.WHITE) |-|
+      label("message", quoted(line)).highlight
+
 }

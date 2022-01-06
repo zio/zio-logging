@@ -60,42 +60,4 @@ object LogAnnotation {
     combine = (_, r) => r,
     render = _.map(_.toString).getOrElse("undefined-correlation-id")
   )
-
-  /**
-   * The `Level` annotation keeps track of log levels.
-   */
-  val Level: LogAnnotation[LogLevel] = LogAnnotation[LogLevel]("level", LogLevel.Info, (_, r) => r, _.render)
-
-  /**
-   * The `Name` annotation keeps track of logger names.
-   */
-  val Name: LogAnnotation[List[String]] = LogAnnotation[List[String]]("name", Nil, _ ++ _, _.mkString("."))
-
-  /**
-   * The `Throwable` annotation keeps track of a throwable.
-   */
-  val Throwable: LogAnnotation[Option[Throwable]] =
-    optional[Throwable](
-      name = "throwable",
-      zio.Cause.fail(_).prettyPrint
-    )
-
-  /**
-   * The `Cause` annotation keeps track of a Cause.
-   */
-  val Cause: LogAnnotation[Option[Cause[Any]]] =
-    optional[Cause[Any]](
-      name = "cause",
-      _.prettyPrint
-    )
-
-  /**
-   * Log timestamp
-   */
-  val Timestamp: LogAnnotation[OffsetDateTime] = LogAnnotation[OffsetDateTime](
-    name = "timestamp",
-    initialValue = OffsetDateTime.MIN,
-    combine = (_, newValue) => newValue,
-    render = (time: OffsetDateTime) => LogDatetimeFormatter.humanReadableDateTimeFormatter.format(time)
-  )
 }

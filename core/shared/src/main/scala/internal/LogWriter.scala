@@ -1,4 +1,4 @@
-package zio.logging
+package zio.logging.internal
 
 import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset

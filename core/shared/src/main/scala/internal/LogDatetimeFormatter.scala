@@ -1,4 +1,4 @@
-package zio.logging
+package zio.logging.internal
 
 import java.time.format.{ DateTimeFormatter, DateTimeFormatterBuilder, SignStyle }
 import java.time.temporal.ChronoField._
