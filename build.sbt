@@ -102,6 +102,7 @@ lazy val docs = project
     moduleName                                 := "zio-logging-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
+    crossScalaVersions --= List(ScalaDotty),
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j),
     ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
     cleanFiles += (ScalaUnidoc / unidoc / target).value,
