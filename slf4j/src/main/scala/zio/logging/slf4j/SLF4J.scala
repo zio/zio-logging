@@ -1,10 +1,11 @@
 package zio.logging.backend
 
+import com.github.ghik.silencer.silent
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.logging.{ LogFormat, logAnnotation }
 import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 object SLF4J {
 
@@ -52,7 +53,7 @@ object SLF4J {
               case Some(annotations: Map[String, String] @unchecked) if annotations.nonEmpty =>
                 val previous =
                   Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
-                MDC.setContextMap(annotations.asJava)
+                MDC.setContextMap(annotations.asJava: @silent("JavaConverters"))
                 previous
               case _                                                                         =>
                 None
