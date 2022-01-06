@@ -2,7 +2,21 @@ package zio
 
 import zio.Clock._
 import zio.stream.ZStream
-import zio.{ Cause, Clock, Console, FiberRef, Layer, RuntimeConfigAspect, URIO, URLayer, ZEnvironment, ZIO, ZLayer, ZManaged, ZTraceElement }
+import zio.{
+  Cause,
+  Clock,
+  Console,
+  FiberRef,
+  Layer,
+  RuntimeConfigAspect,
+  URIO,
+  URLayer,
+  ZEnvironment,
+  ZIO,
+  ZLayer,
+  ZManaged,
+  ZTraceElement
+}
 
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
@@ -25,7 +39,6 @@ package object logging {
       def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, A] =
         logAnnotation.get.flatMap(old => logAnnotation.locally(old ++ annotations.toMap)(zio))
     }
-
 
   def console(
     logLevel: LogLevel = LogLevel.Info,
