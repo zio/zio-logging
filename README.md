@@ -1,20 +1,17 @@
-# ZIO logging
+# ZIO Logging
 
 | Project Stage | CI                                       | Release                                                               |  Issues                                                     | Discord                                   |
 | --- |------------------------------------------|-----------------------------------------------------------------------|--------------------------------------------------------------|-------------------------------------------|
 | [![Project stage][Stage]][Stage-Page] | ![CI][badge-CI] | [![Release Artifacts][badge-sonatype-releases]][link-sonatype-releases] | [![Is it maintained?][badge-maintenance]][link-maintenance] | [![Discord][badge-discord]][link-discord] |
 
+_ZIO Logging_ is the official logging library for ZIO 2 applications, with integrations for common logging backends.
 
-An environmental effect for adding logging into any ZIO application.
+- Type-safe, purely-functional, ZIO-powered
+- Compositional, type-safe log formatting
+- Richly integrated into ZIO 2's built-in logging facilities
+- ZIO Console, SLF4j, and other backends
 
-Key features:
-- Type safe, purely-functional
-- Context as first-class citizen implemented on top of `FiberRef`
-- Composability between `Logger` via `contramap`
-- ZIO Console, SLF4j, JS-Console and JS HTTP endpoint backends
-
-
-To learn more about ZIO Logging, check out the following references:
+To learn more about _ZIO Logging_, check out the following references:
 
 - [Homepage](https://zio.github.io/zio-logging/)
 - [Contributor's guide](./.github/CONTRIBUTING.md)

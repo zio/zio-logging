@@ -23,8 +23,8 @@ object LogFormatSpec extends DefaultRunnableSpec {
         assertTrue(result == level.label)
       }
     },
-    test("level_value") {
-      val format = level_value
+    test("levelSyslog") {
+      val format = levelSyslog
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(ZTraceElement.empty, FiberId.None, level, () => "", Map.empty, Nil, ZTraceElement.empty)
@@ -32,7 +32,7 @@ object LogFormatSpec extends DefaultRunnableSpec {
       }
     },
     test("fiberId") {
-      val format = fiberNumber
+      val format = fiberId
       check(Gen.int, Gen.int) { (seq, time) =>
         val result = format.toLogger(
           ZTraceElement.empty,
@@ -81,7 +81,7 @@ object LogFormatSpec extends DefaultRunnableSpec {
       assertTrue(result == "")
     } @@ TestAspect.ignore,
     test("string concat") {
-      val format = string("a") + line + string("c")
+      val format = text("a") + line + text("c")
       check(Gen.string) { line =>
         val result = format
           .toLogger(ZTraceElement.empty, FiberId.None, LogLevel.Info, () => line, Map.empty, Nil, ZTraceElement.empty)
@@ -89,7 +89,7 @@ object LogFormatSpec extends DefaultRunnableSpec {
       }
     },
     test("spaced") {
-      val format = line |-| string("c")
+      val format = line |-| text("c")
       check(Gen.string) { line =>
         val result = format
           .toLogger(ZTraceElement.empty, FiberId.None, LogLevel.Info, () => line, Map.empty, Nil, ZTraceElement.empty)

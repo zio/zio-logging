@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019-2022 John A. De Goes and the ZIO Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package zio.logging
 
 /**
@@ -14,23 +29,23 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
    * Annotates the context with the specified annotation and value, returning
    * the new context.
    */
-  def annotate[A](annotation: LogAnnotation[A], newA: A): LogContext = {
-    val oldA = get(annotation)
-
-    new LogContext(map + (annotation -> annotation.combine(oldA, newA)))
-  }
+  def annotate[A](annotation: LogAnnotation[A], newA: A): LogContext =
+    get(annotation) match {
+      case None       => new LogContext(map + (annotation -> newA))
+      case Some(oldA) => new LogContext(map + (annotation -> annotation.combine(oldA, newA)))
+    }
 
   /**
    * Renders value for given annotation
    */
-  def apply[A](logAnnotation: LogAnnotation[A]): String =
-    logAnnotation.render(get(logAnnotation))
+  def apply[A](logAnnotation: LogAnnotation[A]): Option[String] =
+    get(logAnnotation).map(logAnnotation.render(_))
 
   /**
    * Retrieves the specified annotation from the context.
    */
-  def get[A](annotation: LogAnnotation[A]): A =
-    map.get(annotation).fold(annotation.initialValue)(_.asInstanceOf[A])
+  def get[A](annotation: LogAnnotation[A]): Option[A] =
+    map.get(annotation).map(_.asInstanceOf[A])
 
   /**
    * Merges this context with the specified context.
@@ -42,10 +57,11 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
       allKeys.foldLeft(Map.empty[LogAnnotation[_], Any]) { case (map, annotation) =>
         map +
           (annotation -> ((self.map.get(annotation), that.map.get(annotation)) match {
-            case (Some(_), Some(_)) => annotation.combine(self.get(annotation), that.get(annotation))
-            case (None, Some(_))    => that.get(annotation)
-            case (Some(_), None)    => self.get(annotation)
-            case (None, None)       => annotation.combine(self.get(annotation), that.get(annotation)) // this is no possible
+            case (Some(l), Some(r)) =>
+              annotation.combine(l.asInstanceOf[annotation.Type], r.asInstanceOf[annotation.Type])
+            case (None, Some(r))    => r
+            case (Some(l), None)    => l
+            case (None, None)       => throw new IllegalStateException("Impossible")
           }))
       }
     )
@@ -56,7 +72,7 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
    *
    * @return Map from annotation name to rendered value
    */
-  def renderContext: Map[String, String] =
+  def asMap: Map[String, String] =
     map.asInstanceOf[Map[LogAnnotation[Any], Any]].map { case (annotation, value) =>
       annotation.name -> annotation.render(value)
     }

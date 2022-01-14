@@ -1,23 +1,43 @@
+/*
+ * Copyright 2019-2022 John A. De Goes and the ZIO Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package zio.logging
 
+import zio._
+
 import java.{ util => ju }
-import scala.reflect.ClassTag
 
 /**
- * A `LogAnnotation` describes a particular type of annotation applied to log
- * lines.
+ * A `LogAnnotation` describes a particular type of statically-typed log
+ * annotation applied to log lines. Log annotations combine in user-defined
+ * ways, which means they can have arbitrary structure. In the end, however,
+ * it must be possible to render each log annotation as a string.
  */
-final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combine: (A, A) => A, render: A => String) {
+final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, render: A => String) {
   self =>
+  type Id
+  type Type = A
 
-  def apply(value: A): LogContext => LogContext = _.annotate(self, combine(initialValue, value))
+  def apply(value: A): LogContext => LogContext = _.annotate(self, value)
 
-  def id: (String, ClassTag[A]) = (name, classTag)
+  def id: Id = (name, tag).asInstanceOf[Id]
 
   /**
    * The class tag of the annotation type, used for disambiguation purposes only.
    */
-  def classTag: ClassTag[A] = implicitly[ClassTag[A]]
+  def tag: Tag[A] = implicitly[Tag[A]]
 
   override def hashCode: Int = id.hashCode
 
@@ -27,34 +47,17 @@ final case class LogAnnotation[A: ClassTag](name: String, initialValue: A, combi
       case _                      => false
     }
 
-  override def toString: String = "LogAnnotation(" + name + ")"
+  override def toString: String = s"LogAnnotation($name, $tag)"
 }
 
 object LogAnnotation {
 
   /**
-   * Creates a LogAnnotation that is represented as an optional value and initialized with `None`.
-   * If a value for the annotation is present, it will be rendered using the provided function. When
-   * absent, it will be rendered as an empty string.
-   */
-  def optional[A: ClassTag](name: String, render: A => String): LogAnnotation[Option[A]] =
-    LogAnnotation(
-      name = name,
-      initialValue = None,
-      combine = (_, a) => a,
-      render = {
-        case None    => ""
-        case Some(a) => render(a)
-      }
-    )
-
-  /**
    * The `CorrelationId` annotation keeps track of correlation id.
    */
-  val CorrelationId: LogAnnotation[Option[ju.UUID]] = LogAnnotation[Option[java.util.UUID]](
+  val CorrelationId: LogAnnotation[ju.UUID] = LogAnnotation[java.util.UUID](
     name = "correlation-id",
-    initialValue = None,
-    combine = (_, r) => r,
-    render = _.map(_.toString).getOrElse("undefined-correlation-id")
+    combine = (_: ju.UUID, r: ju.UUID) => r,
+    render = _.toString
   )
 }
