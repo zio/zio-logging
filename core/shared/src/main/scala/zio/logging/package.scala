@@ -27,11 +27,26 @@ package object logging {
   /**
    * The [[logContext]] fiber reference is used to store typed, structured log
    * annotations, which can be utilized by backends to enrich log messages.
+   *
+   * Because [[logContext]] is an ordinary [[zio.FiberRef]], it may be get, set,
+   * and updated like any other fiber reference. However, the idiomatic way to
+   * interact with [[logContext]] is by using [[LogAnnoation]].
+   *
+   * For example:
+   *
+   * {{{
+   * myResponseHandler(request) @@ UserId(request.userId)
+   * }}}
+   *
+   * This code would add the structured log annotation [[LogAnnotation.UserId]]
+   * to all log messages emitted by the `myResponseHandler(request)` effect.
    */
   val logContext: FiberRef.Runtime[LogContext] =
     FiberRef.unsafeMake(LogContext.empty, identity, (old, newV) => old ++ newV)
 
   /**
+   * TODO: This is moved to ZIO 2.
+   *
    * Add annotations to log context.
    *
    * example of usage:
@@ -49,16 +64,34 @@ package object logging {
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
   ): RuntimeConfigAspect = {
-    val _ = (logLevel, format)
-    ???
+    val stringLogger = format.toLogger.map { line =>
+      try java.lang.System.out.println(line)
+      catch {
+        case t: VirtualMachineError => throw t
+        case _: Throwable           => ()
+      }
+    }.filterLogLevel(_ >= logLevel)
+
+    val causeLogger = makeCauseLogger(stringLogger)
+
+    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
   }
 
   def consoleErr(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): RuntimeConfigAspect = {
-    val _ = (logLevel, format)
-    ???
+    val stringLogger = format.toLogger.map { line =>
+      try java.lang.System.err.println(line)
+      catch {
+        case t: VirtualMachineError => throw t
+        case _: Throwable           => ()
+      }
+    }.filterLogLevel(_ >= logLevel)
+
+    val causeLogger = makeCauseLogger(stringLogger)
+
+    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
   }
 
   def file(
@@ -69,16 +102,8 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): RuntimeConfigAspect = {
-    val _         = (destination, charset, autoFlushBatchSize, bufferedIOSize, logLevel, format)
-    val logWriter = new internal.LogWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
-
-    val stringLogger: ZLogger[String, Unit] =
-      format.toLogger.map { line =>
-        logWriter.write(line)
-      }
-
-    val causeLogger: ZLogger[Cause[Any], Unit] =
-      ??? //format.toLogger
+    val stringLogger = makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+    val causeLogger  = makeCauseLogger(stringLogger)
 
     RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
   }
@@ -91,7 +116,66 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): RuntimeConfigAspect = {
-    val _ = (destination, charset, autoFlushBatchSize, bufferedIOSize, logLevel, format)
-    ???
+    val queue = Runtime.default.unsafeRun(zio.Queue.bounded[UIO[Any]](1000))
+
+    val stringLogger =
+      makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
+    val causeLogger  = makeCauseLogger(stringLogger)
+
+    Runtime.default.unsafeRun(queue.take.flatMap(task => task.ignore).forever.forkDaemon)
+
+    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
+  }
+
+  private def makeCauseLogger(stringLogger: ZLogger[String, Any]): ZLogger[Cause[Any], Any] =
+    stringLogger.contramap[Cause[Any]] { cause =>
+      cause.unified.headOption.fold("<unknown>")(_.message)
+    }
+
+  private def makeStringLogger(
+    destination: Path,
+    format: LogFormat,
+    logLevel: LogLevel,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLogger[String, Any] = {
+    val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
+
+    val stringLogger: ZLogger[String, Any] =
+      format.toLogger.map { (line: String) =>
+        try logWriter.append(line)
+        catch {
+          case t: VirtualMachineError => throw t
+          case _: Throwable           => ()
+        }
+      }.filterLogLevel(_ >= logLevel)
+
+    stringLogger
+  }
+
+  private def makeAsyncStringLogger(
+    destination: Path,
+    format: LogFormat,
+    logLevel: LogLevel,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int],
+    queue: Queue[UIO[Any]]
+  ): ZLogger[String, Any] = {
+    val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
+
+    val stringLogger: ZLogger[String, Any] =
+      format.toLogger.map { (line: String) =>
+        Runtime.default.unsafeRun(queue.offer(UIO {
+          try logWriter.append(line)
+          catch {
+            case t: VirtualMachineError => throw t
+            case _: Throwable           => ()
+          }
+        }))
+      }.filterLogLevel(_ >= logLevel)
+
+    stringLogger
   }
 }

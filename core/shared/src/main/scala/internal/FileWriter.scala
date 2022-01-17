@@ -4,7 +4,7 @@ import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
 import java.nio.file.Path
 
-private[logging] class LogWriter(
+private[logging] class FileWriter(
   destination: Path,
   charset: Charset,
   autoFlushBatchSize: Int,
@@ -20,10 +20,10 @@ private[logging] class LogWriter(
 
   private var entriesWritten: Long = 0
 
-  def write(buffer: Array[Char], offset: Int, length: Int): Unit =
+  final def write(buffer: Array[Char], offset: Int, length: Int): Unit =
     writer.write(buffer, offset, length)
 
-  def writeln(line: String): Unit = {
+  final def writeln(line: String): Unit = {
     writer.write(line)
     writer.write(System.lineSeparator)
 
@@ -33,7 +33,7 @@ private[logging] class LogWriter(
       writer.flush()
   }
 
-  def flush(): Unit = writer.flush()
+  final def flush(): Unit = writer.flush()
 
-  def close(): Unit = writer.close()
+  final def close(): Unit = writer.close()
 }

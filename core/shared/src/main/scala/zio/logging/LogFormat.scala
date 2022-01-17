@@ -15,6 +15,7 @@
  */
 package zio.logging
 
+import zio.logging.internal._
 import zio.{ FiberId, LogLevel, LogSpan, ZFiberRef, ZLogger, ZTraceElement }
 
 import java.time.ZonedDateTime
@@ -71,7 +72,8 @@ trait LogFormat { self =>
 
   /**
    * Returns a new log format that produces the same as this one, but with a
-   * space-padded, fixed-width output.
+   * space-padded, fixed-width output. Be careful using this operator, as it
+   * destroys all structure, resulting in purely textual log output.
    */
   final def fixed(size: Int): LogFormat =
     LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, spans, location) =>
@@ -97,8 +99,8 @@ trait LogFormat { self =>
   final def highlight(fn: LogLevel => LogColor): LogFormat =
     LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, spans, location) =>
       builder.appendText(fn(level).ansi)
-      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location)
-      builder.appendText(LogColor.RESET.ansi)
+      try self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location)
+      finally builder.appendText(LogColor.RESET.ansi)
     }
 
   /**
@@ -115,8 +117,8 @@ trait LogFormat { self =>
     this |-| other
 
   /**
-   * Converts this log format into a logger, which accepts string messages,
-   * and produces string outputs.
+   * Converts this log format into a text logger, which accepts text input, and
+   * produces text output.
    */
   final def toLogger: ZLogger[String, String] = (
     trace: ZTraceElement,
@@ -179,11 +181,30 @@ object LogFormat {
       ()
     }
 
-  def annotation(name: => String): LogFormat =
+  def annotation(name: String): LogFormat =
     LogFormat.make { (builder, _, _, _, _, fiberRefs, _, _) =>
       fiberRefs
         .get(logAnnotation)
-        .foreach(value => value.asInstanceOf[Map[String, String]].get(name).foreach(builder.appendKeyValue(name, _)))
+        .foreach { value =>
+          val map = value.asInstanceOf[Map[String, String]]
+
+          map.get(name).foreach { value =>
+            builder.appendKeyValue(name, value)
+          }
+        }
+    }
+
+  def annotation[A](ann: LogAnnotation[A]): LogFormat =
+    LogFormat.make { (builder, _, _, _, _, fiberRefs, _, _) =>
+      fiberRefs
+        .get(logContext)
+        .foreach { anyRef =>
+          val context = anyRef.asInstanceOf[LogContext]
+
+          context.get(ann).foreach { value =>
+            builder.appendKeyValue(ann.name, ann.render(value))
+          }
+        }
     }
 
   def bracketed(inner: LogFormat): LogFormat =
@@ -223,7 +244,7 @@ object LogFormat {
 
   def label(label: => String, value: LogFormat): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _) =>
-      builder.openKeyName()
+      builder.openKey()
       try builder.appendText(label)
       finally builder.closeKeyOpenValue()
 

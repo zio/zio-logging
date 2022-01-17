@@ -68,9 +68,7 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
   }
 
   /**
-   * Renders all log annotations in current context.
-   *
-   * @return Map from annotation name to rendered value
+   * Renders all log annotations in the context.
    */
   def asMap: Map[String, String] =
     map.asInstanceOf[Map[LogAnnotation[Any], Any]].map { case (annotation, value) =>

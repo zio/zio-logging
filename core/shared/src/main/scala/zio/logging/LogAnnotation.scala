@@ -24,13 +24,20 @@ import java.{ util => ju }
  * annotation applied to log lines. Log annotations combine in user-defined
  * ways, which means they can have arbitrary structure. In the end, however,
  * it must be possible to render each log annotation as a string.
+ * {{{
+ * myEffect @@ UserId("jdoe")
+ * }}}
  */
 final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, render: A => String) {
   self =>
   type Id
   type Type = A
 
-  def apply(value: A): LogContext => LogContext = _.annotate(self, value)
+  def apply(value: A): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
+    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
+      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, A] =
+        logContext.get.flatMap(context => logContext.locally(context.annotate(self, value))(zio))
+    }
 
   def id: Id = (name, tag).asInstanceOf[Id]
 
@@ -53,11 +60,29 @@ final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, rende
 object LogAnnotation {
 
   /**
-   * The `CorrelationId` annotation keeps track of correlation id.
+   * The `TraceId` annotation keeps track of distributed trace id.
    */
-  val CorrelationId: LogAnnotation[ju.UUID] = LogAnnotation[java.util.UUID](
-    name = "correlation-id",
+  val TraceId: LogAnnotation[ju.UUID] = LogAnnotation[java.util.UUID](
+    name = "trace_id",
     combine = (_: ju.UUID, r: ju.UUID) => r,
+    render = _.toString
+  )
+
+  /**
+   * The `TraceSpans` annotation keeps track of distributed spans.
+   */
+  val TraceSpans: LogAnnotation[List[String]] = LogAnnotation[List[String]](
+    name = "trace_spans",
+    combine = (l, r) => l ++ r,
+    render = _.mkString(":")
+  )
+
+  /**
+   * The `UserId` annotation keeps track of user id.
+   */
+  val UserId: LogAnnotation[String] = LogAnnotation[String](
+    name = "user_id",
+    combine = (_: String, r: String) => r,
     render = _.toString
   )
 }

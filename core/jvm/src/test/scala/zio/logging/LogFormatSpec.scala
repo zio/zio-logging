@@ -6,7 +6,7 @@ import zio.{ FiberId, LogLevel, ZTraceElement }
 import LogFormat.{ level, line, _ }
 
 object LogFormatSpec extends DefaultRunnableSpec {
-  val spec: ZSpec[Environment, Failure] = suite("log format")(
+  val spec: ZSpec[Environment, Failure] = suite("LogFormatSpec")(
     test("line") {
       val format = line
       check(Gen.string) { line =>
@@ -43,7 +43,7 @@ object LogFormatSpec extends DefaultRunnableSpec {
           Nil,
           ZTraceElement.empty
         )
-        assertTrue(result == s"zio-fiber-<$seq>")
+        assertTrue(result == s"zio-fiber-$seq")
       }
     },
     test("annotation") {
@@ -58,7 +58,22 @@ object LogFormatSpec extends DefaultRunnableSpec {
           Nil,
           ZTraceElement.empty
         )
-        assertTrue(result == annotationValue)
+        assertTrue(result == s"test=$annotationValue")
+      }
+    },
+    test("annotation (structured)") {
+      val format = annotation(LogAnnotation.UserId)
+      check(Gen.string) { annotationValue =>
+        val result = format.toLogger(
+          ZTraceElement.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Map(logContext -> LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)),
+          Nil,
+          ZTraceElement.empty
+        )
+        assertTrue(result == s"user_id=$annotationValue")
       }
     },
     test("empty annotation") {
