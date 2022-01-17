@@ -30,7 +30,7 @@ package object logging {
    *
    * Because [[logContext]] is an ordinary [[zio.FiberRef]], it may be get, set,
    * and updated like any other fiber reference. However, the idiomatic way to
-   * interact with [[logContext]] is by using [[LogAnnoation]].
+   * interact with [[logContext]] is by using [[zio.logging.LogAnnotation]].
    *
    * For example:
    *
