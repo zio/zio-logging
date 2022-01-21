@@ -243,12 +243,12 @@ object LogFormat {
     }
 
   def label(label: => String, value: LogFormat): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, _, _) =>
+    LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location) =>
       builder.openKey()
       try builder.appendText(label)
       finally builder.closeKeyOpenValue()
 
-      try value.unsafeFormat(builder)
+      try value.unsafeFormat(builder)(trace, fiberId, logLevel, message, context, spans, location)
       finally builder.closeValue()
     }
 
