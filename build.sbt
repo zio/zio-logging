@@ -22,7 +22,7 @@ inThisBuild(
 
 val ZioVersion           = "2.0.0-RC1"
 val scalaJavaTimeVersion = "2.3.0"
-val slf4jVersion         = "1.7.32"
+val slf4jVersion         = "1.7.35"
 
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
