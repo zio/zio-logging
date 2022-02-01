@@ -11,7 +11,16 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = line
       check(Gen.string) { line =>
         val result = format
-          .toLogger(ZTraceElement.empty, FiberId.None, LogLevel.Info, () => line, Map.empty, Nil, ZTraceElement.empty, Map.empty)
+          .toLogger(
+            ZTraceElement.empty,
+            FiberId.None,
+            LogLevel.Info,
+            () => line,
+            Map.empty,
+            Nil,
+            ZTraceElement.empty,
+            Map.empty
+          )
         assertTrue(result == line)
       }
     },
@@ -19,7 +28,16 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = level
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
-          format.toLogger(ZTraceElement.empty, FiberId.None, level, () => "", Map.empty, Nil, ZTraceElement.empty, Map.empty)
+          format.toLogger(
+            ZTraceElement.empty,
+            FiberId.None,
+            level,
+            () => "",
+            Map.empty,
+            Nil,
+            ZTraceElement.empty,
+            Map.empty
+          )
         assertTrue(result == level.label)
       }
     },
@@ -27,7 +45,16 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = levelSyslog
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
-          format.toLogger(ZTraceElement.empty, FiberId.None, level, () => "", Map.empty, Nil, ZTraceElement.empty, Map.empty)
+          format.toLogger(
+            ZTraceElement.empty,
+            FiberId.None,
+            level,
+            () => "",
+            Map.empty,
+            Nil,
+            ZTraceElement.empty,
+            Map.empty
+          )
         assertTrue(result == level.syslog.toString)
       }
     },
@@ -96,14 +123,32 @@ object LogFormatSpec extends DefaultRunnableSpec {
     test("enclosing class") {
       val format = enclosingClass
       val result = format
-        .toLogger(implicitly[ZTraceElement], FiberId.None, LogLevel.Info, () => "", Map.empty, Nil, ZTraceElement.empty, Map.empty)
+        .toLogger(
+          implicitly[ZTraceElement],
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Map.empty,
+          Nil,
+          ZTraceElement.empty,
+          Map.empty
+        )
       assertTrue(result == "")
     } @@ TestAspect.ignore,
     test("string concat") {
       val format = text("a") + line + text("c")
       check(Gen.string) { line =>
         val result = format
-          .toLogger(ZTraceElement.empty, FiberId.None, LogLevel.Info, () => line, Map.empty, Nil, ZTraceElement.empty, Map.empty)
+          .toLogger(
+            ZTraceElement.empty,
+            FiberId.None,
+            LogLevel.Info,
+            () => line,
+            Map.empty,
+            Nil,
+            ZTraceElement.empty,
+            Map.empty
+          )
         assertTrue(result == "a" + line + "c")
       }
     },
@@ -111,7 +156,16 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = line |-| text("c")
       check(Gen.string) { line =>
         val result = format
-          .toLogger(ZTraceElement.empty, FiberId.None, LogLevel.Info, () => line, Map.empty, Nil, ZTraceElement.empty, Map.empty)
+          .toLogger(
+            ZTraceElement.empty,
+            FiberId.None,
+            LogLevel.Info,
+            () => line,
+            Map.empty,
+            Nil,
+            ZTraceElement.empty,
+            Map.empty
+          )
         assertTrue(result == line + " c")
       }
     },
@@ -119,7 +173,16 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = line.color(LogColor.RED)
       check(Gen.string) { line =>
         val result = format
-          .toLogger(ZTraceElement.empty, FiberId.None, LogLevel.Info, () => line, Map.empty, Nil, ZTraceElement.empty, Map.empty)
+          .toLogger(
+            ZTraceElement.empty,
+            FiberId.None,
+            LogLevel.Info,
+            () => line,
+            Map.empty,
+            Nil,
+            ZTraceElement.empty,
+            Map.empty
+          )
         assertTrue(result == LogColor.RED.ansi + line + LogColor.RESET.ansi)
       }
     },
