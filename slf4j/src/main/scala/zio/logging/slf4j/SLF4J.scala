@@ -2,7 +2,7 @@ package zio.logging.backend
 
 import com.github.ghik.silencer.silent
 import org.slf4j.{ LoggerFactory, MDC }
-import zio.logging.{ LogFormat, logAnnotation }
+import zio.logging.LogFormat
 import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
 
 import scala.collection.JavaConverters._
@@ -43,21 +43,19 @@ object SLF4J {
         message: () => String,
         context: Map[ZFiberRef.Runtime[_], AnyRef],
         spans: List[LogSpan],
-        location: ZTraceElement
+        location: ZTraceElement,
+        annotations: Map[String, String]
       ): Unit =
-        formatLogger(trace, fiberId, logLevel, message, context, spans, location).foreach { message =>
+        formatLogger(trace, fiberId, logLevel, message, context, spans, location, annotations).foreach { message =>
           val slf4jLogger = LoggerFactory.getLogger(rootLoggerName(trace))
 
           val previous =
-            context.get(logAnnotation) match {
-              case Some(annotations: Map[String, String] @unchecked) if annotations.nonEmpty =>
-                val previous =
-                  Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
-                MDC.setContextMap(annotations.asJava: @silent("JavaConverters"))
-                previous
-              case _                                                                         =>
-                None
-            }
+            if (annotations.nonEmpty) {
+              val previous =
+                Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
+              MDC.setContextMap(annotations.asJava: @silent("JavaConverters"))
+              previous
+            } else None
 
           try logLevel match {
             case LogLevel.All     => if (slf4jLogger.isTraceEnabled) slf4jLogger.trace(message)
