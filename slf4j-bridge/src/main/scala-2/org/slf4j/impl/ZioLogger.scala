@@ -1,8 +1,8 @@
 package org.slf4j.impl
 
 import org.slf4j.helpers.MarkerIgnoringBase
-import zio.{ Cause, LogLevel, ZIO }
 import zio.logging.slf4j.bridge.WrappedException
+import zio.{ Cause, LogLevel, ZIO }
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
   private def run(f: ZIO[Any, Nothing, Unit]): Unit =
