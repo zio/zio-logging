@@ -1,0 +1,107 @@
+package org.slf4j.impl
+
+import org.slf4j.helpers.MarkerIgnoringBase
+import zio.{ Cause, LogLevel, ZIO }
+import zio.logging.slf4j.bridge.WrappedException
+
+class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
+  private def run(f: ZIO[Any, Nothing, Unit]): Unit =
+    factory.run {
+      ZIO.logSpan(name)(f)
+    }
+
+  override def isTraceEnabled: Boolean = true
+
+  override def trace(msg: String): Unit =
+    run(ZIO.logTrace(msg))
+
+  override def trace(format: String, arg: AnyRef): Unit =
+    run(ZIO.logTrace(String.format(format, arg)))
+
+  override def trace(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
+    run(ZIO.logTrace(String.format(format, arg1, arg2)))
+
+  override def trace(format: String, arguments: AnyRef*): Unit =
+    run(ZIO.logTrace(String.format(format, arguments: _*)))
+
+  override def trace(msg: String, t: Throwable): Unit =
+    run(
+      ZIO.logLevel(LogLevel.Trace)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+    )
+
+  override def isDebugEnabled: Boolean = true
+
+  override def debug(msg: String): Unit =
+    run(ZIO.logDebug(msg))
+
+  override def debug(format: String, arg: AnyRef): Unit =
+    run(ZIO.logDebug(String.format(format, arg)))
+
+  override def debug(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
+    run(ZIO.logDebug(String.format(format, arg1, arg2)))
+
+  override def debug(format: String, arguments: AnyRef*): Unit =
+    run(ZIO.logDebug(String.format(format, arguments: _*)))
+
+  override def debug(msg: String, t: Throwable): Unit =
+    run(
+      ZIO.logLevel(LogLevel.Debug)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+    )
+
+  override def isInfoEnabled: Boolean = true
+
+  override def info(msg: String): Unit =
+    run(ZIO.logInfo(msg))
+
+  override def info(format: String, arg: AnyRef): Unit =
+    run(ZIO.logInfo(String.format(format, arg)))
+
+  override def info(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
+    run(ZIO.logInfo(String.format(format, arg1, arg2)))
+
+  override def info(format: String, arguments: AnyRef*): Unit =
+    run(ZIO.logInfo(String.format(format, arguments: _*)))
+
+  override def info(msg: String, t: Throwable): Unit =
+    run(
+      ZIO.logLevel(LogLevel.Info)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+    )
+
+  override def isWarnEnabled: Boolean = true
+
+  override def warn(msg: String): Unit =
+    run(ZIO.logWarning(msg))
+
+  override def warn(format: String, arg: AnyRef): Unit =
+    run(ZIO.logWarning(String.format(format, arg)))
+
+  override def warn(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
+    run(ZIO.logWarning(String.format(format, arg1, arg2)))
+
+  override def warn(format: String, arguments: AnyRef*): Unit =
+    run(ZIO.logWarning(String.format(format, arguments: _*)))
+
+  override def warn(msg: String, t: Throwable): Unit =
+    run(
+      ZIO.logLevel(LogLevel.Warning)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+    )
+
+  override def isErrorEnabled: Boolean = true
+
+  override def error(msg: String): Unit =
+    run(ZIO.logError(msg))
+
+  override def error(format: String, arg: AnyRef): Unit =
+    run(ZIO.logError(String.format(format, arg)))
+
+  override def error(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
+    run(ZIO.logError(String.format(format, arg1, arg2)))
+
+  override def error(format: String, arguments: AnyRef*): Unit =
+    run(ZIO.logError(String.format(format, arguments: _*)))
+
+  override def error(msg: String, t: Throwable): Unit =
+    run(
+      ZIO.logLevel(LogLevel.Error)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+    )
+}
