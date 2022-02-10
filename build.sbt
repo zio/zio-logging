@@ -29,7 +29,7 @@ addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix
 
 addCommandAlias(
   "testJVM",
-  ";coreJVM/test;slf4j/test"
+  ";coreJVM/test;slf4j/test;slf4jBridge/test"
 )
 
 addCommandAlias(
