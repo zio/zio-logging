@@ -42,7 +42,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, benchmarks, docs, examples)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, benchmarks, docs, examples)
 
 lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -79,6 +79,20 @@ lazy val slf4j = project
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
       "ch.qos.logback"       % "logback-classic"          % "1.2.6"    % Test,
       "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
+lazy val slf4jBridge = project
+  .in(file("slf4j-bridge"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-slf4j-bridge"))
+  .settings(dottySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.slf4j" % "slf4j-api"    % slf4jVersion,
+      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
