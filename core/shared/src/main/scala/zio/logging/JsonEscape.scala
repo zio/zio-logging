@@ -18,7 +18,7 @@ object JsonEscape {
         case '\n'               => sb.append("\\n")
         case '\f'               => sb.append("\\f")
         case '\r'               => sb.append("\\r")
-        case ctrl if ctrl < ' ' => sb.append("\\u").append("000").append(Integer.toHexString(ctrl))
+        case ctrl if ctrl < ' ' => sb.append("\\u").append("000").append(Integer.toHexString(ctrl.toInt))
         case _                  => sb.append(c)
       }
     sb

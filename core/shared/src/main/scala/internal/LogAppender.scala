@@ -31,10 +31,18 @@ private[logging] trait LogAppender { self =>
    */
   def appendCause(cause: Cause[Any]): Unit
 
+  def appendElement(appendValue: LogAppender => Unit): Unit =
+    appendValue(self)
+
   /**
    * Appends a numeric value to the log.
    */
   def appendNumeric[A](numeric: A): Unit
+
+  /**
+   * Adds a separator between elements
+   */
+  def appendSeparator(): Unit
 
   /**
    * Appends unstructured text to the log.
@@ -53,9 +61,11 @@ private[logging] trait LogAppender { self =>
     openKey()
     try appendText(key)
     finally closeKeyOpenValue()
-    try appendValue(self)
+    try appendElement(appendValue)
     finally closeValue()
   }
+
+  def asString(appendValue: LogAppender => Unit): String
 
   /**
    * Marks the close of a key for a key/value pair, and the opening of the value.
@@ -82,12 +92,16 @@ private[logging] trait LogAppender { self =>
   }
 }
 private[logging] object LogAppender {
-  class Proxy(self: LogAppender) extends LogAppender {
+  private[logging] class Proxy(self: LogAppender) extends LogAppender {
     def appendCause(cause: Cause[Any]): Unit = self.appendCause(cause)
 
     def appendNumeric[A](numeric: A): Unit = self.appendNumeric(numeric)
 
+    def appendSeparator(): Unit = self.appendSeparator()
+
     def appendText(text: String): Unit = self.appendText(text)
+
+    def asString(appendValue: LogAppender => Unit): String = self.asString(appendValue)
 
     def closeKeyOpenValue(): Unit = self.closeKeyOpenValue()
 
@@ -105,7 +119,15 @@ private[logging] object LogAppender {
 
     def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
 
+    def appendSeparator(): Unit = appendText(" ")
+
     def appendText(text: String): Unit = { textAppender(text); () }
+
+    def asString(appendValue: LogAppender => Unit): String = {
+      val sb = new StringBuilder
+      LogAppender.unstructured(sb.append(_))
+      sb.toString()
+    }
 
     def closeKeyOpenValue(): Unit = appendText("=")
 

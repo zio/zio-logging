@@ -120,7 +120,7 @@ trait LogFormat { self =>
    * Converts this log format into a text logger, which accepts text input, and
    * produces text output.
    */
-  final def toLogger: ZLogger[String, String] = (
+  def toLogger: ZLogger[String, String] = (
     trace: ZTraceElement,
     fiberId: FiberId,
     logLevel: LogLevel,
@@ -155,6 +155,7 @@ trait LogFormat { self =>
 }
 
 object LogFormat {
+  trait KeyValueLogFormat extends LogFormat
 
   private val NL = System.lineSeparator()
 
@@ -185,25 +186,27 @@ object LogFormat {
       ()
     }
 
-  def annotation(name: String): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
-      annotations.get(name).foreach { value =>
-        builder.appendKeyValue(name, value)
-      }
-    }
-
-  def annotation[A](ann: LogAnnotation[A]): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, fiberRefs, _, _, _) =>
-      fiberRefs
-        .get(logContext)
-        .foreach { anyRef =>
-          val context = anyRef.asInstanceOf[LogContext]
-
-          context.get(ann).foreach { value =>
-            builder.appendKeyValue(ann.name, ann.render(value))
-          }
+  def annotation(name: String*): KeyValueLogFormat =
+    (builder: LogAppender) =>
+      LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
+        var separate = false
+        for {
+          key   <- name
+          value <- annotations.get(key)
+        } {
+          if (separate) builder.appendSeparator()
+          builder.appendKeyValue(key, value)
+          separate = true
         }
-    }
+      }.unsafeFormat(builder)
+
+  def annotation[A](ann: LogAnnotation[A]): KeyValueLogFormat =
+    (builder: LogAppender) =>
+      LogFormat.make { (builder, _, _, _, _, context, _, _, _) =>
+        context.get(logContext).flatMap(_.asInstanceOf[LogContext].get(ann)).foreach { value =>
+          builder.appendKeyValue(ann.name, ann.render(value))
+        }
+      }.unsafeFormat(builder)
 
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd
@@ -225,6 +228,15 @@ object LogFormat {
       builder.appendText(fiberId.threadName)
     }
 
+  def label(label: => String, value: LogFormat): KeyValueLogFormat =
+    (builder: LogAppender) =>
+      LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location, annotations) =>
+        builder.appendKeyValue(
+          label,
+          a => value.unsafeFormat(a)(trace, fiberId, logLevel, message, context, spans, location, annotations)
+        )
+      }.unsafeFormat(builder)
+
   val level: LogFormat =
     LogFormat.make { (builder, _, _, level, _, _, _, _, _) =>
       builder.appendText(level.label)
@@ -238,16 +250,6 @@ object LogFormat {
   val line: LogFormat =
     LogFormat.make { (builder, _, _, _, line, _, _, _, _) =>
       builder.appendText(line())
-    }
-
-  def label(label: => String, value: LogFormat): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location, annotations) =>
-      builder.openKey()
-      try builder.appendText(label)
-      finally builder.closeKeyOpenValue()
-
-      try value.unsafeFormat(builder)(trace, fiberId, logLevel, message, context, spans, location, annotations)
-      finally builder.closeValue()
     }
 
   val newLine: LogFormat = text(NL)

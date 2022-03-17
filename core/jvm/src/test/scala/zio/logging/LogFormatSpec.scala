@@ -75,8 +75,8 @@ object LogFormatSpec extends DefaultRunnableSpec {
       }
     },
     test("annotation") {
-      val format = annotation("test")
-      check(Gen.string) { annotationValue =>
+      val format = annotation("test", "test2")
+      check(Gen.string, Gen.string) { (ann1, ann2) =>
         val result = format.toLogger(
           ZTraceElement.empty,
           FiberId.None,
@@ -85,9 +85,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
           Map.empty,
           Nil,
           ZTraceElement.empty,
-          Map("test" -> annotationValue)
+          Map("test" -> ann1, "test2" -> ann2)
         )
-        assertTrue(result == s"test=$annotationValue")
+        assertTrue(result == s"test=$ann1 test2=$ann2")
       }
     },
     test("annotation (structured)") {

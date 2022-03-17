@@ -7,13 +7,15 @@ import zio.test._
 import zio.{ FiberId, LogLevel, ZTraceElement }
 
 object JsonLogFormatSpec extends DefaultRunnableSpec {
+  val nonEmptyString = Gen.stringBounded(1, 5)(Gen.unicodeChar)
+
   val spec: ZSpec[Environment, Failure] = suite("JsonLogFormatSpec")(
-    test("json value") {
-      val format = json(JsonValue(line))
-      check(Gen.string) { line =>
+    test("nested array") {
+      val format = jsonArr(text(""), line, line |-| fiberId, jsonArr(line, fiberId))
+      check(nonEmptyString, Gen.int) { (line, fiberId) =>
         val result = format.toLogger(
           ZTraceElement.empty,
-          FiberId.None,
+          FiberId(fiberId, 1),
           LogLevel.Info,
           () => line,
           Map.empty,
@@ -21,15 +23,22 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
           ZTraceElement.empty,
           Map.empty
         )
-        assertTrue(result == s""""${jsonEscaped(line)}"""")
+        val msg    = jsonEscaped(line)
+        val fiber  = s"zio-fiber-${jsonEscaped(fiberId.toString)}"
+        assertTrue(result == s"""["$msg","$msg $fiber",["$msg","$fiber"]]""")
       }
     },
-    test("json msg") {
-      val format = json(JsonObject("msg" -> JsonValue(line)))
-      check(Gen.alphaNumericString) { line =>
+    test("nested object") {
+      val format =
+        jsonObj(
+          label("msg", line),
+          label("fiber", fiberId),
+          label("nested", jsonObj(label("2 fibers", fiberId |-| fiberId)))
+        )
+      check(nonEmptyString, Gen.int) { (line, fiberId) =>
         val result = format.toLogger(
           ZTraceElement.empty,
-          FiberId.None,
+          FiberId(fiberId, 1),
           LogLevel.Info,
           () => line,
           Map.empty,
@@ -37,31 +46,66 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
           ZTraceElement.empty,
           Map.empty
         )
-        assertTrue(result == s"""{"msg":"${jsonEscaped(line)}"}""")
+        val msg    = jsonEscaped(line)
+        val fiber  = s"zio-fiber-${jsonEscaped(fiberId.toString)}"
+        assertTrue(result == s"""{"msg":"$msg","fiber":"$fiber","nested":{"2 fibers":"$fiber $fiber"}}""")
+      }
+    },
+    test("nested obejct array object") {
+      val format =
+        jsonObj(
+          label("msgWithFiber", line |-| bracketed(fiberId)),
+          label("arr", jsonArr(fiberId, jsonObj(label("msg", line))))
+        )
+
+      check(nonEmptyString, Gen.int) { (line, fiberId) =>
+        val result = format.toLogger(
+          ZTraceElement.empty,
+          FiberId(fiberId, 1),
+          LogLevel.Info,
+          () => line,
+          Map.empty,
+          Nil,
+          ZTraceElement.empty,
+          Map.empty
+        )
+        val msg    = jsonEscaped(line)
+        val fiber  = s"zio-fiber-${jsonEscaped(fiberId.toString)}"
+        assertTrue(
+          result == s"""{"msgWithFiber":"$msg [$fiber]","arr":["$fiber",{"msg":"$msg"}]}"""
+        )
+      }
+    },
+    test("mixed annotations") {
+      val format = jsonObj(
+        annotation("ann1", "ann2", "ann3"),
+        annotation(LogAnnotation.UserId),
+        annotation(LogAnnotation.TraceId),
+        annotation(LogAnnotation.TraceSpans)
+      )
+
+      check(nonEmptyString, nonEmptyString, nonEmptyString, Gen.uuid) { (ann1, ann2, userId, traceId) =>
+        val result = format.toLogger(
+          ZTraceElement.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Map(
+            logContext -> LogContext.empty
+              .annotate(LogAnnotation.UserId, userId)
+              .annotate(LogAnnotation.TraceId, traceId)
+          ),
+          Nil,
+          ZTraceElement.empty,
+          Map("ann1"   -> ann1, "ann2" -> ann2)
+        )
+        val a1     = jsonEscaped(ann1)
+        val a2     = jsonEscaped(ann2)
+        val a3     = jsonEscaped(userId)
+        val a4     = jsonEscaped(traceId.toString)
+
+        assertTrue(result == s"""{"ann1":"$a1","ann2":"$a2","user_id":"$a3","trace_id":"$a4"}""")
       }
     }
-//    test("scoped line 2") {
-//      val format = json(
-//        JsonObject(
-//          "msg"         -> JsonValue(line),
-//          "annotations" -> JsonObject(JsonValue(annotation("ann1")), JsonValue(annotation("ann2")))
-//        )
-//      )
-//      check(Gen.string, Gen.string, Gen.string) { (line, ann1, ann2) =>
-//        val result = format.toLogger(
-//          ZTraceElement.empty,
-//          FiberId.None,
-//          LogLevel.Info,
-//          () => line,
-//          Map.empty,
-//          Nil,
-//          ZTraceElement.empty,
-//          Map("ann1" -> ann1, "ann2" -> ann2)
-//        )
-//        assertTrue(
-//          result == s"""{"msg":"${JsonEscape(line)}",{"ann1":"${JsonEscape(ann1)}","ann2":"${JsonEscape(ann2)}"}"""
-//        )
-//      }
-//    }
   )
 }
