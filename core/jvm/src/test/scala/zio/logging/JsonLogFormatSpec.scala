@@ -7,7 +7,7 @@ import zio.test._
 import zio.{ FiberId, LogLevel, ZTraceElement }
 
 object JsonLogFormatSpec extends DefaultRunnableSpec {
-  val nonEmptyString = Gen.stringBounded(1, 5)(Gen.unicodeChar)
+  private val nonEmptyString = Gen.stringBounded(1, 5)(Gen.unicodeChar)
 
   val spec: ZSpec[Environment, Failure] = suite("JsonLogFormatSpec")(
     test("nested array") {
