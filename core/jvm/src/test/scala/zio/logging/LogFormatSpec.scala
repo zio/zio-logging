@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio.test._
-import zio.{ FiberId, LogLevel, ZTraceElement }
+import zio.{ Cause, FiberId, LogLevel, ZTraceElement }
 
 import LogFormat.{ level, line, _ }
 
@@ -16,9 +16,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == line)
@@ -33,9 +33,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
             FiberId.None,
             level,
             () => "",
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == level.label)
@@ -50,9 +50,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
             FiberId.None,
             level,
             () => "",
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == level.syslog.toString)
@@ -63,12 +63,12 @@ object LogFormatSpec extends DefaultRunnableSpec {
       check(Gen.int, Gen.int) { (seq, time) =>
         val result = format.toLogger(
           ZTraceElement.empty,
-          FiberId(seq, time),
+          FiberId(seq, time, ZTraceElement.empty),
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
         assertTrue(result == s"zio-fiber-$seq")
@@ -82,9 +82,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
           FiberId.None,
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map("test" -> annotationValue)
         )
         assertTrue(result == s"test=$annotationValue")
@@ -98,9 +98,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
           FiberId.None,
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map(logContext -> LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)),
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
         assertTrue(result == s"user_id=$annotationValue")
@@ -113,9 +113,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
         FiberId.None,
         LogLevel.Info,
         () => "",
+        Cause.empty,
         Map.empty,
         Nil,
-        ZTraceElement.empty,
         Map.empty
       )
       assertTrue(result == "")
@@ -128,9 +128,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
           FiberId.None,
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
       assertTrue(result == "")
@@ -144,9 +144,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == "a" + line + "c")
@@ -161,9 +161,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == line + " c")
@@ -178,9 +178,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == LogColor.RED.ansi + line + LogColor.RESET.ansi)
@@ -194,9 +194,9 @@ object LogFormatSpec extends DefaultRunnableSpec {
           FiberId.None,
           LogLevel.Info,
           () => line,
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
         assertTrue(result.size == 10)

@@ -52,9 +52,7 @@ package object logging {
       }
     }.filterLogLevel(_ >= logLevel)
 
-    val causeLogger = makeCauseLogger(stringLogger)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
+    RuntimeConfigAspect.addLogger(stringLogger)
   }
 
   def consoleErr(
@@ -69,9 +67,7 @@ package object logging {
       }
     }.filterLogLevel(_ >= logLevel)
 
-    val causeLogger = makeCauseLogger(stringLogger)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
+    RuntimeConfigAspect.addLogger(stringLogger)
   }
 
   def file(
@@ -81,12 +77,10 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
-  ): RuntimeConfigAspect = {
-    val stringLogger = makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
-    val causeLogger  = makeCauseLogger(stringLogger)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
-  }
+  ): RuntimeConfigAspect =
+    RuntimeConfigAspect.addLogger(
+      makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+    )
 
   def fileAsync(
     destination: Path,
@@ -100,17 +94,11 @@ package object logging {
 
     val stringLogger =
       makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
-    val causeLogger  = makeCauseLogger(stringLogger)
 
     Runtime.default.unsafeRun(queue.take.flatMap(task => task.ignore).forever.forkDaemon)
 
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
+    RuntimeConfigAspect.addLogger(stringLogger)
   }
-
-  private def makeCauseLogger(stringLogger: ZLogger[String, Any]): ZLogger[Cause[Any], Any] =
-    stringLogger.contramap[Cause[Any]] { cause =>
-      cause.unified.headOption.fold("<unknown>")(_.message)
-    }
 
   private def makeStringLogger(
     destination: Path,
@@ -147,7 +135,7 @@ package object logging {
 
     val stringLogger: ZLogger[String, Any] =
       format.toLogger.map { (line: String) =>
-        Runtime.default.unsafeRun(queue.offer(UIO {
+        Runtime.default.unsafeRun(queue.offer(UIO.succeed {
           try logWriter.append(line)
           catch {
             case t: VirtualMachineError => throw t

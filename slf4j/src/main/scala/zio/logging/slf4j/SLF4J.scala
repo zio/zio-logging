@@ -3,7 +3,7 @@ package zio.logging.backend
 import com.github.ghik.silencer.silent
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.logging.LogFormat
-import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
+import zio.{ Cause, FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
 
 import scala.collection.JavaConverters._
 
@@ -41,12 +41,12 @@ object SLF4J {
         fiberId: FiberId,
         logLevel: LogLevel,
         message: () => String,
+        cause: Cause[Any],
         context: Map[ZFiberRef.Runtime[_], AnyRef],
         spans: List[LogSpan],
-        location: ZTraceElement,
         annotations: Map[String, String]
       ): Unit =
-        formatLogger(trace, fiberId, logLevel, message, context, spans, location, annotations).foreach { message =>
+        formatLogger(trace, fiberId, logLevel, message, cause, context, spans, annotations).foreach { message =>
           val slf4jLogger = LoggerFactory.getLogger(rootLoggerName(trace))
 
           val previous =
