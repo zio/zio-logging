@@ -145,6 +145,31 @@ trait LogFormat { self =>
     builder.toString()
   }
 
+  def toJsonLogger: ZLogger[String, String] = (
+    trace: ZTraceElement,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => String,
+    context: Map[ZFiberRef.Runtime[_], AnyRef],
+    spans: List[LogSpan],
+    location: ZTraceElement,
+    annotations: Map[String, String]
+  ) => {
+
+    val appender = new JsonLogAppender
+    unsafeFormat(appender)(
+      trace,
+      fiberId,
+      logLevel,
+      message,
+      context,
+      spans,
+      location,
+      annotations
+    )
+    appender.toString()
+  }
+
   private def defaultHighlighter(level: LogLevel) = level match {
     case LogLevel.Error   => LogColor.RED
     case LogLevel.Warning => LogColor.YELLOW
@@ -233,7 +258,7 @@ object LogFormat {
       LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location, annotations) =>
         builder.appendKeyValue(
           label,
-          a => value.unsafeFormat(a)(trace, fiberId, logLevel, message, context, spans, location, annotations)
+          value.unsafeFormat(_)(trace, fiberId, logLevel, message, context, spans, location, annotations)
         )
       }.unsafeFormat(builder)
 
@@ -250,6 +275,42 @@ object LogFormat {
   val line: LogFormat =
     LogFormat.make { (builder, _, _, _, line, _, _, _, _) =>
       builder.appendText(line())
+    }
+
+  final def seq(elements: LogFormat*): LogFormat =
+    LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location, annotations) =>
+      builder.openSeq()
+      var separate = false
+      for (element <- elements) {
+        val str = builder.asString(tmpAppender =>
+          tmpAppender.appendElement(
+            element.unsafeFormat(_)(trace, fiberId, logLevel, message, context, spans, location, annotations)
+          )
+        )
+        if (str.nonEmpty) {
+          if (separate) builder.appendSeparator()
+          builder.appendText(str)
+          separate = true
+        }
+      }
+      builder.closeSeq()
+    }
+
+  final def map(keyValues: KeyValueLogFormat*): LogFormat =
+    LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location, annotations) =>
+      builder.openMap()
+      var separate = false
+      for (kv <- keyValues) {
+        val str = builder.asString(tmpAppender =>
+          kv.unsafeFormat(tmpAppender)(trace, fiberId, logLevel, message, context, spans, location, annotations)
+        )
+        if (str.nonEmpty) {
+          if (separate) builder.appendSeparator()
+          builder.appendText(str)
+          separate = true
+        }
+      }
+      builder.closeMap()
     }
 
   val newLine: LogFormat = text(NL)
@@ -282,5 +343,4 @@ object LogFormat {
       label("level", level).highlight |-|
       label("thread", fiberId).color(LogColor.WHITE) |-|
       label("message", quoted(line)).highlight
-
 }

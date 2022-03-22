@@ -1,7 +1,6 @@
 package zio.logging
 
 import zio.logging.JsonEscape.jsonEscaped
-import zio.logging.JsonLogFormat._
 import zio.logging.LogFormat._
 import zio.test._
 import zio.{ FiberId, LogLevel, ZTraceElement }
@@ -11,9 +10,9 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
 
   val spec: ZSpec[Environment, Failure] = suite("JsonLogFormatSpec")(
     test("nested array") {
-      val format = jsonArr(text(""), line, line |-| fiberId, jsonArr(line, fiberId))
+      val format = seq(text(""), line, line |-| fiberId, seq(line, fiberId))
       check(nonEmptyString, Gen.int) { (line, fiberId) =>
-        val result = format.toLogger(
+        val result = format.toJsonLogger(
           ZTraceElement.empty,
           FiberId(fiberId, 1),
           LogLevel.Info,
@@ -30,13 +29,13 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
     },
     test("nested object") {
       val format =
-        jsonObj(
+        map(
           label("msg", line),
           label("fiber", fiberId),
-          label("nested", jsonObj(label("2 fibers", fiberId |-| fiberId)))
+          label("nested", map(label("2 fibers", fiberId |-| fiberId)))
         )
       check(nonEmptyString, Gen.int) { (line, fiberId) =>
-        val result = format.toLogger(
+        val result = format.toJsonLogger(
           ZTraceElement.empty,
           FiberId(fiberId, 1),
           LogLevel.Info,
@@ -51,15 +50,15 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
         assertTrue(result == s"""{"msg":"$msg","fiber":"$fiber","nested":{"2 fibers":"$fiber $fiber"}}""")
       }
     },
-    test("nested obejct array object") {
+    test("nested object array object") {
       val format =
-        jsonObj(
+        map(
           label("msgWithFiber", line |-| bracketed(fiberId)),
-          label("arr", jsonArr(fiberId, jsonObj(label("msg", line))))
+          label("arr", seq(fiberId, map(label("msg", line))))
         )
 
       check(nonEmptyString, Gen.int) { (line, fiberId) =>
-        val result = format.toLogger(
+        val result = format.toJsonLogger(
           ZTraceElement.empty,
           FiberId(fiberId, 1),
           LogLevel.Info,
@@ -77,7 +76,7 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
       }
     },
     test("mixed annotations") {
-      val format = jsonObj(
+      val format = map(
         annotation("ann1", "ann2", "ann3"),
         annotation(LogAnnotation.UserId),
         annotation(LogAnnotation.TraceId),
@@ -85,7 +84,7 @@ object JsonLogFormatSpec extends DefaultRunnableSpec {
       )
 
       check(nonEmptyString, nonEmptyString, nonEmptyString, Gen.uuid) { (ann1, ann2, userId, traceId) =>
-        val result = format.toLogger(
+        val result = format.toJsonLogger(
           ZTraceElement.empty,
           FiberId.None,
           LogLevel.Info,

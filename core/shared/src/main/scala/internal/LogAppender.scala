@@ -83,6 +83,26 @@ private[logging] trait LogAppender { self =>
   def openKey(): Unit
 
   /**
+   * Marks the open of a map of key/value pairs
+   */
+  def openMap(): Unit
+
+  /**
+   * Marks the close of a map of key/value pairs
+   */
+  def closeMap(): Unit
+
+  /**
+   * Marks the open of a sequence of elements
+   */
+  def openSeq(): Unit
+
+  /**
+   * Marks the close of a sequence of elements
+   */
+  def closeSeq(): Unit
+
+  /**
    * Modifies the way text is appended to the log.
    */
   final def withAppendText(f: (String => Unit) => (String => Unit)): LogAppender = new LogAppender.Proxy(self) {
@@ -108,6 +128,14 @@ private[logging] object LogAppender {
     def closeValue(): Unit = self.closeValue()
 
     def openKey(): Unit = self.openKey()
+
+    def openMap(): Unit = self.openMap()
+
+    def closeMap(): Unit = self.closeMap()
+
+    def openSeq(): Unit = self.openSeq()
+
+    def closeSeq(): Unit = self.closeSeq()
   }
 
   /**
@@ -134,5 +162,13 @@ private[logging] object LogAppender {
     def closeValue(): Unit = ()
 
     def openKey(): Unit = ()
+
+    def openMap(): Unit = ()
+
+    def closeMap(): Unit = ()
+
+    def openSeq(): Unit = ()
+
+    def closeSeq(): Unit = ()
   }
 }
