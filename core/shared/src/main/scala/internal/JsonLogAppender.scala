@@ -49,11 +49,11 @@ private[logging] class JsonLogAppender extends LogAppender {
 
   override def toString(): String = sb.toString()
 
-  def openMap(): Unit = sb.append("{")
+  def openMap(): Unit = appendText("{")
 
-  def closeMap(): Unit = sb.append("}")
+  def closeMap(): Unit = appendText("}")
 
-  def openSeq(): Unit = sb.append("[")
+  def openSeq(): Unit = appendText("[")
 
-  def closeSeq(): Unit = sb.append("]")
+  def closeSeq(): Unit = appendText("]")
 }
