@@ -5,7 +5,7 @@ import zio.{ Cause, FiberId, LogLevel, ZTraceElement }
 
 import LogFormat.{ level, line, _ }
 
-object LogFormatSpec extends DefaultRunnableSpec {
+object LogFormatSpec extends ZIOSpecDefault {
   val spec: ZSpec[Environment, Failure] = suite("LogFormatSpec")(
     test("line") {
       val format = line
