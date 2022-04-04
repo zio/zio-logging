@@ -37,7 +37,7 @@ package object logging {
    * This code would add the structured log annotation [[LogAnnotation.UserId]]
    * to all log messages emitted by the `myResponseHandler(request)` effect.
    */
-  val logContext: FiberRef.Runtime[LogContext] =
+  val logContext: FiberRef[LogContext] =
     FiberRef.unsafeMake(LogContext.empty, identity, (old, newV) => old ++ newV)
 
   def console(
