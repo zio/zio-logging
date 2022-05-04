@@ -43,7 +43,7 @@ package object logging {
   def console(
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
-  ): RuntimeConfigAspect = {
+  ): ZLayer[Any, Nothing, Unit] = {
     val stringLogger = format.toLogger.map { line =>
       try java.lang.System.out.println(line)
       catch {
@@ -52,13 +52,13 @@ package object logging {
       }
     }.filterLogLevel(_ >= logLevel)
 
-    RuntimeConfigAspect.addLogger(stringLogger)
+    Runtime.addLogger(stringLogger)
   }
 
   def consoleErr(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
-  ): RuntimeConfigAspect = {
+  ): ZLayer[Any, Nothing, Unit] = {
     val stringLogger = format.toLogger.map { line =>
       try java.lang.System.err.println(line)
       catch {
@@ -67,7 +67,7 @@ package object logging {
       }
     }.filterLogLevel(_ >= logLevel)
 
-    RuntimeConfigAspect.addLogger(stringLogger)
+    Runtime.addLogger(stringLogger)
   }
 
   def file(
@@ -77,8 +77,8 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
-  ): RuntimeConfigAspect =
-    RuntimeConfigAspect.addLogger(
+  ): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(
       makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
     )
 
@@ -89,16 +89,16 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
-  ): RuntimeConfigAspect = {
-    val queue = Runtime.default.unsafeRun(zio.Queue.bounded[UIO[Any]](1000))
-
-    val stringLogger =
-      makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
-
-    Runtime.default.unsafeRun(queue.take.flatMap(task => task.ignore).forever.forkDaemon)
-
-    RuntimeConfigAspect.addLogger(stringLogger)
-  }
+  ): ZLayer[Any, Nothing, Unit] =
+    ZLayer.scoped {
+      for {
+        queue       <- Queue.bounded[UIO[Any]](1000)
+        stringLogger =
+          makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
+        _           <- FiberRef.currentLoggers.locallyScopedWith(_ + stringLogger)
+        _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
+      } yield ()
+    }
 
   private def makeStringLogger(
     destination: Path,
@@ -135,7 +135,7 @@ package object logging {
 
     val stringLogger: ZLogger[String, Any] =
       format.toLogger.map { (line: String) =>
-        Runtime.default.unsafeRun(queue.offer(UIO.succeed {
+        Runtime.default.unsafeRun(queue.offer(ZIO.succeed {
           try logWriter.append(line)
           catch {
             case t: VirtualMachineError => throw t

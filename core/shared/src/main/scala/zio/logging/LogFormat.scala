@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.logging.internal._
-import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, ZLogger, ZTraceElement }
+import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -121,7 +121,7 @@ trait LogFormat { self =>
    * produces text output.
    */
   final def toLogger: ZLogger[String, String] = (
-    trace: ZTraceElement,
+    trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
     message: () => String,
@@ -161,7 +161,7 @@ object LogFormat {
   private[logging] def make(
     format: (
       LogAppender,
-      ZTraceElement,
+      Trace,
       FiberId,
       LogLevel,
       () => String,
@@ -172,7 +172,7 @@ object LogFormat {
     ) => Any
   ): LogFormat = (builder: LogAppender) =>
     (
-      trace: ZTraceElement,
+      trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
       message: () => String,
@@ -215,8 +215,8 @@ object LogFormat {
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
       trace match {
-        case ZTraceElement(_, file, _) => builder.appendText(file)
-        case _                         => builder.appendText("not-available")
+        case Trace(_, file, _) => builder.appendText(file)
+        case _                 => builder.appendText("not-available")
       }
     }
 

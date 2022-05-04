@@ -35,7 +35,7 @@ final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, rende
 
   def apply(value: A): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, A] =
+      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
         logContext.get.flatMap(context => logContext.locally(context.annotate(self, value))(zio))
     }
 
