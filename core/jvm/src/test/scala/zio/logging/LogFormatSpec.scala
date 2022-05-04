@@ -1,18 +1,18 @@
 package zio.logging
 
 import zio.test._
-import zio.{ Cause, FiberId, LogLevel, ZTraceElement }
+import zio.{ Cause, FiberId, LogLevel, Trace }
 
 import LogFormat.{ level, line, _ }
 
 object LogFormatSpec extends ZIOSpecDefault {
-  val spec: ZSpec[Environment, Any] = suite("LogFormatSpec")(
+  val spec: Spec[Environment, Any] = suite("LogFormatSpec")(
     test("line") {
       val format = line
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
@@ -29,7 +29,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             level,
             () => "",
@@ -46,7 +46,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             level,
             () => "",
@@ -62,8 +62,8 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = fiberId
       check(Gen.int, Gen.int) { (seq, time) =>
         val result = format.toLogger(
-          ZTraceElement.empty,
-          FiberId(seq, time, ZTraceElement.empty),
+          Trace.empty,
+          FiberId(seq, time, Trace.empty),
           LogLevel.Info,
           () => "",
           Cause.empty,
@@ -78,7 +78,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = annotation("test")
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
-          ZTraceElement.empty,
+          Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => "",
@@ -94,7 +94,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = annotation(LogAnnotation.UserId)
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
-          ZTraceElement.empty,
+          Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => "",
@@ -109,7 +109,7 @@ object LogFormatSpec extends ZIOSpecDefault {
     test("empty annotation") {
       val format = annotation("test")
       val result = format.toLogger(
-        ZTraceElement.empty,
+        Trace.empty,
         FiberId.None,
         LogLevel.Info,
         () => "",
@@ -124,7 +124,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = enclosingClass
       val result = format
         .toLogger(
-          implicitly[ZTraceElement],
+          implicitly[Trace],
           FiberId.None,
           LogLevel.Info,
           () => "",
@@ -140,7 +140,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
@@ -157,7 +157,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
@@ -174,7 +174,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
@@ -190,7 +190,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = line.fixed(10)
       check(Gen.string) { line =>
         val result = format.toLogger(
-          ZTraceElement.empty,
+          Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => line,
