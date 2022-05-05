@@ -100,6 +100,11 @@ package object logging {
       } yield ()
     }
 
+  val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = {
+    implicit val trace = Trace.empty
+    ZLayer.scoped(FiberRef.currentLoggers.locallyScopedWith(_ -- Runtime.defaultLoggers))
+  }
+
   private def makeStringLogger(
     destination: Path,
     format: LogFormat,
