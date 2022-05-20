@@ -26,7 +26,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
 
   override def trace(msg: String, t: Throwable): Unit =
     run(
-      ZIO.logLevel(LogLevel.Trace)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+      ZIO.logTraceCause(msg, Cause.die(t))
     )
 
   override def isDebugEnabled: Boolean = true
@@ -45,7 +45,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
 
   override def debug(msg: String, t: Throwable): Unit =
     run(
-      ZIO.logLevel(LogLevel.Debug)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+      ZIO.logDebugCause(msg, Cause.die(t))
     )
 
   override def isInfoEnabled: Boolean = true
@@ -64,7 +64,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
 
   override def info(msg: String, t: Throwable): Unit =
     run(
-      ZIO.logLevel(LogLevel.Info)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+      ZIO.logInfoCause(msg, Cause.die(t))
     )
 
   override def isWarnEnabled: Boolean = true
@@ -83,7 +83,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
 
   override def warn(msg: String, t: Throwable): Unit =
     run(
-      ZIO.logLevel(LogLevel.Warning)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+      ZIO.logWarningCause(msg, Cause.die(t))
     )
 
   override def isErrorEnabled: Boolean = true
@@ -102,6 +102,6 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
 
   override def error(msg: String, t: Throwable): Unit =
     run(
-      ZIO.logLevel(LogLevel.Error)(ZIO.logErrorCause(Cause.die(WrappedException(msg, t))))
+      ZIO.logErrorCause(msg, Cause.die(t))
     )
 }
