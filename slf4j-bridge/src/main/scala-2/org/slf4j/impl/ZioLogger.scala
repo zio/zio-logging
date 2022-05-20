@@ -1,7 +1,7 @@
 package org.slf4j.impl
 
 import org.slf4j.helpers.MarkerIgnoringBase
-import zio.{Cause, ZIO}
+import zio.{ Cause, ZIO }
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
   private def run(f: ZIO[Any, Nothing, Unit]): Unit =
