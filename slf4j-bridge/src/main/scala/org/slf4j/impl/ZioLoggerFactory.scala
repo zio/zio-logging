@@ -1,5 +1,6 @@
 package org.slf4j.impl
 
+import com.github.ghik.silencer.silent
 import org.slf4j.{ ILoggerFactory, Logger }
 import zio.ZIO
 
@@ -8,7 +9,7 @@ import scala.collection.JavaConverters._
 
 class ZioLoggerFactory extends ILoggerFactory {
   private var runtime: zio.Runtime[Any] = null
-  private val loggers                   = new ConcurrentHashMap[String, Logger]().asScala
+  private val loggers                   = new ConcurrentHashMap[String, Logger]().asScala: @silent("JavaConverters")
 
   def attachRuntime(runtime: zio.Runtime[Any]): Unit =
     this.runtime = runtime
