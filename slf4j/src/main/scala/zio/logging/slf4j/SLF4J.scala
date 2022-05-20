@@ -3,7 +3,7 @@ package zio.logging.backend
 import com.github.ghik.silencer.silent
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.logging.LogFormat
-import zio.{ FiberId, LogLevel, LogSpan, RuntimeConfigAspect, ZFiberRef, ZLogger, ZTraceElement }
+import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, Runtime, Trace, ZLayer, ZLogger }
 
 import scala.collection.JavaConverters._
 
@@ -12,23 +12,23 @@ object SLF4J {
   def slf4j(
     logLevel: zio.LogLevel,
     format: LogFormat,
-    rootLoggerName: ZTraceElement => String
-  ): RuntimeConfigAspect =
-    RuntimeConfigAspect.addLogger(slf4jLogger(rootLoggerName, logLevel, format))
+    rootLoggerName: Trace => String
+  ): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(slf4jLogger(rootLoggerName, logLevel, format))
 
   def slf4j(
     logLevel: zio.LogLevel,
     format: LogFormat
-  ): RuntimeConfigAspect =
+  ): ZLayer[Any, Nothing, Unit] =
     slf4j(logLevel, format, _ => "zio-slf4j-logger")
 
   def slf4j(
     logLevel: zio.LogLevel
-  ): RuntimeConfigAspect =
+  ): ZLayer[Any, Nothing, Unit] =
     slf4j(logLevel, LogFormat.default, _ => "zio-slf4j-logger")
 
   private def slf4jLogger(
-    rootLoggerName: ZTraceElement => String,
+    rootLoggerName: Trace => String,
     logLevel: LogLevel,
     format: LogFormat
   ): ZLogger[String, Unit] =
@@ -37,16 +37,16 @@ object SLF4J {
         format.toLogger.filterLogLevel(_ >= logLevel)
 
       override def apply(
-        trace: ZTraceElement,
+        trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
         message: () => String,
-        context: Map[ZFiberRef.Runtime[_], AnyRef],
+        cause: Cause[Any],
+        context: Map[FiberRef[_], Any],
         spans: List[LogSpan],
-        location: ZTraceElement,
         annotations: Map[String, String]
       ): Unit =
-        formatLogger(trace, fiberId, logLevel, message, context, spans, location, annotations).foreach { message =>
+        formatLogger(trace, fiberId, logLevel, message, cause, context, spans, annotations).foreach { message =>
           val slf4jLogger = LoggerFactory.getLogger(rootLoggerName(trace))
 
           val previous =

@@ -1,24 +1,24 @@
 package zio.logging
 
 import zio.test._
-import zio.{ FiberId, LogLevel, ZTraceElement }
+import zio.{ Cause, FiberId, LogLevel, Trace }
 
 import LogFormat.{ level, line, _ }
 
-object LogFormatSpec extends DefaultRunnableSpec {
-  val spec: ZSpec[Environment, Failure] = suite("LogFormatSpec")(
+object LogFormatSpec extends ZIOSpecDefault {
+  val spec: Spec[Environment, Any] = suite("LogFormatSpec")(
     test("line") {
       val format = line
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == line)
@@ -29,13 +29,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             level,
             () => "",
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == level.label)
@@ -46,13 +46,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             level,
             () => "",
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == level.syslog.toString)
@@ -62,13 +62,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = fiberId
       check(Gen.int, Gen.int) { (seq, time) =>
         val result = format.toLogger(
-          ZTraceElement.empty,
-          FiberId(seq, time),
+          Trace.empty,
+          FiberId(seq, time, Trace.empty),
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
         assertTrue(result == s"zio-fiber-$seq")
@@ -78,13 +78,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = annotation("test")
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
-          ZTraceElement.empty,
+          Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map("test" -> annotationValue)
         )
         assertTrue(result == s"test=$annotationValue")
@@ -94,13 +94,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = annotation(LogAnnotation.UserId)
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
-          ZTraceElement.empty,
+          Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map(logContext -> LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)),
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
         assertTrue(result == s"user_id=$annotationValue")
@@ -109,13 +109,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
     test("empty annotation") {
       val format = annotation("test")
       val result = format.toLogger(
-        ZTraceElement.empty,
+        Trace.empty,
         FiberId.None,
         LogLevel.Info,
         () => "",
+        Cause.empty,
         Map.empty,
         Nil,
-        ZTraceElement.empty,
         Map.empty
       )
       assertTrue(result == "")
@@ -124,13 +124,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = enclosingClass
       val result = format
         .toLogger(
-          implicitly[ZTraceElement],
+          implicitly[Trace],
           FiberId.None,
           LogLevel.Info,
           () => "",
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
       assertTrue(result == "")
@@ -140,13 +140,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == "a" + line + "c")
@@ -157,13 +157,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == line + " c")
@@ -174,13 +174,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       check(Gen.string) { line =>
         val result = format
           .toLogger(
-            ZTraceElement.empty,
+            Trace.empty,
             FiberId.None,
             LogLevel.Info,
             () => line,
+            Cause.empty,
             Map.empty,
             Nil,
-            ZTraceElement.empty,
             Map.empty
           )
         assertTrue(result == LogColor.RED.ansi + line + LogColor.RESET.ansi)
@@ -190,13 +190,13 @@ object LogFormatSpec extends DefaultRunnableSpec {
       val format = line.fixed(10)
       check(Gen.string) { line =>
         val result = format.toLogger(
-          ZTraceElement.empty,
+          Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => line,
+          Cause.empty,
           Map.empty,
           Nil,
-          ZTraceElement.empty,
           Map.empty
         )
         assertTrue(result.size == 10)

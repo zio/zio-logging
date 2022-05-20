@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.logging.internal._
-import zio.{ FiberId, LogLevel, LogSpan, ZFiberRef, ZLogger, ZTraceElement }
+import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -76,13 +76,13 @@ trait LogFormat { self =>
    * destroys all structure, resulting in purely textual log output.
    */
   final def fixed(size: Int): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, spans, location, annotations) =>
+    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
       val tempBuilder = new StringBuilder
       val append      = LogAppender.unstructured { (line: String) =>
         tempBuilder.append(line)
         ()
       }
-      self.unsafeFormat(append)(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
+      self.unsafeFormat(append)(trace, fiberId, level, line, fiberRefs, cause, spans, annotations)
 
       val messageSize = tempBuilder.size
       if (messageSize < size) {
@@ -97,9 +97,9 @@ trait LogFormat { self =>
    * log levels are colored according to the specified mapping.
    */
   final def highlight(fn: LogLevel => LogColor): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, spans, location, annotations) =>
+    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
       builder.appendText(fn(level).ansi)
-      try self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
+      try self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, cause, spans, annotations)
       finally builder.appendText(LogColor.RESET.ansi)
     }
 
@@ -121,13 +121,13 @@ trait LogFormat { self =>
    * produces text output.
    */
   final def toLogger: ZLogger[String, String] = (
-    trace: ZTraceElement,
+    trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
     message: () => String,
-    context: Map[ZFiberRef.Runtime[_], AnyRef],
+    cause: Cause[Any],
+    context: Map[FiberRef[_], Any],
     spans: List[LogSpan],
-    location: ZTraceElement,
     annotations: Map[String, String]
   ) => {
 
@@ -137,9 +137,9 @@ trait LogFormat { self =>
       fiberId,
       logLevel,
       message,
+      cause,
       context,
       spans,
-      location,
       annotations
     )
     builder.toString()
@@ -161,27 +161,27 @@ object LogFormat {
   private[logging] def make(
     format: (
       LogAppender,
-      ZTraceElement,
+      Trace,
       FiberId,
       LogLevel,
       () => String,
-      Map[ZFiberRef.Runtime[_], AnyRef],
+      Cause[Any],
+      Map[FiberRef[_], Any],
       List[LogSpan],
-      ZTraceElement,
       Map[String, String]
     ) => Any
   ): LogFormat = (builder: LogAppender) =>
     (
-      trace: ZTraceElement,
+      trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
       message: () => String,
-      context: Map[ZFiberRef.Runtime[_], AnyRef],
+      cause: Cause[Any],
+      context: Map[FiberRef[_], Any],
       spans: List[LogSpan],
-      location: ZTraceElement,
       annotations: Map[String, String]
     ) => {
-      format(builder, trace, fiberId, logLevel, message, context, spans, location, annotations)
+      format(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
       ()
     }
 
@@ -193,7 +193,7 @@ object LogFormat {
     }
 
   def annotation[A](ann: LogAnnotation[A]): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, fiberRefs, _, _, _) =>
+    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
       fiberRefs
         .get(logContext)
         .foreach { anyRef =>
@@ -215,8 +215,8 @@ object LogFormat {
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
       trace match {
-        case ZTraceElement(_, file, _) => builder.appendText(file)
-        case _                         => builder.appendText("not-available")
+        case Trace(_, file, _) => builder.appendText(file)
+        case _                 => builder.appendText("not-available")
       }
     }
 

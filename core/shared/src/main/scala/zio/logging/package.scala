@@ -37,13 +37,13 @@ package object logging {
    * This code would add the structured log annotation [[LogAnnotation.UserId]]
    * to all log messages emitted by the `myResponseHandler(request)` effect.
    */
-  val logContext: FiberRef.Runtime[LogContext] =
+  val logContext: FiberRef[LogContext] =
     FiberRef.unsafeMake(LogContext.empty, identity, (old, newV) => old ++ newV)
 
   def console(
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
-  ): RuntimeConfigAspect = {
+  ): ZLayer[Any, Nothing, Unit] = {
     val stringLogger = format.toLogger.map { line =>
       try java.lang.System.out.println(line)
       catch {
@@ -52,15 +52,13 @@ package object logging {
       }
     }.filterLogLevel(_ >= logLevel)
 
-    val causeLogger = makeCauseLogger(stringLogger)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
+    Runtime.addLogger(stringLogger)
   }
 
   def consoleErr(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
-  ): RuntimeConfigAspect = {
+  ): ZLayer[Any, Nothing, Unit] = {
     val stringLogger = format.toLogger.map { line =>
       try java.lang.System.err.println(line)
       catch {
@@ -69,9 +67,7 @@ package object logging {
       }
     }.filterLogLevel(_ >= logLevel)
 
-    val causeLogger = makeCauseLogger(stringLogger)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
+    Runtime.addLogger(stringLogger)
   }
 
   def file(
@@ -81,12 +77,10 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
-  ): RuntimeConfigAspect = {
-    val stringLogger = makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
-    val causeLogger  = makeCauseLogger(stringLogger)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
-  }
+  ): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(
+      makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+    )
 
   def fileAsync(
     destination: Path,
@@ -95,22 +89,21 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
-  ): RuntimeConfigAspect = {
-    val queue = Runtime.default.unsafeRun(zio.Queue.bounded[UIO[Any]](1000))
-
-    val stringLogger =
-      makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
-    val causeLogger  = makeCauseLogger(stringLogger)
-
-    Runtime.default.unsafeRun(queue.take.flatMap(task => task.ignore).forever.forkDaemon)
-
-    RuntimeConfigAspect.addLogger(stringLogger) >>> RuntimeConfigAspect.addLogger(causeLogger)
-  }
-
-  private def makeCauseLogger(stringLogger: ZLogger[String, Any]): ZLogger[Cause[Any], Any] =
-    stringLogger.contramap[Cause[Any]] { cause =>
-      cause.unified.headOption.fold("<unknown>")(_.message)
+  ): ZLayer[Any, Nothing, Unit] =
+    ZLayer.scoped {
+      for {
+        queue       <- Queue.bounded[UIO[Any]](1000)
+        stringLogger =
+          makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
+        _           <- FiberRef.currentLoggers.locallyScopedWith(_ + stringLogger)
+        _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
+      } yield ()
     }
+
+  val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = {
+    implicit val trace = Trace.empty
+    ZLayer.scoped(FiberRef.currentLoggers.locallyScopedWith(_ -- Runtime.defaultLoggers))
+  }
 
   private def makeStringLogger(
     destination: Path,
@@ -147,7 +140,7 @@ package object logging {
 
     val stringLogger: ZLogger[String, Any] =
       format.toLogger.map { (line: String) =>
-        Runtime.default.unsafeRun(queue.offer(UIO {
+        Runtime.default.unsafeRun(queue.offer(ZIO.succeed {
           try logWriter.append(line)
           catch {
             case t: VirtualMachineError => throw t
