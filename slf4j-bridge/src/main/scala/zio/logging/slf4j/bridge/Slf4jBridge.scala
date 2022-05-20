@@ -9,7 +9,6 @@ object Slf4jBridge {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
           ZioLoggerFactory.initialize(runtime)
-          runtime.environment
         }
       }
     }
