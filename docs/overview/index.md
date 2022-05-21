@@ -277,10 +277,13 @@ the `zio-logging-slf4j-bridge` module:
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % version
 ```
 
-and use the `initializeSlf4jBridge` layer when setting up logging:
+and use the `Slf4jBridge.initialize` layer when setting up logging:
 
 ```scala
-import zio.logging.slf4j.bridge.initializeSlf4jBridge
+import zio.logging.slf4j.Slf4jBridge
 
-val env = Logging.consoleErr() >>> initializeSlf4jBridge
+program.provideCustom(Slf4jBridge.initialize)
 ```
+
+**NOTE** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to 
+ZIO logging. Enabling both causes circular logging and makes no sense.
