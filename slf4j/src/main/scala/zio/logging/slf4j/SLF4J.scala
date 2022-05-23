@@ -59,6 +59,7 @@ object SLF4J {
 
           try logLevel match {
             case LogLevel.All     => if (slf4jLogger.isTraceEnabled) slf4jLogger.trace(message)
+            case LogLevel.Trace   => if (slf4jLogger.isTraceEnabled) slf4jLogger.trace(message)
             case LogLevel.Debug   => if (slf4jLogger.isDebugEnabled) slf4jLogger.debug(message)
             case LogLevel.Info    => if (slf4jLogger.isInfoEnabled) slf4jLogger.info(message)
             case LogLevel.Warning => if (slf4jLogger.isWarnEnabled) slf4jLogger.warn(message)
