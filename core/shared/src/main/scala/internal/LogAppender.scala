@@ -16,6 +16,9 @@
 package zio.logging.internal
 
 import zio._
+import zio.logging.internal.JsonEscape
+
+import scala.collection.mutable
 
 /**
  * A [[LogAppender]] is a low-level interface designed to be the bridge between
@@ -63,6 +66,11 @@ private[logging] trait LogAppender { self =>
   def closeKeyOpenValue(): Unit
 
   /**
+   * Marks the close of the log entry
+   */
+  def closeLogEntry(): Unit
+
+  /**
    * Marks the close of the value of a key/value pair.
    */
   def closeValue(): Unit
@@ -71,6 +79,11 @@ private[logging] trait LogAppender { self =>
    * Marks the open of the key.
    */
   def openKey(): Unit
+
+  /**
+   * Marks the start of the log entry
+   */
+  def openLogEntry(): Unit
 
   /**
    * Modifies the way text is appended to the log.
@@ -91,9 +104,13 @@ private[logging] object LogAppender {
 
     def closeKeyOpenValue(): Unit = self.closeKeyOpenValue()
 
+    def closeLogEntry(): Unit = self.closeLogEntry()
+
     def closeValue(): Unit = self.closeValue()
 
     def openKey(): Unit = self.openKey()
+
+    def openLogEntry(): Unit = self.openLogEntry()
   }
 
   /**
@@ -109,8 +126,89 @@ private[logging] object LogAppender {
 
     def closeKeyOpenValue(): Unit = appendText("=")
 
+    def closeLogEntry(): Unit = ()
+
     def closeValue(): Unit = ()
 
     def openKey(): Unit = ()
+
+    def openLogEntry(): Unit = ()
+  }
+
+  def json(textAppender: String => Any): LogAppender = new LogAppender { self =>
+    class State(
+      var root: Boolean = false,
+      var separateKeyValue: Boolean = false,
+      var writingKey: Boolean = false,
+      val content: mutable.StringBuilder = new mutable.StringBuilder,
+      val textContent: mutable.StringBuilder = new mutable.StringBuilder
+    )
+
+    val stack          = new mutable.Stack[State]()
+    def current: State = stack.top
+
+    def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
+
+    def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
+
+    def appendText(text: String): Unit =
+      if (current.writingKey) current.content.append(text)
+      else current.textContent.append(text)
+
+    def beginStructure(root: Boolean = false): Unit =
+      stack.push(new State(root = root))
+
+    def endStructure(): mutable.StringBuilder = {
+      val result = new StringBuilder
+
+      if (current.content.isEmpty && !current.root) {
+        // Simple value
+        result.append("\"").append(JsonEscape(current.textContent.toString())).append("\"")
+      } else {
+        // Structure
+        result.append("{")
+
+        if (current.textContent.nonEmpty) {
+          result.append(""""text_content":""")
+          result.append("\"").append(JsonEscape(current.textContent.toString())).append("\"")
+        }
+
+        if (current.content.nonEmpty) {
+          if (current.textContent.nonEmpty) result.append(",")
+          result.append(current.content)
+        }
+
+        result.append("}")
+      }
+
+      stack.pop()
+      result
+    }
+
+    def closeKeyOpenValue(): Unit = {
+      current.writingKey = false
+      current.content.append("""":""")
+      beginStructure()
+    }
+
+    def closeLogEntry(): Unit =
+      textAppender(endStructure().toString())
+
+    def closeValue(): Unit = {
+      val result = endStructure()
+      current.content.append(result)
+    }
+
+    def openKey(): Unit = {
+      if (current.separateKeyValue) current.content.append(",")
+      current.separateKeyValue = true
+      current.writingKey = true
+      current.content.append("\"")
+    }
+
+    def openLogEntry(): Unit = {
+      stack.clear()
+      beginStructure(true)
+    }
   }
 }
