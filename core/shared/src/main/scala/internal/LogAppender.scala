@@ -16,7 +16,6 @@
 package zio.logging.internal
 
 import zio._
-import zio.logging.internal.JsonEscape
 
 import scala.collection.mutable
 
@@ -159,8 +158,7 @@ private[logging] object LogAppender {
       if (current.writingKey) current.appendContent(text)
       else current.appendTextContent(text)
 
-    def beginStructure(root: Boolean = false): Unit =
-      stack.push(new State(root = root))
+    def beginStructure(root: Boolean = false): Unit = { stack.push(new State(root = root)); () }
 
     def endStructure(): mutable.StringBuilder = {
       val result = new mutable.StringBuilder
