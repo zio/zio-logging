@@ -242,7 +242,7 @@ object LogFormat {
 
   val cause: LogFormat =
     LogFormat.make { (builder, _, _, _, _, cause, _, _, _) =>
-      builder.appendText(cause.prettyPrint)
+      builder.appendCause(cause)
     }
 
   def label(label: => String, value: LogFormat): LogFormat =
