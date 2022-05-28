@@ -201,6 +201,23 @@ object LogFormatSpec extends ZIOSpecDefault {
         )
         assertTrue(result.size == 10)
       }
+    },
+    test("cause") {
+      val format = cause
+      check(Gen.string) { msg =>
+        val failure = Cause.fail(new Exception(msg))
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          failure,
+          Map.empty,
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == failure.prettyPrint)
+      }
     }
   )
 }
