@@ -141,36 +141,48 @@ private[logging] object LogAppender {
       var separateKeyValue: Boolean = false,
       var writingKey: Boolean = false,
       val content: mutable.StringBuilder = new mutable.StringBuilder,
-      val textContent: mutable.StringBuilder = new mutable.StringBuilder
-    )
+      var textContent: mutable.StringBuilder = new mutable.StringBuilder
+    ) {
+      def appendContent(str: CharSequence): Unit     = { content.append(str); () }
+      def appendTextContent(str: CharSequence): Unit = { textContent.append(str); () }
+    }
 
-    val stack          = new mutable.Stack[State]()
+    val stack = new mutable.Stack[State]()
+
     def current: State = stack.top
 
-    def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
+    override def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
 
-    def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
+    override def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
 
-    def appendText(text: String): Unit =
-      if (current.writingKey) current.content.append(text)
-      else current.textContent.append(text)
+    override def appendText(text: String): Unit =
+      if (current.writingKey) current.appendContent(text)
+      else current.appendTextContent(text)
 
     def beginStructure(root: Boolean = false): Unit =
       stack.push(new State(root = root))
 
     def endStructure(): mutable.StringBuilder = {
-      val result = new StringBuilder
+      val result = new mutable.StringBuilder
+
+      val cleanedTextContent = {
+        // Do a little cleanup to handle default log formats (quoted and spaced)
+        if (current.textContent.startsWith("\"") && current.textContent.endsWith("\""))
+          current.textContent = current.textContent.drop(1).dropRight(1)
+        if (current.textContent.forall(_ == ' ')) current.textContent.clear()
+        current.textContent.toString()
+      }
 
       if (current.content.isEmpty && !current.root) {
         // Simple value
-        result.append("\"").append(JsonEscape(current.textContent.toString())).append("\"")
+        result.append("\"").append(JsonEscape(cleanedTextContent)).append("\"")
       } else {
         // Structure
         result.append("{")
 
         if (current.textContent.nonEmpty) {
           result.append(""""text_content":""")
-          result.append("\"").append(JsonEscape(current.textContent.toString())).append("\"")
+          result.append("\"").append(JsonEscape(cleanedTextContent)).append("\"")
         }
 
         if (current.content.nonEmpty) {
@@ -185,28 +197,30 @@ private[logging] object LogAppender {
       result
     }
 
-    def closeKeyOpenValue(): Unit = {
+    override def closeKeyOpenValue(): Unit = {
       current.writingKey = false
-      current.content.append("""":""")
+      current.appendContent("""":""")
       beginStructure()
     }
 
-    def closeLogEntry(): Unit =
+    override def closeLogEntry(): Unit = {
       textAppender(endStructure().toString())
-
-    def closeValue(): Unit = {
-      val result = endStructure()
-      current.content.append(result)
+      ()
     }
 
-    def openKey(): Unit = {
-      if (current.separateKeyValue) current.content.append(",")
+    override def closeValue(): Unit = {
+      val result = endStructure()
+      current.appendContent(result)
+    }
+
+    override def openKey(): Unit = {
+      if (current.separateKeyValue) current.appendContent(",")
       current.separateKeyValue = true
       current.writingKey = true
-      current.content.append("\"")
+      current.appendContent("\"")
     }
 
-    def openLogEntry(): Unit = {
+    override def openLogEntry(): Unit = {
       stack.clear()
       beginStructure(true)
     }

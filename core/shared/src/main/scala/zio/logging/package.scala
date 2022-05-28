@@ -15,6 +15,7 @@
  */
 package zio
 
+import java.io.PrintStream
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
 
@@ -43,32 +44,26 @@ package object logging {
   def console(
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
-  ): ZLayer[Any, Nothing, Unit] = {
-    val stringLogger = format.toLogger.map { line =>
-      try java.lang.System.out.println(line)
-      catch {
-        case t: VirtualMachineError => throw t
-        case _: Throwable           => ()
-      }
-    }.filterLogLevel(_ >= logLevel)
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toLogger, java.lang.System.out, logLevel)
 
-    Runtime.addLogger(stringLogger)
-  }
+  def consoleJson(
+    format: LogFormat = LogFormat.default,
+    logLevel: LogLevel = LogLevel.Info
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toJsonLogger, java.lang.System.out, logLevel)
 
   def consoleErr(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
-  ): ZLayer[Any, Nothing, Unit] = {
-    val stringLogger = format.toLogger.map { line =>
-      try java.lang.System.err.println(line)
-      catch {
-        case t: VirtualMachineError => throw t
-        case _: Throwable           => ()
-      }
-    }.filterLogLevel(_ >= logLevel)
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toLogger, java.lang.System.err, logLevel)
 
-    Runtime.addLogger(stringLogger)
-  }
+  def consoleErrJson(
+    format: LogFormat = LogFormat.default,
+    logLevel: LogLevel = LogLevel.Info
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toJsonLogger, java.lang.System.err, logLevel)
 
   def file(
     destination: Path,
@@ -79,7 +74,19 @@ package object logging {
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(
-      makeStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+      makeStringLogger(destination, format.toLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+    )
+
+  def fileJson(
+    destination: Path,
+    format: LogFormat = LogFormat.default,
+    logLevel: LogLevel = LogLevel.Info,
+    charset: Charset = StandardCharsets.UTF_8,
+    autoFlushBatchSize: Int = 1,
+    bufferedIOSize: Option[Int] = None
+  ): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(
+      makeStringLogger(destination, format.toJsonLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
     )
 
   def fileAsync(
@@ -90,24 +97,42 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
-    ZLayer.scoped {
-      for {
-        queue       <- Queue.bounded[UIO[Any]](1000)
-        stringLogger =
-          makeAsyncStringLogger(destination, format, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
-        _           <- FiberRef.currentLoggers.locallyScopedWith(_ + stringLogger)
-        _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
-      } yield ()
-    }
+    makeFileAsync(destination, format.toLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+
+  def fileAsyncJson(
+    destination: Path,
+    format: LogFormat = LogFormat.default,
+    logLevel: LogLevel = LogLevel.Info,
+    charset: Charset = StandardCharsets.UTF_8,
+    autoFlushBatchSize: Int = 1,
+    bufferedIOSize: Option[Int] = None
+  ): ZLayer[Any, Nothing, Unit] =
+    makeFileAsync(destination, format.toJsonLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
 
   val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = {
     implicit val trace = Trace.empty
     ZLayer.scoped(FiberRef.currentLoggers.locallyScopedWith(_ -- Runtime.defaultLoggers))
   }
 
+  private def makeConsole(
+    logger: ZLogger[String, String],
+    stream: PrintStream,
+    logLevel: LogLevel
+  ): ZLayer[Any, Nothing, Unit] = {
+    val stringLogger = logger.map { line =>
+      try stream.println(line)
+      catch {
+        case t: VirtualMachineError => throw t
+        case _: Throwable           => ()
+      }
+    }.filterLogLevel(_ >= logLevel)
+
+    Runtime.addLogger(stringLogger)
+  }
+
   private def makeStringLogger(
     destination: Path,
-    format: LogFormat,
+    logger: ZLogger[String, String],
     logLevel: LogLevel,
     charset: Charset,
     autoFlushBatchSize: Int,
@@ -116,7 +141,7 @@ package object logging {
     val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
 
     val stringLogger: ZLogger[String, Any] =
-      format.toLogger.map { (line: String) =>
+      logger.map { (line: String) =>
         try logWriter.append(line)
         catch {
           case t: VirtualMachineError => throw t
@@ -127,9 +152,27 @@ package object logging {
     stringLogger
   }
 
+  private def makeFileAsync(
+    destination: Path,
+    logger: ZLogger[String, String],
+    logLevel: LogLevel,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLayer[Any, Nothing, Unit] =
+    ZLayer.scoped {
+      for {
+        queue       <- Queue.bounded[UIO[Any]](1000)
+        stringLogger =
+          makeAsyncStringLogger(destination, logger, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
+        _           <- FiberRef.currentLoggers.locallyScopedWith(_ + stringLogger)
+        _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
+      } yield ()
+    }
+
   private def makeAsyncStringLogger(
     destination: Path,
-    format: LogFormat,
+    logger: ZLogger[String, String],
     logLevel: LogLevel,
     charset: Charset,
     autoFlushBatchSize: Int,
@@ -139,7 +182,7 @@ package object logging {
     val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
 
     val stringLogger: ZLogger[String, Any] =
-      format.toLogger.map { (line: String) =>
+      logger.map { (line: String) =>
         Runtime.default.unsafeRun(queue.offer(ZIO.succeed {
           try logWriter.append(line)
           catch {
