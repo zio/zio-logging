@@ -206,7 +206,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = cause
       check(Gen.string) { msg =>
         val failure = Cause.fail(new Exception(msg))
-        val result = format.toLogger(
+        val result  = format.toLogger(
           Trace.empty,
           FiberId.None,
           LogLevel.Info,
