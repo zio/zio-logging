@@ -240,6 +240,16 @@ object LogFormat {
         }
     }
 
+  /**
+   * Returns a new log format that appends all annotations to the log output.
+   */
+  def annotations: LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
+      annotations.foreach { case (key, value) =>
+        builder.appendKeyValue(key, value)
+      }
+    }
+
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd
 
