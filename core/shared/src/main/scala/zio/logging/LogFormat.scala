@@ -309,6 +309,28 @@ object LogFormat {
 
   def quoted(inner: LogFormat): LogFormat = quote + inner + quote
 
+  /**
+   * Returns a new log format that appends the specified span to the log output.
+   */
+  def span(name: String): LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
+      spans.find(_.label == name).foreach { span =>
+        val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
+        builder.appendKeyValue(name, duration)
+      }
+    }
+
+  /**
+   * Returns a new log format that appends all spans to the log output.
+   */
+  def spans: LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
+      spans.foreach { span =>
+        val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
+        builder.appendKeyValue(span.label, duration + "ms")
+      }
+    }
+
   def text(value: => String): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, _) =>
       builder.appendText(value)
