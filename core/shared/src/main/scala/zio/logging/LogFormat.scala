@@ -158,7 +158,7 @@ object LogFormat {
 
   private val NL = System.lineSeparator()
 
-  private[logging] def make(
+  def make(
     format: (
       LogAppender,
       Trace,
@@ -238,6 +238,11 @@ object LogFormat {
   val line: LogFormat =
     LogFormat.make { (builder, _, _, _, line, _, _, _, _) =>
       builder.appendText(line())
+    }
+
+  val cause: LogFormat =
+    LogFormat.make { (builder, _, _, _, _, cause, _, _, _) =>
+      builder.appendCause(cause)
     }
 
   def label(label: => String, value: LogFormat): LogFormat =
