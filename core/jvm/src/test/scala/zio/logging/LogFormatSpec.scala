@@ -1,8 +1,7 @@
 package zio.logging
 
 import zio.test._
-import zio.{ Cause, FiberId, LogLevel, Trace }
-
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace, Unsafe }
 import LogFormat.{ level, line, _ }
 
 object LogFormatSpec extends ZIOSpecDefault {
@@ -17,7 +16,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             LogLevel.Info,
             () => line,
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -34,7 +33,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             level,
             () => "",
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -51,7 +50,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             level,
             () => "",
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -67,7 +66,7 @@ object LogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => "",
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map.empty
         )
@@ -83,7 +82,7 @@ object LogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => "",
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map("test" -> annotationValue)
         )
@@ -93,13 +92,16 @@ object LogFormatSpec extends ZIOSpecDefault {
     test("annotation (structured)") {
       val format = annotation(LogAnnotation.UserId)
       check(Gen.string) { annotationValue =>
-        val result = format.toLogger(
+        val fiberId: FiberId.Runtime = Unsafe.unsafeCompat(implicit u => FiberId.make(implicitly[Trace]))
+        val result                   = format.toLogger(
           Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => "",
           Cause.empty,
-          Map(logContext -> LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)),
+          FiberRefs(
+            Map(logContext -> ::((fiberId, LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)), Nil))
+          ),
           Nil,
           Map.empty
         )
@@ -114,7 +116,7 @@ object LogFormatSpec extends ZIOSpecDefault {
         LogLevel.Info,
         () => "",
         Cause.empty,
-        Map.empty,
+        FiberRefs.empty,
         Nil,
         Map.empty
       )
@@ -129,7 +131,7 @@ object LogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => "",
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map.empty
         )
@@ -145,7 +147,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             LogLevel.Info,
             () => line,
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -162,7 +164,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             LogLevel.Info,
             () => line,
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -179,7 +181,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             LogLevel.Info,
             () => line,
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -195,11 +197,11 @@ object LogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => line,
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map.empty
         )
-        assertTrue(result.size == 10)
+        assertTrue(result.length == 10)
       }
     },
     test("cause") {
@@ -212,7 +214,7 @@ object LogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => "",
           failure,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map.empty
         )

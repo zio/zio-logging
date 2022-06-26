@@ -2,13 +2,13 @@ package org.slf4j.impl
 
 import com.github.ghik.silencer.silent
 import org.slf4j.{ ILoggerFactory, Logger }
-import zio.ZIO
+import zio.{ Unsafe, ZIO }
 
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 class ZioLoggerFactory extends ILoggerFactory {
-  private var runtime: zio.Runtime[Any] = null
+  private var runtime: zio.Runtime[Any] = _
   private val loggers                   = new ConcurrentHashMap[String, Logger]().asScala: @silent("JavaConverters")
 
   def attachRuntime(runtime: zio.Runtime[Any]): Unit =
@@ -16,7 +16,7 @@ class ZioLoggerFactory extends ILoggerFactory {
 
   private[impl] def run(f: ZIO[Any, Nothing, Any]): Unit =
     if (runtime != null) {
-      runtime.unsafeRun(f)
+      Unsafe.unsafeCompat(implicit u => runtime.unsafe.run(f))
       ()
     }
 

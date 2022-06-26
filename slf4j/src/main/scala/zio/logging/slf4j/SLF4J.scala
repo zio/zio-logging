@@ -3,7 +3,7 @@ package zio.logging.backend
 import com.github.ghik.silencer.silent
 import org.slf4j.{ LoggerFactory, MDC }
 import zio.logging.LogFormat
-import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, Runtime, Trace, ZLayer, ZLogger }
+import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZLayer, ZLogger }
 
 import scala.collection.JavaConverters._
 
@@ -42,7 +42,7 @@ object SLF4J {
         logLevel: LogLevel,
         message: () => String,
         cause: Cause[Any],
-        context: Map[FiberRef[_], Any],
+        context: FiberRefs,
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit =

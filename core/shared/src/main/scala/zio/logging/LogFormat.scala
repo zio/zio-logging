@@ -16,10 +16,12 @@
 package zio.logging
 
 import zio.logging.internal._
-import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, Trace, ZLogger }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import scala.annotation.unused
+import scala.collection.mutable
 
 /**
  * A [[LogFormat]] represents a DSL to describe the format of text log messages.
@@ -37,16 +39,16 @@ trait LogFormat { self =>
    * mutable builder.
    */
   private[logging] def unsafeFormat(
-    builder: LogAppender
+    @unused builder: LogAppender
   ): ZLogger[String, Unit]
 
   /**
-   * Returns a new log format which concats both formats together without any
+   * Returns a new log format which concatenates both formats together without any
    * separator between them.
    */
   final def +(other: LogFormat): LogFormat =
     LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, spans, location, annotations) =>
-      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
+      self.unsafeFormat(builder).apply(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
       other.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
     }
 
@@ -77,7 +79,7 @@ trait LogFormat { self =>
    */
   final def fixed(size: Int): LogFormat =
     LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
-      val tempBuilder = new StringBuilder
+      val tempBuilder = new mutable.StringBuilder
       val append      = LogAppender.unstructured { (line: String) =>
         tempBuilder.append(line)
         ()
@@ -108,7 +110,7 @@ trait LogFormat { self =>
    * the log output is highlighted.
    */
   final def highlight: LogFormat =
-    highlight(defaultHighlighter(_))
+    highlight(defaultHighlighter)
 
   /**
    * The alphanumeric version of the `|-|` operator.
@@ -126,13 +128,13 @@ trait LogFormat { self =>
     logLevel: LogLevel,
     message: () => String,
     cause: Cause[Any],
-    context: Map[FiberRef[_], Any],
+    context: FiberRefs,
     spans: List[LogSpan],
     annotations: Map[String, String]
   ) => {
 
-    val builder = new StringBuilder()
-    unsafeFormat(LogAppender.unstructured(builder.append(_)))(
+    val builder = new mutable.StringBuilder()
+    unsafeFormat(LogAppender.unstructured(builder.append))(
       trace,
       fiberId,
       logLevel,
@@ -166,7 +168,7 @@ object LogFormat {
       LogLevel,
       () => String,
       Cause[Any],
-      Map[FiberRef[_], Any],
+      FiberRefs,
       List[LogSpan],
       Map[String, String]
     ) => Any
@@ -177,7 +179,7 @@ object LogFormat {
       logLevel: LogLevel,
       message: () => String,
       cause: Cause[Any],
-      context: Map[FiberRef[_], Any],
+      context: FiberRefs,
       spans: List[LogSpan],
       annotations: Map[String, String]
     ) => {
@@ -197,7 +199,7 @@ object LogFormat {
       fiberRefs
         .get(logContext)
         .foreach { anyRef =>
-          val context = anyRef.asInstanceOf[LogContext]
+          val context = anyRef
 
           context.get(ann).foreach { value =>
             builder.appendKeyValue(ann.name, ann.render(value))
