@@ -17,6 +17,8 @@ package zio.logging.internal
 
 import zio._
 
+import scala.collection.mutable
+
 /**
  * A [[LogAppender]] is a low-level interface designed to be the bridge between
  * ZIO Logging and logging backends, such as Logback. This interface is slightly
@@ -63,6 +65,11 @@ private[logging] trait LogAppender { self =>
   def closeKeyOpenValue(): Unit
 
   /**
+   * Marks the close of the log entry
+   */
+  def closeLogEntry(): Unit
+
+  /**
    * Marks the close of the value of a key/value pair.
    */
   def closeValue(): Unit
@@ -71,6 +78,11 @@ private[logging] trait LogAppender { self =>
    * Marks the open of the key.
    */
   def openKey(): Unit
+
+  /**
+   * Marks the start of the log entry
+   */
+  def openLogEntry(): Unit
 
   /**
    * Modifies the way text is appended to the log.
@@ -91,9 +103,13 @@ private[logging] object LogAppender {
 
     def closeKeyOpenValue(): Unit = self.closeKeyOpenValue()
 
+    def closeLogEntry(): Unit = self.closeLogEntry()
+
     def closeValue(): Unit = self.closeValue()
 
     def openKey(): Unit = self.openKey()
+
+    def openLogEntry(): Unit = self.openLogEntry()
   }
 
   /**
@@ -109,8 +125,102 @@ private[logging] object LogAppender {
 
     def closeKeyOpenValue(): Unit = appendText("=")
 
+    def closeLogEntry(): Unit = ()
+
     def closeValue(): Unit = ()
 
     def openKey(): Unit = ()
+
+    def openLogEntry(): Unit = ()
+  }
+
+  def json(textAppender: String => Any): LogAppender = new LogAppender { self =>
+    class State(
+      var root: Boolean = false,
+      var separateKeyValue: Boolean = false,
+      var writingKey: Boolean = false,
+      val content: mutable.StringBuilder = new mutable.StringBuilder,
+      var textContent: mutable.StringBuilder = new mutable.StringBuilder
+    ) {
+      def appendContent(str: CharSequence): Unit     = { content.append(str); () }
+      def appendTextContent(str: CharSequence): Unit = { textContent.append(str); () }
+    }
+
+    val stack = new mutable.Stack[State]()
+
+    def current: State = stack.top
+
+    override def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
+
+    override def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
+
+    override def appendText(text: String): Unit =
+      if (current.writingKey) current.appendContent(text)
+      else current.appendTextContent(text)
+
+    def beginStructure(root: Boolean = false): Unit = { stack.push(new State(root = root)); () }
+
+    def endStructure(): mutable.StringBuilder = {
+      val result = new mutable.StringBuilder
+
+      val cleanedTextContent = {
+        // Do a little cleanup to handle default log formats (quoted and spaced)
+        if (current.textContent.startsWith("\"") && current.textContent.endsWith("\""))
+          current.textContent = current.textContent.drop(1).dropRight(1)
+        if (current.textContent.forall(_ == ' ')) current.textContent.clear()
+        current.textContent.toString()
+      }
+
+      if (current.content.isEmpty && !current.root) {
+        // Simple value
+        result.append("\"").append(JsonEscape(cleanedTextContent)).append("\"")
+      } else {
+        // Structure
+        result.append("{")
+
+        if (current.textContent.nonEmpty) {
+          result.append(""""text_content":""")
+          result.append("\"").append(JsonEscape(cleanedTextContent)).append("\"")
+        }
+
+        if (current.content.nonEmpty) {
+          if (current.textContent.nonEmpty) result.append(",")
+          result.append(current.content)
+        }
+
+        result.append("}")
+      }
+
+      stack.pop()
+      result
+    }
+
+    override def closeKeyOpenValue(): Unit = {
+      current.writingKey = false
+      current.appendContent("""":""")
+      beginStructure()
+    }
+
+    override def closeLogEntry(): Unit = {
+      textAppender(endStructure().toString())
+      ()
+    }
+
+    override def closeValue(): Unit = {
+      val result = endStructure()
+      current.appendContent(result)
+    }
+
+    override def openKey(): Unit = {
+      if (current.separateKeyValue) current.appendContent(",")
+      current.separateKeyValue = true
+      current.writingKey = true
+      current.appendContent("\"")
+    }
+
+    override def openLogEntry(): Unit = {
+      stack.clear()
+      beginStructure(true)
+    }
   }
 }

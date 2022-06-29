@@ -117,6 +117,41 @@ trait LogFormat { self =>
     this |-| other
 
   /**
+   * Converts this log format into a json logger, which accepts text input, and
+   * produces json output.
+   */
+  final def toJsonLogger: ZLogger[String, String] = (
+    trace: Trace,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => String,
+    cause: Cause[Any],
+    context: FiberRefs,
+    spans: List[LogSpan],
+    annotations: Map[String, String]
+  ) => {
+    val logEntryFormat =
+      LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
+        builder.openLogEntry()
+        try self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, cause, spans, annotations)
+        finally builder.closeLogEntry()
+      }
+
+    val builder = new StringBuilder()
+    logEntryFormat.unsafeFormat(LogAppender.json(builder.append(_)))(
+      trace,
+      fiberId,
+      logLevel,
+      message,
+      cause,
+      context,
+      spans,
+      annotations
+    )
+    builder.toString()
+  }
+
+  /**
    * Converts this log format into a text logger, which accepts text input, and
    * produces text output.
    */
