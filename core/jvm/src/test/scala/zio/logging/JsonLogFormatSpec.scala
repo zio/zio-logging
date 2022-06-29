@@ -3,7 +3,7 @@ package zio.logging
 import zio.logging.LogFormat.{ line, _ }
 import zio.logging.internal.JsonEscape
 import zio.test._
-import zio.{ Cause, FiberId, LogLevel, Trace }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
 
 object JsonLogFormatSpec extends ZIOSpecDefault {
   private val nonEmptyString = Gen.stringBounded(1, 5)(Gen.alphaNumericChar)
@@ -19,7 +19,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
             LogLevel.Info,
             () => line,
             Cause.empty,
-            Map.empty,
+            FiberRefs.empty,
             Nil,
             Map.empty
           )
@@ -35,7 +35,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => "",
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map("test" -> annotationValue)
         )
@@ -51,7 +51,10 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => "",
           Cause.empty,
-          Map(logContext -> LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)),
+          FiberRefs.empty.updatedAs(FiberId.Runtime(0, 0, Trace.empty))(
+            logContext,
+            LogContext.empty.annotate(LogAnnotation.UserId, annotationValue)
+          ),
           Nil,
           Map.empty
         )
@@ -66,7 +69,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
         LogLevel.Info,
         () => "",
         Cause.empty,
-        Map.empty,
+        FiberRefs.empty,
         Nil,
         Map.empty
       )
@@ -81,7 +84,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => line,
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map.empty
         )
@@ -99,7 +102,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => line,
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map("test" -> annotationValue)
         )
@@ -123,7 +126,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           LogLevel.Info,
           () => line,
           Cause.empty,
-          Map.empty,
+          FiberRefs.empty,
           Nil,
           Map("test" -> annotationValue)
         )
