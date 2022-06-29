@@ -16,8 +16,10 @@ class ZioLoggerFactory extends ILoggerFactory {
 
   private[impl] def run(f: ZIO[Any, Nothing, Any]): Unit =
     if (runtime != null) {
-      runtime.unsafeRun(f)
-      ()
+      zio.Unsafe.unsafeCompat { implicit u =>
+        runtime.unsafe.run(f)
+        ()
+      }
     }
 
   override def getLogger(name: String): Logger =

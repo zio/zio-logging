@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.logging.internal._
-import zio.{ Cause, FiberId, FiberRef, LogLevel, LogSpan, Trace, ZLogger }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -161,7 +161,7 @@ trait LogFormat { self =>
     logLevel: LogLevel,
     message: () => String,
     cause: Cause[Any],
-    context: Map[FiberRef[_], Any],
+    context: FiberRefs,
     spans: List[LogSpan],
     annotations: Map[String, String]
   ) => {
@@ -201,7 +201,7 @@ object LogFormat {
       LogLevel,
       () => String,
       Cause[Any],
-      Map[FiberRef[_], Any],
+      FiberRefs,
       List[LogSpan],
       Map[String, String]
     ) => Any
@@ -212,7 +212,7 @@ object LogFormat {
       logLevel: LogLevel,
       message: () => String,
       cause: Cause[Any],
-      context: Map[FiberRef[_], Any],
+      context: FiberRefs,
       spans: List[LogSpan],
       annotations: Map[String, String]
     ) => {
