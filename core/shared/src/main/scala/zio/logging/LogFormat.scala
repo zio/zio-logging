@@ -205,20 +205,23 @@ object LogFormat {
       List[LogSpan],
       Map[String, String]
     ) => Any
-  ): LogFormat = (builder: LogAppender) =>
-    (
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => String,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ) => {
-      format(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
-      ()
+  ): LogFormat = { (builder: LogAppender) =>
+    new ZLogger[String, Unit] {
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => String,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Unit = {
+        format(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        ()
+      }
     }
+  }
 
   def annotation(name: String): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
@@ -238,6 +241,16 @@ object LogFormat {
             builder.appendKeyValue(ann.name, ann.render(value))
           }
         }
+    }
+
+  /**
+   * Returns a new log format that appends all annotations to the log output.
+   */
+  def annotations: LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
+      annotations.foreach { case (key, value) =>
+        builder.appendKeyValue(key, value)
+      }
     }
 
   def bracketed(inner: LogFormat): LogFormat =
@@ -295,6 +308,28 @@ object LogFormat {
   val quote: LogFormat = text("\"")
 
   def quoted(inner: LogFormat): LogFormat = quote + inner + quote
+
+  /**
+   * Returns a new log format that appends the specified span to the log output.
+   */
+  def span(name: String): LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
+      spans.find(_.label == name).foreach { span =>
+        val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
+        builder.appendKeyValue(name, duration)
+      }
+    }
+
+  /**
+   * Returns a new log format that appends all spans to the log output.
+   */
+  def spans: LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
+      spans.foreach { span =>
+        val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
+        builder.appendKeyValue(span.label, duration + "ms")
+      }
+    }
 
   def text(value: => String): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, _) =>
