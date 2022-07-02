@@ -1,25 +1,27 @@
 package zio.logging.internal
 
-import scala.collection.mutable
+import scala.annotation.switch
 
 object JsonEscape {
-  def apply(s: String): String =
-    escape(s, new mutable.StringBuilder()).toString()
-
-  private def escape(s: String, sb: mutable.StringBuilder): mutable.StringBuilder = {
-    if (s != null || s.isEmpty)
-      for { c <- s } c match {
-        case '\\'               => sb.append('\\').append(c)
-        case '"'                => sb.append('\\').append(c)
-        case '/'                => sb.append('\\').append(c)
-        case '\b'               => sb.append("\\b")
-        case '\t'               => sb.append("\\t")
-        case '\n'               => sb.append("\\n")
-        case '\f'               => sb.append("\\f")
-        case '\r'               => sb.append("\\r")
-        case ctrl if ctrl < ' ' => sb.append("\\u").append("000").append(Integer.toHexString(ctrl.toInt))
-        case _                  => sb.append(c)
+  def apply(s: CharSequence): CharSequence = {
+    val sb  = new java.lang.StringBuilder
+    var i   = 0
+    val len = s.length
+    while (i < len) {
+      (s.charAt(i): @switch) match {
+        case '"'  => sb.append("\\\"")
+        case '\\' => sb.append("\\\\")
+        case '\b' => sb.append("\\b")
+        case '\f' => sb.append("\\f")
+        case '\n' => sb.append("\\n")
+        case '\r' => sb.append("\\r")
+        case '\t' => sb.append("\\t")
+        case c    =>
+          if (c < ' ') sb.append("\\u%04x".format(c.toInt))
+          else sb.append(c)
       }
+      i += 1
+    }
     sb
   }
 }

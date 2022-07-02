@@ -160,7 +160,7 @@ private[logging] object LogAppender {
 
     def beginStructure(root: Boolean = false): Unit = { stack.push(new State(root = root)); () }
 
-    def endStructure(): mutable.StringBuilder = {
+    def endStructure(): CharSequence = {
       val result = new mutable.StringBuilder
 
       val cleanedTextContent = {
@@ -202,7 +202,7 @@ private[logging] object LogAppender {
     }
 
     override def closeLogEntry(): Unit = {
-      textAppender(endStructure().toString())
+      textAppender(endStructure().toString)
       ()
     }
 
