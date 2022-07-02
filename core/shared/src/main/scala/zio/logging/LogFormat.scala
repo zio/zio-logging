@@ -205,20 +205,23 @@ object LogFormat {
       List[LogSpan],
       Map[String, String]
     ) => Any
-  ): LogFormat = (builder: LogAppender) =>
-    (
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => String,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ) => {
-      format(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
-      ()
+  ): LogFormat = { (builder: LogAppender) =>
+    new ZLogger[String, Unit] {
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => String,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Unit = {
+        format(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        ()
+      }
     }
+  }
 
   def annotation(name: String): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
