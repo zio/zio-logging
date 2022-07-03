@@ -7,13 +7,8 @@
         </layout>
     </appender>
 
-    <appender name="logstash" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-    </appender>
-
     <root level="debug">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="logstash" />
     </root>
 
 </configuration>

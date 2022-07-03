@@ -22,7 +22,8 @@ inThisBuild(
 
 val ZioVersion           = "2.0.0"
 val scalaJavaTimeVersion = "2.3.0"
-val slf4jVersion         = "1.7.35"
+val slf4jVersion         = "1.7.36"
+val logbackVersion       = "1.2.11"
 
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
@@ -75,10 +76,10 @@ lazy val slf4j = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
-      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test,
-      "ch.qos.logback"       % "logback-classic"          % "1.2.6"    % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"      % Test
+      "dev.zio"            %%% "zio-test"                 % ZioVersion     % Test,
+      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion     % Test,
+      "ch.qos.logback"       % "logback-classic"          % logbackVersion % Test,
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"          % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -133,7 +134,9 @@ lazy val examples = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "ch.qos.logback"       % "logback-classic"          % "1.2.6",
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
+      "ch.qos.logback"       % "logback-classic"          % logbackVersion,
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6",
+      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
+      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test
     )
   )
