@@ -144,7 +144,7 @@ package object logging {
 
     val stringLogger: ZLogger[String, Any] =
       logger.map { (line: String) =>
-        try logWriter.append(line)
+        try logWriter.writeln(line)
         catch {
           case t: VirtualMachineError => throw t
           case _: Throwable           => ()
@@ -187,7 +187,7 @@ package object logging {
       logger.map { (line: String) =>
         zio.Unsafe.unsafeCompat { implicit u =>
           Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
-            try logWriter.append(line)
+            try logWriter.writeln(line)
             catch {
               case t: VirtualMachineError => throw t
               case _: Throwable           => ()
