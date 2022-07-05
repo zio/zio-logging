@@ -21,7 +21,7 @@ object PingServiceSpec extends ZIOSpecDefault {
         pingResult   <- PingService.ping("x8.8.8.8").either
         loggerOutput <- ZTestLogger.logOutput
       } yield assertTrue(
-        pingResult.isLeft && pingResult.swap.exists(_.isInstanceOf[UnknownHostException])
+        pingResult.isLeft && pingResult.fold(_.isInstanceOf[UnknownHostException], _ => false)
       ) && assertTrue(loggerOutput.size == 1) && assertTrue(
         loggerOutput(0).logLevel == LogLevel.Error && loggerOutput(0)
           .message() == "ping: x8.8.8.8 - invalid address error" && loggerOutput(0).cause.failureOption.exists(
