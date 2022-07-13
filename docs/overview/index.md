@@ -31,21 +31,30 @@ If you need  `scala.js http` log publishing integration use `zio-logging-jshttp`
 libraryDependencies += "dev.zio" %%% "zio-logging-jshttp" % version
 ```
 
-
 ### Logger Context
-Logger Context is a mechanism that we use to carry information like logger name or correlation id across different fibers. The implementation uses `FiberRef` from `ZIO`. 
+
+The `logContext` fiber reference is used to store typed, structured log
+annotations, which can be utilized by backends to enrich log messages.
+
+Because `logContext` is an ordinary `zio.FiberRef`, it may be get, set,
+and updated like any other fiber reference. However, the idiomatic way to
+interact with `logContext` is by using `zio.logging.LogAnnotation`.
+
+For example:
 
 ```scala
-import zio.logging._
-log.locally(LogAnnotation.Name("my-logger" :: Nil)) {
-  log.info("log entry") // value of LogAnnotation.Name is only visible in this block
-}
+myResponseHandler(request) @@ LogAnnotation.UserId(request.userId)
 ```
+
+This code would add the structured log annotation `LogAnnotation.UserId`
+to all log messages emitted by the `myResponseHandler(request)` effect.
 
 The user of the library is allowed to add a custom `LogAnnotation`: 
 
 ```scala
-val customLogAnnotation = LogAnnotation("custom_annotation", 1, _ + _, _.toString)
+import zio.logging.LogAnnotation
+
+val customLogAnnotation = LogAnnotation[Int]("custom_annotation", _ + _, _.toString)
 ```
 
 ## Examples
@@ -53,18 +62,20 @@ val customLogAnnotation = LogAnnotation("custom_annotation", 1, _ + _, _.toStrin
 ### Simple console log
 
 ```scala
-import zio.logging._
+package zio.logging.example
 
-object Simple extends zio.App {
+import zio.logging.LogFormat
+import zio.logging.backend.SLF4J
+import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppDefault }
 
-  val env =
-    Logging.console(
-      logLevel = LogLevel.Info,
-      format = LogFormat.ColoredLogFormat()
-    ) >>> Logging.withRootLoggerName("my-component")
+object Slf4jSimpleApp extends ZIOAppDefault {
 
-  override def run(args: List[String]) =
-    log.info("Hello from ZIO logger").provideCustomLayer(env).as(ExitCode.success)
+  private val slf4jLogger =
+    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(LogLevel.Info, LogFormat.line |-| LogFormat.cause)
+
+  override def run: ZIO[Scope, Any, ExitCode] =
+    ZIO.logInfo("Hello from ZIO logger").provide(slf4jLogger).as(ExitCode.success)
+
 }
 
 ```
@@ -72,87 +83,58 @@ object Simple extends zio.App {
 Expected console output:
 
 ```
-2020-02-02T18:09:45.197-05:00 INFO default-logger Hello from ZIO logger
+20:16:06.700 [ZScheduler-Worker-12] INFO  zio-slf4j-logger Hello from ZIO logger
 ```
 
-### Logger Name and Log Level
-
-```scala
-import zio.logging._
-
-object LogLevelAndLoggerName extends zio.App {
-
-  val env =
-    Logging.consoleErr()
-
-  override def run(args: List[String]) =
-    log.locally(LogAnnotation.Name("logger-name-here" :: Nil)) {
-      log.debug("Hello from ZIO logger")
-    }.provideCustomLayer(env).as(ExitCode.success)
-}
-```
-
-Expected console output:
-
-```
-2020-02-02T18:22:33.200-05:00 DEBUG logger-name-here Hello from ZIO logger
-```
-
-### Slf4j and correlation id
+### Slf4j and annotations
 We can create an `slf4j` logger and define how the annotations translate into the logging message:
 
 ```scala
+package zio.logging.example
 
-import zio.logging._
-import zio.logging.slf4j._
+import zio.logging.{ LogAnnotation, LogFormat }
+import zio.logging.backend.SLF4J
+import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppDefault }
+import zio._
 
+import java.util.UUID
 
-object Slf4jAndCorrelationId extends zio.App {
-  val logFormat = "[correlation-id = %s] %s"
+object Slf4jAnnotationApp extends ZIOAppDefault {
 
-  val env =
-    Slf4jLogger.make{(context, message) => 
-        val correlationId = LogAnnotation.CorrelationId.render(
-          context.get(LogAnnotation.CorrelationId)
-        )
-        logFormat.format(correlationId, message)
-    }
+  private val slf4jLogger =
+    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(
+      LogLevel.Info,
+      LogFormat.annotation(LogAnnotation.TraceId) |-| LogFormat.annotation(
+        "user"
+      ) |-| LogFormat.line |-| LogFormat.cause
+    )
 
-  def generateCorrelationId =
-    Some(java.util.UUID.randomUUID())
+  private val users = List.fill(2)(UUID.randomUUID())
 
-  override def run(args: List[String]) =
-      (for {
-        fiber <- log.locally(correlationId("1234"))(ZIO.unit).fork
-        _     <- log.info("info message without correlation id")
-        _     <- fiber.join
-        _ <- log.locally(correlationId("1234111")) {
-              log.info("info message with correlation id") *>
-                log.throwable("another info message with correlation id", new RuntimeException("error message")).fork
-            }
-      } yield ExitCode.success).provideLayer(env)
+  override def run: ZIO[Scope, Any, ExitCode] =
+    (for {
+      traceId <- ZIO.succeed(UUID.randomUUID())
+      _       <- ZIO.foreachPar(users) { uId =>
+        {
+          ZIO.logInfo("Starting operation") *>
+            ZIO.sleep(500.millis) *>
+            ZIO.logInfo("Stopping operation")
+        } @@ ZIOAspect.annotated("user", uId.toString)
+      } @@ LogAnnotation.TraceId(traceId)
+      _       <- ZIO.logInfo("Done")
+    } yield ExitCode.success).provide(slf4jLogger)
+
 }
-
 ```
 
 
 Expected Console Output:
 ```
-00:27:56.448 [zio-default-async-1-1920387277] INFO  zio.logging.Examples$ [correlation-id = undefined-correlation-id] info message without correlation id
-00:27:56.530 [zio-default-async-1-1920387277] INFO  zio.logging.Examples$ [correlation-id = 1234111] info message with correlation id
-00:27:56.546 [zio-default-async-4-1920387277] ERROR zio.logging.Examples$ [correlation-id = 1234111] another info message with correlation id
-Fiber failed.
-An unchecked error was produced.
-java.lang.RuntimeException: error message
-	at zio.logging.Examples$.$anonfun$run$6(Examples.scala:26)
-	at zio.ZIO$ZipRightFn.apply(ZIO.scala:3368)
-	at zio.ZIO$ZipRightFn.apply(ZIO.scala:3365)
-	at zio.internal.FiberContext.evaluateNow(FiberContext.scala:815)
-	at zio.internal.FiberContext.$anonfun$fork$2(FiberContext.scala:681)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
-	at java.lang.Thread.run(Thread.java:745)
-No ZIO Trace available.
+20:40:28.256 [ZScheduler-Worker-13] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=0b20ba98-b707-4e7a-8aeb-ad3751ae126f Starting operation 
+20:40:28.257 [ZScheduler-Worker-13] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=c395c22a-5672-4a11-bcae-766d0aeda382 Starting operation 
+20:40:28.630 [ZScheduler-Worker-15] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=0b20ba98-b707-4e7a-8aeb-ad3751ae126f Stopping operation 
+20:40:28.758 [ZScheduler-Worker-3] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=c395c22a-5672-4a11-bcae-766d0aeda382 Stopping operation 
+20:40:28.763 [ZScheduler-Worker-10] INFO  zio-slf4j-logger   Done 
 ```
 
 ### Slf4j and MDC

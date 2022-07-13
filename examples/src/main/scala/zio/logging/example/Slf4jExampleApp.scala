@@ -6,7 +6,8 @@ import zio.{ Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
 
 object Slf4jExampleApp extends ZIOAppDefault {
 
-  private val slf4jLogger = SLF4J.slf4j(zio.LogLevel.Debug, LogFormat.line |-| LogFormat.cause)
+  private val slf4jLogger =
+    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(zio.LogLevel.Debug, LogFormat.line |-| LogFormat.cause)
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
@@ -16,17 +17,10 @@ object Slf4jExampleApp extends ZIOAppDefault {
         r => ZIO.logInfo(s"ping: $address - result: $r")
       )
 
-  override def run: ZIO[Scope, Any, ExitCode] = {
-
-    val run: ZIO[PingService, Throwable, ExitCode] =
-      for {
-        _ <- ping("127.0.0.1")
-        _ <- ping("x8.8.8.8")
-      } yield ExitCode.success
-
-    run.provide(
-      LivePingService.layer ++ (Runtime.removeDefaultLoggers >>> slf4jLogger)
-    )
-  }
+  override def run: ZIO[Scope, Any, ExitCode] =
+    (for {
+      _ <- ping("127.0.0.1")
+      _ <- ping("x8.8.8.8")
+    } yield ExitCode.success).provide(LivePingService.layer ++ slf4jLogger)
 
 }
