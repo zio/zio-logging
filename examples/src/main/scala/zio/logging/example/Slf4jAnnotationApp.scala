@@ -8,7 +8,7 @@ import zio._
 import java.util.UUID
 
 object Slf4jAnnotationApp extends ZIOAppDefault {
-  val customLogAnnotation = LogAnnotation[Int]("custom_annotation", _ + _, _.toString)
+
   private val slf4jLogger =
     Runtime.removeDefaultLoggers >>> SLF4J.slf4j(
       LogLevel.Info,
