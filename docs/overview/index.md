@@ -29,8 +29,11 @@ libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 A `LogFormat` represents a DSL to describe the format of text log messages.
 
 ```scala
+import zio.logging.console
 import zio.logging.LogFormat._
-timestamp.fixed(32) |-| level |-| label("message", quoted(line))
+
+val myLogFormat = timestamp.fixed(32) |-| level |-| label("message", quoted(line))
+val myConsoleLogger = console(myLogFormat)
 ```
 
 ### Logger Context and Annotations
