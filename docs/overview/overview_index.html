@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Summary · ZIO logging</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="ZIO Logging is a functional, type-safe library for logging."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Summary · ZIO logging"/><meta property="og:type" content="website"/><meta property="og:url" content="https://zio.github.io/zio-logging/"/><meta property="og:description" content="ZIO Logging is a functional, type-safe library for logging."/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/zio-logging/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="https://unpkg.com/vanilla-back-to-top@7.1.14/dist/vanilla-back-to-top.min.js"></script><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Summary · ZIO logging</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="_ZIO Logging_ is the official logging library for ZIO 2 applications, with integrations for common logging backends."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Summary · ZIO logging"/><meta property="og:type" content="website"/><meta property="og:url" content="https://zio.github.io/zio-logging/"/><meta property="og:description" content="_ZIO Logging_ is the official logging library for ZIO 2 applications, with integrations for common logging backends."/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/zio-logging/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="https://unpkg.com/vanilla-back-to-top@7.1.14/dist/vanilla-back-to-top.min.js"></script><script>
         document.addEventListener('DOMContentLoaded', function() {
           addBackToTop(
             {"zIndex":100,"cornerOffset":100}
@@ -60,7 +60,13 @@
                 };
               }
             });
-        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Summary</h1></header><article><div><span><p>ZIO Logging is a functional, type-safe library for logging.</p>
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Summary</h1></header><article><div><span><p><em>ZIO Logging</em> is the official logging library for ZIO 2 applications, with integrations for common logging backends.</p>
+<ul>
+<li>Type-safe, purely-functional, ZIO-powered</li>
+<li>Compositional, type-safe log formatting</li>
+<li>Richly integrated into ZIO 2's built-in logging facilities</li>
+<li>ZIO Console, SLF4j, and other backends</li>
+</ul>
 <h2><a class="anchor" aria-hidden="true" id="installation"></a><a href="#installation" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Installation</h2>
 <p><code>ZIO-Logging</code> is available via maven repo so importing in <code>build.sbt</code> is sufficient:</p>
 <pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging"</span> % version
@@ -68,199 +74,138 @@
 <p>If you need <code>slf4j</code> integration use <code>zio-logging-slf4j</code> instead:</p>
 <pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %% <span class="hljs-string">"zio-logging-slf4j"</span> % version
 </code></pre>
-<p>If you need  <code>scala.js console</code> integration use <code>zio-logging-jsconsole</code> instead:</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %%% <span class="hljs-string">"zio-logging-jsconsole"</span> % version
+<h3><a class="anchor" aria-hidden="true" id="log-format"></a><a href="#log-format" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Log Format</h3>
+<p>A <code>LogFormat</code> represents a DSL to describe the format of text log messages.</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging.console
+<span class="hljs-keyword">import</span> zio.logging.<span class="hljs-type">LogFormat</span>._
+
+<span class="hljs-keyword">val</span> myLogFormat = timestamp.fixed(<span class="hljs-number">32</span>) |-| level |-| label(<span class="hljs-string">"message"</span>, quoted(line))
+<span class="hljs-keyword">val</span> myConsoleLogger = console(myLogFormat)
 </code></pre>
-<p>If you need  <code>scala.js http</code> log publishing integration use <code>zio-logging-jshttp</code> instead:</p>
-<pre><code class="hljs css language-scala">libraryDependencies += <span class="hljs-string">"dev.zio"</span> %%% <span class="hljs-string">"zio-logging-jshttp"</span> % version
+<h3><a class="anchor" aria-hidden="true" id="logger-context-and-annotations"></a><a href="#logger-context-and-annotations" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Context and Annotations</h3>
+<p>The <code>logContext</code> fiber reference is used to store typed, structured log
+annotations, which can be utilized by backends to enrich log messages.</p>
+<p>Because <code>logContext</code> is an ordinary <code>zio.FiberRef</code>, it may be get, set,
+and updated like any other fiber reference. However, the idiomatic way to
+interact with <code>logContext</code> is by using <code>zio.logging.LogAnnotation</code>.</p>
+<p>For example:</p>
+<pre><code class="hljs css language-scala">myResponseHandler(request) @@ <span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">UserId</span>(request.userId)
 </code></pre>
-<h3><a class="anchor" aria-hidden="true" id="logger-context"></a><a href="#logger-context" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Context</h3>
-<p>Logger Context is a mechanism that we use to carry information like logger name or correlation id across different fibers. The implementation uses <code>FiberRef</code> from <code>ZIO</code>.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
-log.locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"my-logger"</span> :: <span class="hljs-type">Nil</span>)) {
-  log.info(<span class="hljs-string">"log entry"</span>) <span class="hljs-comment">// value of LogAnnotation.Name is only visible in this block</span>
-}
-</code></pre>
+<p>This code would add the structured log annotation <code>LogAnnotation.UserId</code>
+to all log messages emitted by the <code>myResponseHandler(request)</code> effect.</p>
 <p>The user of the library is allowed to add a custom <code>LogAnnotation</code>:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> customLogAnnotation = <span class="hljs-type">LogAnnotation</span>(<span class="hljs-string">"custom_annotation"</span>, <span class="hljs-number">1</span>, _ + _, _.toString)
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging.<span class="hljs-type">LogAnnotation</span>
+
+<span class="hljs-keyword">val</span> customLogAnnotation = <span class="hljs-type">LogAnnotation</span>[<span class="hljs-type">Int</span>](<span class="hljs-string">"custom_annotation"</span>, _ + _, _.toString)
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="examples"></a><a href="#examples" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Examples</h2>
+<p>You can find the source code <a href="https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example">here</a></p>
 <h3><a class="anchor" aria-hidden="true" id="simple-console-log"></a><a href="#simple-console-log" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Simple console log</h3>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">package</span> zio.logging.example
 
-<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Simple</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">zio</span>.<span class="hljs-title">App</span> </span>{
+<span class="hljs-keyword">import</span> zio.logging.{ <span class="hljs-type">LogFormat</span>, console }
+<span class="hljs-keyword">import</span> zio.{ <span class="hljs-type">ExitCode</span>, <span class="hljs-type">Runtime</span>, <span class="hljs-type">Scope</span>, <span class="hljs-type">ZIO</span>, <span class="hljs-type">ZIOAppDefault</span> }
 
-  <span class="hljs-keyword">val</span> env =
-    <span class="hljs-type">Logging</span>.console(
-      logLevel = <span class="hljs-type">LogLevel</span>.<span class="hljs-type">Info</span>,
-      format = <span class="hljs-type">LogFormat</span>.<span class="hljs-type">ColoredLogFormat</span>()
-    ) &gt;&gt;&gt; <span class="hljs-type">Logging</span>.withRootLoggerName(<span class="hljs-string">"my-component"</span>)
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">ConsoleSimpleApp</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ZIOAppDefault</span> </span>{
 
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-    log.info(<span class="hljs-string">"Hello from ZIO logger"</span>).provideCustomLayer(env).as(<span class="hljs-type">ExitCode</span>.success)
-}
+  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> logger =
+    <span class="hljs-type">Runtime</span>.removeDefaultLoggers &gt;&gt;&gt; console(<span class="hljs-type">LogFormat</span>.<span class="hljs-keyword">default</span>)
 
-</code></pre>
-<p>Expected console output:</p>
-<pre><code class="hljs"><span class="hljs-number">2020</span><span class="hljs-number">-02</span><span class="hljs-number">-02</span>T18:<span class="hljs-number">09</span>:<span class="hljs-number">45.197</span><span class="hljs-number">-05</span>:<span class="hljs-number">00</span> INFO <span class="hljs-keyword">default</span>-logger Hello <span class="hljs-keyword">from</span> ZIO logger
-</code></pre>
-<h3><a class="anchor" aria-hidden="true" id="logger-name-and-log-level"></a><a href="#logger-name-and-log-level" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logger Name and Log Level</h3>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Scope</span>, <span class="hljs-type">Any</span>, <span class="hljs-type">ExitCode</span>] =
+    <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Hello from ZIO logger"</span>).provide(logger).as(<span class="hljs-type">ExitCode</span>.success)
 
-<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">LogLevelAndLoggerName</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">zio</span>.<span class="hljs-title">App</span> </span>{
-
-  <span class="hljs-keyword">val</span> env =
-    <span class="hljs-type">Logging</span>.consoleErr()
-
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-    log.locally(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">Name</span>(<span class="hljs-string">"logger-name-here"</span> :: <span class="hljs-type">Nil</span>)) {
-      log.debug(<span class="hljs-string">"Hello from ZIO logger"</span>)
-    }.provideCustomLayer(env).as(<span class="hljs-type">ExitCode</span>.success)
 }
 </code></pre>
 <p>Expected console output:</p>
-<pre><code class="hljs"><span class="hljs-number">2020</span><span class="hljs-number">-02</span><span class="hljs-number">-02</span>T18:<span class="hljs-number">22</span>:<span class="hljs-number">33.200</span><span class="hljs-number">-05</span>:<span class="hljs-number">00</span> DEBUG logger-name-here Hello <span class="hljs-keyword">from</span> ZIO logger
+<pre><code class="hljs">timestamp=<span class="hljs-number">2022</span><span class="hljs-number">-07</span><span class="hljs-number">-15</span>T20:<span class="hljs-number">48</span>:<span class="hljs-number">37.106927</span>+<span class="hljs-number">02</span>:<span class="hljs-number">00</span> level=INFO thread=zio-fiber<span class="hljs-number">-6</span> message=<span class="hljs-string">"Hello from ZIO logger"</span>
 </code></pre>
-<h3><a class="anchor" aria-hidden="true" id="slf4j-and-correlation-id"></a><a href="#slf4j-and-correlation-id" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Slf4j and correlation id</h3>
-<p>We can create an <code>slf4j</code> logger and define how the annotations translate into the logging message:</p>
-<pre><code class="hljs css language-scala">
-<span class="hljs-keyword">import</span> zio.logging._
-<span class="hljs-keyword">import</span> zio.logging.slf4j._
+<h3><a class="anchor" aria-hidden="true" id="json-console-log"></a><a href="#json-console-log" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>JSON console log</h3>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">package</span> zio.logging.example
 
+<span class="hljs-keyword">import</span> zio.logging.{ <span class="hljs-type">LogAnnotation</span>, <span class="hljs-type">LogFormat</span>, consoleJson }
+<span class="hljs-keyword">import</span> zio.{ <span class="hljs-type">ExitCode</span>, <span class="hljs-type">Runtime</span>, <span class="hljs-type">Scope</span>, <span class="hljs-type">ZIO</span>, <span class="hljs-type">ZIOAppDefault</span>, _ }
 
-<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Slf4jAndCorrelationId</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">zio</span>.<span class="hljs-title">App</span> </span>{
-  <span class="hljs-keyword">val</span> logFormat = <span class="hljs-string">"[correlation-id = %s] %s"</span>
+<span class="hljs-keyword">import</span> java.util.<span class="hljs-type">UUID</span>
 
-  <span class="hljs-keyword">val</span> env =
-    <span class="hljs-type">Slf4jLogger</span>.make{(context, message) =&gt; 
-        <span class="hljs-keyword">val</span> correlationId = <span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">CorrelationId</span>.render(
-          context.get(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">CorrelationId</span>)
-        )
-        logFormat.format(correlationId, message)
-    }
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">ConsoleJsonApp</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ZIOAppDefault</span> </span>{
 
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">generateCorrelationId</span> </span>=
-    <span class="hljs-type">Some</span>(java.util.<span class="hljs-type">UUID</span>.randomUUID())
+  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> userLogAnnotation = <span class="hljs-type">LogAnnotation</span>[<span class="hljs-type">UUID</span>](<span class="hljs-string">"user"</span>, (_, i) =&gt; i, _.toString)
 
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]) =
-      (<span class="hljs-keyword">for</span> {
-        fiber &lt;- log.locally(correlationId(<span class="hljs-string">"1234"</span>))(<span class="hljs-type">ZIO</span>.unit).fork
-        _     &lt;- log.info(<span class="hljs-string">"info message without correlation id"</span>)
-        _     &lt;- fiber.join
-        _ &lt;- log.locally(correlationId(<span class="hljs-string">"1234111"</span>)) {
-              log.info(<span class="hljs-string">"info message with correlation id"</span>) *&gt;
-                log.throwable(<span class="hljs-string">"another info message with correlation id"</span>, <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">"error message"</span>)).fork
-            }
-      } <span class="hljs-keyword">yield</span> <span class="hljs-type">ExitCode</span>.success).provideLayer(env)
-}
+  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> logger =
+    <span class="hljs-type">Runtime</span>.removeDefaultLoggers &gt;&gt;&gt; consoleJson(
+      <span class="hljs-type">LogFormat</span>.<span class="hljs-keyword">default</span> |-| <span class="hljs-type">LogFormat</span>.annotation(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">TraceId</span>) |-| <span class="hljs-type">LogFormat</span>.annotation(
+        userLogAnnotation
+      )
+    )
 
-</code></pre>
-<p>Expected Console Output:</p>
-<pre><code class="hljs"><span class="hljs-number">00</span>:<span class="hljs-number">27</span>:<span class="hljs-number">56.448</span> <span class="hljs-literal">[<span class="hljs-identifier">zio</span>-<span class="hljs-identifier">default</span>-<span class="hljs-identifier">async</span>-<span class="hljs-number">1</span>-<span class="hljs-number">1920387277</span>]</span> INFO  zio.logging.Examples$ <span class="hljs-literal">[<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span> = <span class="hljs-identifier">undefined</span>-<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span>]</span> info message without correlation id
-<span class="hljs-number">00</span>:<span class="hljs-number">27</span>:<span class="hljs-number">56.530</span> <span class="hljs-literal">[<span class="hljs-identifier">zio</span>-<span class="hljs-identifier">default</span>-<span class="hljs-identifier">async</span>-<span class="hljs-number">1</span>-<span class="hljs-number">1920387277</span>]</span> INFO  zio.logging.Examples$ <span class="hljs-literal">[<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span> = <span class="hljs-number">1234111</span>]</span> info message <span class="hljs-keyword">with</span> correlation id
-<span class="hljs-number">00</span>:<span class="hljs-number">27</span>:<span class="hljs-number">56.546</span> <span class="hljs-literal">[<span class="hljs-identifier">zio</span>-<span class="hljs-identifier">default</span>-<span class="hljs-identifier">async</span>-<span class="hljs-number">4</span>-<span class="hljs-number">1920387277</span>]</span> ERROR zio.logging.Examples$ <span class="hljs-literal">[<span class="hljs-identifier">correlation</span>-<span class="hljs-identifier">id</span> = <span class="hljs-number">1234111</span>]</span> another info message <span class="hljs-keyword">with</span> correlation id
-Fiber failed.
-An unchecked error was produced.
-java.lang.RuntimeException: error message
-    at zio.logging.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Examples$</span>.</span></span><span class="hljs-constructor">$anonfun$run$6(Examples.<span class="hljs-params">scala</span>:26)</span>
-    at zio.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO$ZipRightFn</span>.</span></span>apply(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO</span>.</span></span>scala:<span class="hljs-number">3368</span>)
-    at zio.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO$ZipRightFn</span>.</span></span>apply(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ZIO</span>.</span></span>scala:<span class="hljs-number">3365</span>)
-    at zio.internal.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">FiberContext</span>.</span></span>evaluate<span class="hljs-constructor">Now(FiberContext.<span class="hljs-params">scala</span>:815)</span>
-    at zio.internal.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">FiberContext</span>.</span></span><span class="hljs-constructor">$anonfun$fork$2(FiberContext.<span class="hljs-params">scala</span>:681)</span>
-    at java.util.concurrent.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ThreadPoolExecutor</span>.</span></span>run<span class="hljs-constructor">Worker(ThreadPoolExecutor.<span class="hljs-params">java</span>:1142)</span>
-    at java.util.concurrent.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ThreadPoolExecutor$Worker</span>.</span></span>run(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ThreadPoolExecutor</span>.</span></span>java:<span class="hljs-number">617</span>)
-    at java.lang.<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>run(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>java:<span class="hljs-number">745</span>)
-No ZIO Trace available.
-</code></pre>
-<h3><a class="anchor" aria-hidden="true" id="slf4j-and-mdc"></a><a href="#slf4j-and-mdc" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Slf4j and MDC</h3>
-<p>We can create a logger and define a number of annotations that will be translated into an MDC context:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Slf4jMdc</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">zio</span>.<span class="hljs-title">App</span> </span>{
+  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> users = <span class="hljs-type">List</span>.fill(<span class="hljs-number">2</span>)(<span class="hljs-type">UUID</span>.randomUUID())
 
-  <span class="hljs-keyword">val</span> userId = <span class="hljs-type">LogAnnotation</span>[<span class="hljs-type">UUID</span>](
-    name = <span class="hljs-string">"user-id"</span>,
-    initialValue = <span class="hljs-type">UUID</span>.fromString(<span class="hljs-string">"0-0-0-0-0"</span>),
-    combine = (_, newValue) =&gt; newValue,
-    render = _.toString
-  )
-
-  <span class="hljs-keyword">val</span> logLayer = <span class="hljs-type">Slf4jLogger</span>.makeWithAnnotationsAsMdc(<span class="hljs-type">List</span>(userId))
-  <span class="hljs-keyword">val</span> users = <span class="hljs-type">List</span>.fill(<span class="hljs-number">2</span>)(<span class="hljs-type">UUID</span>.randomUUID())
-
-  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]): <span class="hljs-type">ZIO</span>[zio.<span class="hljs-type">ZEnv</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Int</span>] =
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Scope</span>, <span class="hljs-type">Any</span>, <span class="hljs-type">ExitCode</span>] =
     (<span class="hljs-keyword">for</span> {
-      correlationId &lt;- <span class="hljs-type">UIO</span>(<span class="hljs-type">Some</span>(<span class="hljs-type">UUID</span>.randomUUID()))
-      _ &lt;- <span class="hljs-type">ZIO</span>.foreachPar(users) { uId =&gt;
-        log.locally(_.annotate(userId, uId).annotate(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">CorrelationId</span>, correlationId)) {
-          log.info(<span class="hljs-string">"Starting operation"</span>) *&gt;
+      traceId &lt;- <span class="hljs-type">ZIO</span>.succeed(<span class="hljs-type">UUID</span>.randomUUID())
+      _       &lt;- <span class="hljs-type">ZIO</span>.foreachPar(users) { uId =&gt;
+        {
+          <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Starting operation"</span>) *&gt;
             <span class="hljs-type">ZIO</span>.sleep(<span class="hljs-number">500.</span>millis) *&gt;
-            log.info(<span class="hljs-string">"Stopping operation"</span>)
-        }
-      }
-    } <span class="hljs-keyword">yield</span> <span class="hljs-type">ExitCode</span>.success).provideCustomLayer(logLayer)
+            <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Stopping operation"</span>)
+        } @@ userLogAnnotation(uId)
+      } @@ <span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">TraceId</span>(traceId)
+      _       &lt;- <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Done"</span>)
+    } <span class="hljs-keyword">yield</span> <span class="hljs-type">ExitCode</span>.success).provide(logger)
+
 }
 </code></pre>
-<p>Expected console output (with logstash encoder):</p>
-<pre><code class="hljs">{<span class="hljs-attr">"@timestamp"</span>:<span class="hljs-string">"2020-04-26T13:19:14.845+02:00"</span>,<span class="hljs-attr">"@version"</span>:<span class="hljs-string">"1"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Starting operation"</span>,<span class="hljs-attr">"logger_name"</span>:<span class="hljs-string">"zio.logging.Slf4jMdc$"</span>,<span class="hljs-attr">"thread_name"</span>:<span class="hljs-string">"zio-default-async-7-1282747478"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"level_value"</span>:<span class="hljs-number">20000</span>,<span class="hljs-attr">"user-id"</span>:<span class="hljs-string">"952fd569-b63c-4dac-ac9a-63dd2c60e50e"</span>}
-{<span class="hljs-attr">"@timestamp"</span>:<span class="hljs-string">"2020-04-26T13:19:14.845+02:00"</span>,<span class="hljs-attr">"@version"</span>:<span class="hljs-string">"1"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Starting operation"</span>,<span class="hljs-attr">"logger_name"</span>:<span class="hljs-string">"zio.logging.Slf4jMdc$"</span>,<span class="hljs-attr">"thread_name"</span>:<span class="hljs-string">"zio-default-async-8-1282747478"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"level_value"</span>:<span class="hljs-number">20000</span>,<span class="hljs-attr">"user-id"</span>:<span class="hljs-string">"ec86bf22-41b4-4d09-a2b7-6d8ccadb1ca0"</span>}
-{<span class="hljs-attr">"@timestamp"</span>:<span class="hljs-string">"2020-04-26T13:19:15.360+02:00"</span>,<span class="hljs-attr">"@version"</span>:<span class="hljs-string">"1"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Stopping operation"</span>,<span class="hljs-attr">"logger_name"</span>:<span class="hljs-string">"zio.logging.Slf4jMdc$"</span>,<span class="hljs-attr">"thread_name"</span>:<span class="hljs-string">"zio-default-async-11-1282747478"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"level_value"</span>:<span class="hljs-number">20000</span>,<span class="hljs-attr">"user-id"</span>:<span class="hljs-string">"952fd569-b63c-4dac-ac9a-63dd2c60e50e"</span>}
-{<span class="hljs-attr">"@timestamp"</span>:<span class="hljs-string">"2020-04-26T13:19:15.360+02:00"</span>,<span class="hljs-attr">"@version"</span>:<span class="hljs-string">"1"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Stopping operation"</span>,<span class="hljs-attr">"logger_name"</span>:<span class="hljs-string">"zio.logging.Slf4jMdc$"</span>,<span class="hljs-attr">"thread_name"</span>:<span class="hljs-string">"zio-default-async-10-1282747478"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"level_value"</span>:<span class="hljs-number">20000</span>,<span class="hljs-attr">"user-id"</span>:<span class="hljs-string">"ec86bf22-41b4-4d09-a2b7-6d8ccadb1ca0"</span>}
+<p>Expected console output:</p>
+<pre><code class="hljs">{<span class="hljs-attr">"timestamp"</span>:<span class="hljs-string">"2022-07-15T20:19:03.009677+02:00"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"thread"</span>:<span class="hljs-string">"zio-fiber-8"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Starting operation"</span>,<span class="hljs-attr">"trace_id"</span>:<span class="hljs-string">"19e74a1f-c910-42e5-b060-8a0024baf3b8"</span>,<span class="hljs-attr">"user"</span>:<span class="hljs-string">"06f6eb07-b828-4f40-8cce-1853971e3ec3"</span>}
+{<span class="hljs-attr">"timestamp"</span>:<span class="hljs-string">"2022-07-15T20:19:03.009638+02:00"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"thread"</span>:<span class="hljs-string">"zio-fiber-7"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Starting operation"</span>,<span class="hljs-attr">"trace_id"</span>:<span class="hljs-string">"19e74a1f-c910-42e5-b060-8a0024baf3b8"</span>,<span class="hljs-attr">"user"</span>:<span class="hljs-string">"2e1930a4-4efb-4f36-a021-b55248b4f20e"</span>}
+{<span class="hljs-attr">"timestamp"</span>:<span class="hljs-string">"2022-07-15T20:19:03.557638+02:00"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"thread"</span>:<span class="hljs-string">"zio-fiber-7"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Stopping operation"</span>,<span class="hljs-attr">"trace_id"</span>:<span class="hljs-string">"19e74a1f-c910-42e5-b060-8a0024baf3b8"</span>,<span class="hljs-attr">"user"</span>:<span class="hljs-string">"2e1930a4-4efb-4f36-a021-b55248b4f20e"</span>}
+{<span class="hljs-attr">"timestamp"</span>:<span class="hljs-string">"2022-07-15T20:19:03.557595+02:00"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"thread"</span>:<span class="hljs-string">"zio-fiber-8"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Stopping operation"</span>,<span class="hljs-attr">"trace_id"</span>:<span class="hljs-string">"19e74a1f-c910-42e5-b060-8a0024baf3b8"</span>,<span class="hljs-attr">"user"</span>:<span class="hljs-string">"06f6eb07-b828-4f40-8cce-1853971e3ec3"</span>}
+{<span class="hljs-attr">"timestamp"</span>:<span class="hljs-string">"2022-07-15T20:19:03.566659+02:00"</span>,<span class="hljs-attr">"level"</span>:<span class="hljs-string">"INFO"</span>,<span class="hljs-attr">"thread"</span>:<span class="hljs-string">"zio-fiber-6"</span>,<span class="hljs-attr">"message"</span>:<span class="hljs-string">"Done"</span>}
 </code></pre>
-<h3><a class="anchor" aria-hidden="true" id="scalajs-console"></a><a href="#scalajs-console" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Scala.js Console</h3>
-<p>The Scala.js console works as the JVM Console using the standard JS console for output.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.logging._
-<span class="hljs-keyword">import</span> zio.logging.js._
-...
+<h3><a class="anchor" aria-hidden="true" id="slf4j-and-annotations"></a><a href="#slf4j-and-annotations" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Slf4j and annotations</h3>
+<p>We can create an <code>slf4j</code> logger and define how the annotations translate into the logging message:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">package</span> zio.logging.example
 
-    <span class="hljs-type">Logging</span>.log(<span class="hljs-string">"test"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Trace</span>)(<span class="hljs-string">"test Trace"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Debug</span>)(<span class="hljs-string">"test Debug"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Info</span>)(<span class="hljs-string">"test Info"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Warn</span>)(<span class="hljs-string">"test Warn"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Error</span>)(<span class="hljs-string">"test Error"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Fatal</span>)(<span class="hljs-string">"test Fatal"</span>) *&gt;
-      <span class="hljs-type">Logging</span>.log(<span class="hljs-type">LogLevel</span>.<span class="hljs-type">Off</span>)(<span class="hljs-string">"test Off"</span>)
+<span class="hljs-keyword">import</span> zio.logging.{ <span class="hljs-type">LogAnnotation</span>, <span class="hljs-type">LogFormat</span> }
+<span class="hljs-keyword">import</span> zio.logging.backend.<span class="hljs-type">SLF4J</span>
+<span class="hljs-keyword">import</span> zio.{ <span class="hljs-type">ExitCode</span>, <span class="hljs-type">LogLevel</span>, <span class="hljs-type">Runtime</span>, <span class="hljs-type">Scope</span>, <span class="hljs-type">ZIO</span>, <span class="hljs-type">ZIOAppDefault</span> }
+<span class="hljs-keyword">import</span> zio._
+
+<span class="hljs-keyword">import</span> java.util.<span class="hljs-type">UUID</span>
+
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Slf4jAnnotationApp</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ZIOAppDefault</span> </span>{
+
+  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> logger =
+    <span class="hljs-type">Runtime</span>.removeDefaultLoggers &gt;&gt;&gt; <span class="hljs-type">SLF4J</span>.slf4j(
+      <span class="hljs-type">LogLevel</span>.<span class="hljs-type">Info</span>,
+      <span class="hljs-type">LogFormat</span>.annotation(<span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">TraceId</span>) |-| <span class="hljs-type">LogFormat</span>.annotation(
+        <span class="hljs-string">"user"</span>
+      ) |-| <span class="hljs-type">LogFormat</span>.line |-| <span class="hljs-type">LogFormat</span>.cause
+    )
+
+  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> users = <span class="hljs-type">List</span>.fill(<span class="hljs-number">2</span>)(<span class="hljs-type">UUID</span>.randomUUID())
+
+  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Scope</span>, <span class="hljs-type">Any</span>, <span class="hljs-type">ExitCode</span>] =
+    (<span class="hljs-keyword">for</span> {
+      traceId &lt;- <span class="hljs-type">ZIO</span>.succeed(<span class="hljs-type">UUID</span>.randomUUID())
+      _       &lt;- <span class="hljs-type">ZIO</span>.foreachPar(users) { uId =&gt;
+        {
+          <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Starting operation"</span>) *&gt;
+            <span class="hljs-type">ZIO</span>.sleep(<span class="hljs-number">500.</span>millis) *&gt;
+            <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Stopping operation"</span>)
+        } @@ <span class="hljs-type">ZIOAspect</span>.annotated(<span class="hljs-string">"user"</span>, uId.toString)
+      } @@ <span class="hljs-type">LogAnnotation</span>.<span class="hljs-type">TraceId</span>(traceId)
+      _       &lt;- <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Done"</span>)
+    } <span class="hljs-keyword">yield</span> <span class="hljs-type">ExitCode</span>.success).provide(logger)
+
+}
 </code></pre>
 <p>Expected Console Output:</p>
-<pre><code class="hljs"><span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z INFO  test
-Trace: <span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z TRACE  test Trace
-    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">14731</span>:<span class="hljs-number">82</span>
-    at $c_sjsr_AnonFunction0.apply__O (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">54402</span>:<span class="hljs-number">23</span>)
-    at $c_Lzio_internal_FiberContext.evaluateNow__Lzio_ZIO__V (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">59390</span>:<span class="hljs-number">42</span>)
-    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">58797</span>:<span class="hljs-number">13</span>
-    at $c_Lzio_internal_FiberContext$$Lambda$<span class="hljs-number">2.</span>run__V (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">34590</span>:<span class="hljs-number">16</span>)
-    at $c_sjs_concurrent_QueueExecutionContext$PromisesExecutionContext.scala$scalajs$concurrent$QueueExecutionContext$PromisesExecutionContext$$$anonfun$execute$<span class="hljs-number">2</span>__sr_BoxedUnit__jl_Runnable__sjs_js_$bar (/Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">63008</span>:<span class="hljs-number">16</span>)
-    at /Users/alberto/Projects/zio-logging/jsconsole/target/scala<span class="hljs-number">-2.12</span>/zio-logging-jsconsole-test-fastopt.js:<span class="hljs-number">63025</span>:<span class="hljs-number">24</span>
-    at processTicksAndRejections (<span class="hljs-built_in">int</span>ernal/process/task_queues.js:<span class="hljs-number">97</span>:<span class="hljs-number">5</span>)
-<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z DEBUG  test Debug
-<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z INFO  test Info
-<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z WARN  test Warn
-<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z ERROR  test Error
-<span class="hljs-number">1970</span><span class="hljs-number">-01</span><span class="hljs-number">-01</span>T00:<span class="hljs-number">00</span>Z FATAL  test Fatal
-</code></pre>
-<h3><a class="anchor" aria-hidden="true" id="scalajs-http-ajax-pusher"></a><a href="#scalajs-http-ajax-pusher" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Scala.js HTTP Ajax pusher</h3>
-<p>This Scala.js implementation allows you to send logs to a remote server. It's very useful to control the navigation and action inside a SPA.</p>
-<p>All events are sent to a backend via Ajax POST.</p>
-<p>The JSON format of the event is the following:</p>
-<pre><code class="hljs">{
-     <span class="hljs-attr">"date"</span>: <span class="hljs-string">"2020-03-15T21:58:31.085+01:00"</span>,
-     <span class="hljs-attr">"clientId"</span>: <span class="hljs-string">"446352f6-11be-4af9-99cb-2c0c1bab8721"</span>,
-     <span class="hljs-attr">"level"</span>: <span class="hljs-string">"info"</span>,
-     <span class="hljs-attr">"name"</span>: <span class="hljs-string">"index_page"</span>,
-     <span class="hljs-attr">"msg"</span>: <span class="hljs-string">"index page loaded"</span>,
-     <span class="hljs-attr">"cause"</span>: <span class="hljs-string">""</span>
-}
-</code></pre>
-<p>The <strong>clientId</strong> is an identifier for the connection. The default is a randomly generated UUID.</p>
-<p>To create a logger, the <strong>url</strong> for the POST is mandatory.</p>
-<pre><code class="hljs css language-scala">
-
-<span class="hljs-keyword">import</span> zio.logging._
-<span class="hljs-keyword">import</span> zio.logging.js._
-...
-
-<span class="hljs-keyword">val</span> loggerLayer = <span class="hljs-type">HTTPLogger</span>.make(<span class="hljs-string">"http://localhost:9000/event/collect"</span>)((context, message) =&gt; message)
-
-
+<pre><code class="hljs"><span class="hljs-number">20</span>:<span class="hljs-number">40</span>:<span class="hljs-number">28.256</span> [ZScheduler-Worker-<span class="hljs-number">13</span>] INFO  zio-slf4j-logger trace_id=<span class="hljs-number">011ae21a</span>-<span class="hljs-number">78b7</span>-45a2-<span class="hljs-number">9b82</span>-f5ceea62ec6b user=<span class="hljs-number">0b20ba98</span>-b707-4e7a-8aeb-ad3751ae126f Starting operation 
+<span class="hljs-number">20</span>:<span class="hljs-number">40</span>:<span class="hljs-number">28.257</span> [ZScheduler-Worker-<span class="hljs-number">13</span>] INFO  zio-slf4j-logger trace_id=<span class="hljs-number">011ae21a</span>-<span class="hljs-number">78b7</span>-45a2-<span class="hljs-number">9b82</span>-f5ceea62ec6b user=c395c22a-<span class="hljs-number">5672</span>-4a11-bcae-766d0aeda382 Starting operation 
+<span class="hljs-number">20</span>:<span class="hljs-number">40</span>:<span class="hljs-number">28.630</span> [ZScheduler-Worker-<span class="hljs-number">15</span>] INFO  zio-slf4j-logger trace_id=<span class="hljs-number">011ae21a</span>-<span class="hljs-number">78b7</span>-45a2-<span class="hljs-number">9b82</span>-f5ceea62ec6b user=<span class="hljs-number">0b20ba98</span>-b707-4e7a-8aeb-ad3751ae126f Stopping operation 
+<span class="hljs-number">20</span>:<span class="hljs-number">40</span>:<span class="hljs-number">28.758</span> [ZScheduler-Worker-<span class="hljs-number">3</span>] INFO  zio-slf4j-logger trace_id=<span class="hljs-number">011ae21a</span>-<span class="hljs-number">78b7</span>-45a2-<span class="hljs-number">9b82</span>-f5ceea62ec6b user=c395c22a-<span class="hljs-number">5672</span>-4a11-bcae-766d0aeda382 Stopping operation 
+<span class="hljs-number">20</span>:<span class="hljs-number">40</span>:<span class="hljs-number">28.763</span> [ZScheduler-Worker-<span class="hljs-number">10</span>] INFO  zio-slf4j-logger   Done 
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="slf4j-bridge"></a><a href="#slf4j-bridge" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>SLF4j bridge</h3>
 <p>It is possible to use <code>zio-logging</code> for SLF4j loggers, usually third-party non-ZIO libraries. To do so, import
@@ -274,4 +219,4 @@ program.provideCustom(<span class="hljs-type">Slf4jBridge</span>.initialize)
 </code></pre>
 <p><strong>NOTE</strong> You should either use <code>zio-logging-slf4j</code> to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR <code>zio-logging-slf4j-bridge</code> to send all SLF4j logs to
 ZIO logging. Enabling both causes circular logging and makes no sense.</p>
-</span></div></article></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a><ul class="toc-headings"><li><a href="#logger-context">Logger Context</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#logger-name-and-log-level">Logger Name and Log Level</a></li><li><a href="#slf4j-and-correlation-id">Slf4j and correlation id</a></li><li><a href="#slf4j-and-mdc">Slf4j and MDC</a></li><li><a href="#scalajs-console">Scala.js Console</a></li><li><a href="#scalajs-http-ajax-pusher">Scala.js HTTP Ajax pusher</a></li><li><a href="#slf4j-bridge">SLF4j bridge</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div><div><h5>Additional resources</h5><a href="https://zio.dev">ZIO Homepage</a><a href="/zio-logging/api">Scaladoc</a></div></section><section class="copyright">Copyright © 2022 ZIO Maintainers</section></footer></div></body></html>
+</span></div></article></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#installation">Installation</a><ul class="toc-headings"><li><a href="#log-format">Log Format</a></li><li><a href="#logger-context-and-annotations">Logger Context and Annotations</a></li></ul></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#simple-console-log">Simple console log</a></li><li><a href="#json-console-log">JSON console log</a></li><li><a href="#slf4j-and-annotations">Slf4j and annotations</a></li><li><a href="#slf4j-bridge">SLF4j bridge</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-logging/" class="nav-home"><img src="/zio-logging/img/sidebar_brand2x.png" alt="ZIO logging"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-logging" data-icon="octicon-star" data-count-href="/zio/zio-logging/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-logging/img/discord.png" width="120" alt="discord"/></a></div><div><h5>Additional resources</h5><a href="https://zio.dev">ZIO Homepage</a><a href="/zio-logging/api">Scaladoc</a></div></section><section class="copyright">Copyright © 2022 ZIO Maintainers</section></footer></div></body></html>
