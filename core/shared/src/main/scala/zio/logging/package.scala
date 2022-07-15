@@ -111,10 +111,7 @@ package object logging {
   ): ZLayer[Any, Nothing, Unit] =
     makeFileAsync(destination, format.toJsonLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
 
-  val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = {
-    implicit val trace = Trace.empty
-    ZLayer.scoped(FiberRef.currentLoggers.locallyScopedWith(_ -- Runtime.defaultLoggers))
-  }
+  val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers
 
   private def makeConsole(
     logger: ZLogger[String, String],
