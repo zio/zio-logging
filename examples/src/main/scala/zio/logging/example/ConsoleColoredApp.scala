@@ -1,7 +1,7 @@
 package zio.logging.example
 
-import zio.logging.{LogFormat, console}
-import zio.{Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault}
+import zio.logging.{ LogFormat, console }
+import zio.{ Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 

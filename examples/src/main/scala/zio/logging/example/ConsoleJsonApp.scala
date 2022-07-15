@@ -1,20 +1,19 @@
 package zio.logging.example
 
-import zio.logging.{ LogAnnotation, LogFormat }
-import zio.logging.backend.SLF4J
-import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppDefault }
-import zio._
+import zio.logging.{ LogAnnotation, LogFormat, consoleJson }
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
-object Slf4jAnnotationApp extends ZIOAppDefault {
+object ConsoleJsonApp extends ZIOAppDefault {
+
+  private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
 
   private val logger =
-    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(
-      LogLevel.Info,
-      LogFormat.annotation(LogAnnotation.TraceId) |-| LogFormat.annotation(
-        "user"
-      ) |-| LogFormat.line |-| LogFormat.cause
+    Runtime.removeDefaultLoggers >>> consoleJson(
+      LogFormat.default |-| LogFormat.annotation(LogAnnotation.TraceId) |-| LogFormat.annotation(
+        userLogAnnotation
+      )
     )
 
   private val users = List.fill(2)(UUID.randomUUID())
@@ -27,7 +26,7 @@ object Slf4jAnnotationApp extends ZIOAppDefault {
                      ZIO.logInfo("Starting operation") *>
                        ZIO.sleep(500.millis) *>
                        ZIO.logInfo("Stopping operation")
-                   } @@ ZIOAspect.annotated("user", uId.toString)
+                   } @@ userLogAnnotation(uId)
                  } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success).provide(logger)
