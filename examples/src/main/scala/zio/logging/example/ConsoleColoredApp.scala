@@ -1,13 +1,12 @@
 package zio.logging.example
 
-import zio.logging.LogFormat
-import zio.logging.backend.SLF4J
+import zio.logging.{ LogFormat, console }
 import zio.{ Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
 
-object Slf4jExampleApp extends ZIOAppDefault {
+object ConsoleColoredApp extends ZIOAppDefault {
 
   private val logger =
-    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(zio.LogLevel.Debug, LogFormat.line |-| LogFormat.cause)
+    Runtime.removeDefaultLoggers >>> console(LogFormat.colored)
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
