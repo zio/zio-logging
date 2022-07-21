@@ -1,4 +1,5 @@
 import BuildHelper._
+import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 
 name := "zio-logging"
@@ -38,6 +39,11 @@ addCommandAlias(
   ";coreJS/test"
 )
 
+addCommandAlias(
+  "mimaChecks",
+  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
+)
+
 lazy val root = project
   .in(file("."))
   .settings(
@@ -45,7 +51,7 @@ lazy val root = project
   )
   .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, benchmarks, docs, examples)
 
-lazy val core    = crossProject(JSPlatform, JVMPlatform)
+lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
   .settings(stdSettings("zio-logging"))
@@ -60,8 +66,10 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   )
   .jvmSettings(
     Test / fork := true,
-    run / fork  := true
+    run / fork  := true,
+    mimaSettings(failOnProblem = true)
   )
+
 lazy val coreJVM = core.jvm
   .settings(dottySettings)
 lazy val coreJS  = core.js.settings(
@@ -73,6 +81,7 @@ lazy val slf4j = project
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j"))
   .settings(dottySettings)
+  .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"            % "slf4j-api"                % slf4jVersion,
@@ -89,6 +98,7 @@ lazy val slf4jBridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j-bridge"))
   .settings(dottySettings)
+  .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api"    % slf4jVersion,
