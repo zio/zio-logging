@@ -65,13 +65,13 @@ jobs:
         if: ${{ !startsWith(matrix.scala, '3.') }}
         run: ./sbt ++${{ matrix.scala }}! mimaChecks
       - name: Run tests
-        if: ${{ !startsWith(matrix.scala, '3.0.') }}
+        if: ${{ !startsWith(matrix.scala, '3.') }}
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
-      - name: Run dotty tests
-        if: ${{ startsWith(matrix.scala, '3.0.') && matrix.platform == 'JVM' }}
+      - name: Run scala3 tests
+        if: ${{ startsWith(matrix.scala, '3.') && matrix.platform == 'JVM' }}
         run: sbt ++${{ matrix.scala }}! testJVM
       - name: Compile additional subprojects
-        if: ${{ !startsWith(matrix.scala, '3.0.') }}
+        if: ${{ startsWith(matrix.scala, '2.12.') || startsWith(matrix.scala, '2.13.') }}
         run: sbt ++${{ matrix.scala }}! examples/compile docs/compile benchmarks/compile
 
   ci:

@@ -71,7 +71,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   )
 
 lazy val coreJVM = core.jvm
-  .settings(dottySettings)
+  .settings(scala3Settings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test
 )
@@ -80,7 +80,7 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j"))
-  .settings(dottySettings)
+  .settings(scala3Settings)
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -97,7 +97,7 @@ lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j-bridge"))
-  .settings(dottySettings)
+  .settings(scala3Settings)
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -126,7 +126,7 @@ lazy val docs = project
     moduleName                                 := "zio-logging-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    crossScalaVersions --= List(ScalaDotty),
+    crossScalaVersions --= List(Scala211, Scala3),
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j),
     ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
     cleanFiles += (ScalaUnidoc / unidoc / target).value,
@@ -140,7 +140,7 @@ lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
   .settings(stdSettings("zio-logging-examples"))
-  .settings(dottySettings)
+  .settings(scala3Settings)
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
