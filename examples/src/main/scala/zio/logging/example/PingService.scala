@@ -1,6 +1,6 @@
 package zio.logging.example
 
-import zio.{ Cause, Task, ULayer, ZIO, ZLayer }
+import zio.{ Task, ULayer, ZIO, ZLayer }
 
 import java.net.InetAddress
 
@@ -18,7 +18,7 @@ final class LivePingService extends PingService {
       inetAddress <-
         ZIO
           .attempt(InetAddress.getByName(address))
-          .tapError(e => ZIO.logErrorCause(s"ping: $address - invalid address error", Cause.fail(e)))
+          .tapErrorCause(error => ZIO.logErrorCause(s"ping: $address - invalid address error", error))
       _           <- ZIO.logDebug(s"ping: $inetAddress")
       result      <- ZIO.attempt(inetAddress.isReachable(10000))
     } yield result

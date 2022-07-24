@@ -1,21 +1,20 @@
 package zio.logging.example
 
-import zio.logging.LogFormat
 import zio.logging.backend.SLF4J
-import zio.{ Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
+import zio.{ ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
 
 object Slf4jExampleApp extends ZIOAppDefault {
 
   private val logger =
-    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(zio.LogLevel.Debug, LogFormat.line |-| LogFormat.cause)
+    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(zio.LogLevel.Debug)
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
       .ping(address)
-      .foldZIO(
-        e => ZIO.logErrorCause(s"ping: $address - error", Cause.fail(e)),
-        r => ZIO.logInfo(s"ping: $address - result: $r")
-      )
+      .tap(result => ZIO.logInfo(s"ping: $address - result: $result"))
+      .tapErrorCause(error => ZIO.logErrorCause(s"ping: $address - error", error))
+      .unit
+      .ignore
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {

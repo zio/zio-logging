@@ -230,7 +230,7 @@ object LogFormat {
       }
     }
 
-  def annotation[A](ann: LogAnnotation[A]): LogFormat =
+  def logAnnotation[A](ann: LogAnnotation[A]): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
       fiberRefs
         .get(logContext)
@@ -243,6 +243,8 @@ object LogFormat {
         }
     }
 
+  def annotation[A](ann: LogAnnotation[A]): LogFormat = logAnnotation(ann)
+
   /**
    * Returns a new log format that appends all annotations to the log output.
    */
@@ -252,6 +254,20 @@ object LogFormat {
         builder.appendKeyValue(key, value)
       }
     }
+
+  def logAnnotations: LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
+      fiberRefs
+        .get(logContext)
+        .foreach { context =>
+          context.asMap.foreach { case (key, value) =>
+            builder.appendKeyValue(key, value)
+          }
+        }
+      ()
+    }
+
+  def allAnnotations: LogFormat = annotations + logAnnotations
 
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd
