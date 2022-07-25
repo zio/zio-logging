@@ -24,9 +24,9 @@ object BuildHelper {
   val Scala211: String                      = versions("2.11")
   val Scala212: String                      = versions("2.12")
   val Scala213: String                      = versions("2.13")
-  val ScalaDotty: String                    = versions("3.1")
+  val Scala3: String                        = versions("3.1")
 
-  val SilencerVersion = "1.7.8"
+  val SilencerVersion = "1.7.9"
 
   private val stdOptions = Seq(
     "-deprecation",
@@ -66,23 +66,23 @@ object BuildHelper {
       buildInfoPackage := packageName
     )
 
-  val dottySettings = Seq(
-    crossScalaVersions += ScalaDotty,
+  val scala3Settings = Seq(
+    crossScalaVersions += Scala3,
     scalacOptions ++= {
-      if (scalaVersion.value == ScalaDotty)
+      if (scalaVersion.value == Scala3)
         Seq("-noindent")
       else
         Seq()
     },
     scalacOptions --= {
-      if (scalaVersion.value == ScalaDotty)
+      if (scalaVersion.value == Scala3)
         Seq("-Xfatal-warnings")
       else
         Seq()
     },
     Compile / doc / sources  := {
       val old = (Compile / doc / sources).value
-      if (scalaVersion.value == ScalaDotty) {
+      if (scalaVersion.value == Scala3) {
         Nil
       } else {
         old
@@ -90,7 +90,7 @@ object BuildHelper {
     },
     Test / parallelExecution := {
       val old = (Test / parallelExecution).value
-      if (scalaVersion.value == ScalaDotty) {
+      if (scalaVersion.value == Scala3) {
         false
       } else {
         old
@@ -99,7 +99,7 @@ object BuildHelper {
   )
 
   val scalaReflectSettings = Seq(
-    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "1.0.0-M10")
+    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "2.1.3")
   )
 
   // Keep this consistent with the version in .core-tests/shared/src/test/scala/REPLSpec.scala
@@ -144,10 +144,11 @@ object BuildHelper {
 
   def extraOptions(scalaVersion: String, optimize: Boolean) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((3, 0))  =>
+      case Some((3, _))  =>
         Seq(
           "-language:implicitConversions",
-          "-Xignore-scala2-macros"
+          "-Xignore-scala2-macros",
+          "-noindent"
         )
       case Some((2, 13)) =>
         Seq(
@@ -205,7 +206,7 @@ object BuildHelper {
         List("2.12", "2.11+", "2.12+", "2.11-2.12", "2.12-2.13", "2.x")
       case Some((2, 13)) =>
         List("2.13", "2.11+", "2.12+", "2.13+", "2.12-2.13", "2.x")
-      case Some((3, 0))  =>
+      case Some((3, _))  =>
         List("dotty", "2.11+", "2.12+", "2.13+", "3.x")
       case _             =>
         List()
@@ -239,7 +240,7 @@ object BuildHelper {
       ThisBuild / scalaVersion               := Scala213,
       scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
       libraryDependencies ++= {
-        if (scalaVersion.value == ScalaDotty)
+        if (scalaVersion.value == Scala3)
           Seq(
             "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
           )
@@ -249,9 +250,9 @@ object BuildHelper {
             compilerPlugin("com.github.ghik" % "silencer-plugin" % SilencerVersion cross CrossVersion.full)
           )
       },
-      semanticdbEnabled                      := scalaVersion.value != ScalaDotty, // enable SemanticDB
+      semanticdbEnabled                      := scalaVersion.value != Scala3, // enable SemanticDB
       semanticdbOptions += "-P:semanticdb:synthetics:on",
-      semanticdbVersion                      := scalafixSemanticdb.revision,      // use Scalafix compatible version
+      semanticdbVersion                      := scalafixSemanticdb.revision,  // use Scalafix compatible version
       ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
       ThisBuild / scalafixDependencies ++= List(
         "com.github.liancheng" %% "organize-imports" % "0.5.0",
@@ -284,7 +285,7 @@ object BuildHelper {
     Seq(
       scalacOptions += "-language:experimental.macros",
       libraryDependencies ++= {
-        if (scalaVersion.value == ScalaDotty) Seq()
+        if (scalaVersion.value == Scala3) Seq()
         else
           Seq(
             "org.scala-lang" % "scala-reflect"  % scalaVersion.value % "provided",
@@ -308,7 +309,7 @@ object BuildHelper {
 
   val scalaReflectTestSettings: List[Setting[_]] = List(
     libraryDependencies ++= {
-      if (scalaVersion.value == ScalaDotty)
+      if (scalaVersion.value == Scala3)
         Seq("org.scala-lang" % "scala-reflect" % Scala213           % Test)
       else
         Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value % Test)
