@@ -21,7 +21,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logTrace(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def trace(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logTrace(MessageFormatter.format(format, arguments).getMessage))
+    run(ZIO.logTrace(MessageFormatter.arrayFormat(format, arguments.asInstanceOf[Array[Object]]).getMessage))
 
   override def trace(msg: String, t: Throwable): Unit =
     run(
@@ -40,7 +40,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logDebug(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def debug(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logDebug(MessageFormatter.format(format, arguments).getMessage))
+    run(ZIO.logDebug(MessageFormatter.arrayFormat(format, arguments.asInstanceOf[Array[Object]]).getMessage))
 
   override def debug(msg: String, t: Throwable): Unit =
     run(
@@ -59,7 +59,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logInfo(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def info(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logInfo(MessageFormatter.format(format, arguments).getMessage))
+    run(ZIO.logInfo(MessageFormatter.arrayFormat(format, arguments.asInstanceOf[Array[Object]]).getMessage))
 
   override def info(msg: String, t: Throwable): Unit =
     run(
@@ -78,7 +78,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logWarning(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def warn(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logWarning(MessageFormatter.format(format, arguments).getMessage))
+    run(ZIO.logWarning(MessageFormatter.arrayFormat(format, arguments.asInstanceOf[Array[Object]]).getMessage))
 
   override def warn(msg: String, t: Throwable): Unit =
     run(
@@ -97,7 +97,7 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logError(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def error(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logError(MessageFormatter.format(format, arguments).getMessage))
+    run(ZIO.logError(MessageFormatter.arrayFormat(format, arguments.asInstanceOf[Array[Object]]).getMessage))
 
   override def error(msg: String, t: Throwable): Unit =
     run(

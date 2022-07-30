@@ -22,6 +22,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
                       logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
                       _      <- ZIO.attempt(logger.debug("test debug message"))
                       _      <- ZIO.attempt(logger.warn("hello {}", "world"))
+                      _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
                       _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
                       _      <- ZIO.attempt(logger.error("error", testFailure))
                     } yield ()).exit
@@ -49,6 +50,13 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
               LogLevel.Warning,
               Map.empty,
               "hello world",
+              Cause.empty
+            ),
+            LogEntry(
+              List("test.logger"),
+              LogLevel.Warning,
+              Map.empty,
+              "3..2..1 ... go!",
               Cause.empty
             ),
             LogEntry(
