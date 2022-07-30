@@ -21,7 +21,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           _      <- (for {
                       logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
                       _      <- ZIO.attempt(logger.debug("test debug message"))
-                      _      <- ZIO.attempt(logger.warn("hello %s", "world"))
+                      _      <- ZIO.attempt(logger.warn("hello {}", "world"))
                       _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
                       _      <- ZIO.attempt(logger.error("error", testFailure))
                     } yield ()).exit

@@ -1,6 +1,6 @@
 package org.slf4j.impl
 
-import org.slf4j.helpers.MarkerIgnoringBase
+import org.slf4j.helpers.{ MarkerIgnoringBase, MessageFormatter }
 import zio.{ Cause, ZIO }
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
@@ -15,13 +15,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logTrace(msg))
 
   override def trace(format: String, arg: AnyRef): Unit =
-    run(ZIO.logTrace(String.format(format, arg)))
+    run(ZIO.logTrace(MessageFormatter.format(format, arg).getMessage))
 
   override def trace(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(ZIO.logTrace(String.format(format, arg1, arg2)))
+    run(ZIO.logTrace(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def trace(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logTrace(String.format(format, arguments: _*)))
+    run(ZIO.logTrace(MessageFormatter.format(format, arguments).getMessage))
 
   override def trace(msg: String, t: Throwable): Unit =
     run(
@@ -34,13 +34,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logDebug(msg))
 
   override def debug(format: String, arg: AnyRef): Unit =
-    run(ZIO.logDebug(String.format(format, arg)))
+    run(ZIO.logDebug(MessageFormatter.format(format, arg).getMessage))
 
   override def debug(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(ZIO.logDebug(String.format(format, arg1, arg2)))
+    run(ZIO.logDebug(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def debug(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logDebug(String.format(format, arguments: _*)))
+    run(ZIO.logDebug(MessageFormatter.format(format, arguments).getMessage))
 
   override def debug(msg: String, t: Throwable): Unit =
     run(
@@ -53,13 +53,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logInfo(msg))
 
   override def info(format: String, arg: AnyRef): Unit =
-    run(ZIO.logInfo(String.format(format, arg)))
+    run(ZIO.logInfo(MessageFormatter.format(format, arg).getMessage))
 
   override def info(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(ZIO.logInfo(String.format(format, arg1, arg2)))
+    run(ZIO.logInfo(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def info(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logInfo(String.format(format, arguments: _*)))
+    run(ZIO.logInfo(MessageFormatter.format(format, arguments).getMessage))
 
   override def info(msg: String, t: Throwable): Unit =
     run(
@@ -72,13 +72,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logWarning(msg))
 
   override def warn(format: String, arg: AnyRef): Unit =
-    run(ZIO.logWarning(String.format(format, arg)))
+    run(ZIO.logWarning(MessageFormatter.format(format, arg).getMessage))
 
   override def warn(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(ZIO.logWarning(String.format(format, arg1, arg2)))
+    run(ZIO.logWarning(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def warn(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logWarning(String.format(format, arguments: _*)))
+    run(ZIO.logWarning(MessageFormatter.format(format, arguments).getMessage))
 
   override def warn(msg: String, t: Throwable): Unit =
     run(
@@ -91,13 +91,13 @@ class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringB
     run(ZIO.logError(msg))
 
   override def error(format: String, arg: AnyRef): Unit =
-    run(ZIO.logError(String.format(format, arg)))
+    run(ZIO.logError(MessageFormatter.format(format, arg).getMessage))
 
   override def error(format: String, arg1: AnyRef, arg2: AnyRef): Unit =
-    run(ZIO.logError(String.format(format, arg1, arg2)))
+    run(ZIO.logError(MessageFormatter.format(format, arg1, arg2).getMessage))
 
   override def error(format: String, arguments: Array[? <: Object]): Unit =
-    run(ZIO.logError(String.format(format, arguments: _*)))
+    run(ZIO.logError(MessageFormatter.format(format, arguments).getMessage))
 
   override def error(msg: String, t: Throwable): Unit =
     run(
