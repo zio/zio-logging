@@ -56,7 +56,7 @@ object TestAppender {
     @tailrec
     def append(entry: LogEntry): Unit = {
       val old = logEntriesRef.get()
-      if (logEntriesRef.compareAndSet(old, old.appended(entry))) ()
+      if (logEntriesRef.compareAndSet(old, old :+ entry)) ()
       else append(entry)
     }
 

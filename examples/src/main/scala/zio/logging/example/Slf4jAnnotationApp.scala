@@ -2,14 +2,13 @@ package zio.logging.example
 
 import zio.logging.LogAnnotation
 import zio.logging.backend.SLF4J
-import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppDefault, _ }
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object Slf4jAnnotationApp extends ZIOAppDefault {
 
-  private val logger =
-    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(LogLevel.Info)
+  private val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j()
 
   private val users = List.fill(2)(UUID.randomUUID())
 
