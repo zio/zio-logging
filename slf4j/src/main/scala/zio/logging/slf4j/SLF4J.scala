@@ -35,7 +35,7 @@ object SLF4J {
    * get logger name from [[Trace]]
    *
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
-   * is transformed into ''example.LivePingService''
+   * will have ''example.LivePingService'' as logger name
    */
   def getLoggerName(default: String = "zio-slf4j-logger"): Trace => String =
     _ match {
