@@ -62,6 +62,30 @@ import zio.logging.LogAnnotation
 val customLogAnnotation = LogAnnotation[Int]("custom_annotation", _ + _, _.toString)
 ```
 
+### Slf4j logger
+
+`slf4j` logger layer:
+
+```scala
+import zio.logging.backend.SLF4J
+
+val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+```
+
+Default `slf4j` logger setup:
+* logger name (by default)  is extracted from `zio.Trace`
+    * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
+    * NOTE: custom logger name may be set by `SLF4J.loggerName` aspect
+* all annotations are placed into MDC context
+* cause is logged as throwable
+
+Custom slf4j logger name set by aspect:
+
+```scala
+ZIO.logInfo("Starting user operation") @@ SLF4J.loggerName("zio.logging.example.UserOperation")
+```
+
+
 ## Examples
 
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
@@ -140,53 +164,70 @@ Expected console output:
 {"timestamp":"2022-07-15T20:19:03.566659+02:00","level":"INFO","thread":"zio-fiber-6","message":"Done"}
 ```
 
-### Slf4j and annotations
-We can create an `slf4j` logger and define how the annotations translate into the logging message:
+
+### Slf4j logger name and annotations
 
 ```scala
 package zio.logging.example
 
 import zio.logging.LogAnnotation
 import zio.logging.backend.SLF4J
-import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppDefault }
-import zio._
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
-object Slf4jAnnotationApp extends ZIOAppDefault {
+object Slf4jSimpleApp extends ZIOAppDefault {
 
-  private val logger =
-    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(LogLevel.Info)
+  private val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private val users = List.fill(2)(UUID.randomUUID())
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {
+      _       <- ZIO.logInfo("Start")
       traceId <- ZIO.succeed(UUID.randomUUID())
       _       <- ZIO.foreachPar(users) { uId =>
         {
-          ZIO.logInfo("Starting operation") *>
+          ZIO.logInfo("Starting user operation") *>
             ZIO.sleep(500.millis) *>
-            ZIO.logInfo("Stopping operation")
+            ZIO.logInfo("Stopping user operation")
         } @@ ZIOAspect.annotated("user", uId.toString)
-      } @@ LogAnnotation.TraceId(traceId)
+      } @@ LogAnnotation.TraceId(traceId) @@ SLF4J.loggerName("zio.logging.example.UserOperation")
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success).provide(logger)
 
 }
+
+```
+
+Logback configuration:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n</Pattern>
+        </layout>
+    </appender>
+    <root level="debug">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
 ```
 
 Expected Console Output:
 ```
-20:40:28.256 [ZScheduler-Worker-13] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=0b20ba98-b707-4e7a-8aeb-ad3751ae126f Starting operation 
-20:40:28.257 [ZScheduler-Worker-13] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=c395c22a-5672-4a11-bcae-766d0aeda382 Starting operation 
-20:40:28.630 [ZScheduler-Worker-15] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=0b20ba98-b707-4e7a-8aeb-ad3751ae126f Stopping operation 
-20:40:28.758 [ZScheduler-Worker-3] INFO  zio-slf4j-logger trace_id=011ae21a-78b7-45a2-9b82-f5ceea62ec6b user=c395c22a-5672-4a11-bcae-766d0aeda382 Stopping operation 
-20:40:28.763 [ZScheduler-Worker-10] INFO  zio-slf4j-logger   Done 
+20:52:39.271 [ZScheduler-Worker-10] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Start
+20:52:39.307 [ZScheduler-Worker-9] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=c9b688b6-5fa1-4ea8-a8f0-e0b20a1cf07f INFO  zio.logging.example.UserOperation Starting user operation
+20:52:39.307 [ZScheduler-Worker-8] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=74d16bcd-6f62-45fd-95d6-0319d1524fe8 INFO  zio.logging.example.UserOperation Starting user operation
+20:52:39.840 [ZScheduler-Worker-13] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=74d16bcd-6f62-45fd-95d6-0319d1524fe8 INFO  zio.logging.example.UserOperation Stopping user operation
+20:52:39.840 [ZScheduler-Worker-2] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=c9b688b6-5fa1-4ea8-a8f0-e0b20a1cf07f INFO  zio.logging.example.UserOperation Stopping user operation
+20:52:39.846 [ZScheduler-Worker-3] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Done
 ```
 
 
-### SLF4j bridge
+### Slf4j bridge
 It is possible to use `zio-logging` for SLF4j loggers, usually third-party non-ZIO libraries. To do so, import
 the `zio-logging-slf4j-bridge` module:
 

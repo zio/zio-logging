@@ -150,10 +150,10 @@ object SLF4J {
   ): ZLayer[Any, Nothing, Unit] =
     slf4j(format, getLoggerName())
 
-  def slf4j(): ZLayer[Any, Nothing, Unit] =
+  def slf4j: ZLayer[Any, Nothing, Unit] =
     slf4j(logFormatDefault)
 
-  private def slf4jLogger(
+  def slf4jLogger(
     format: LogFormat,
     loggerName: Trace => String
   ): ZLogger[String, Unit] =

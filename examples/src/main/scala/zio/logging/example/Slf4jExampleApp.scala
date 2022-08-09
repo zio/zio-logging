@@ -5,7 +5,7 @@ import zio.{ ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
 
 object Slf4jExampleApp extends ZIOAppDefault {
 
-  private val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j()
+  private val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService

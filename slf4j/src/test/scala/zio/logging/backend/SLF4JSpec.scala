@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 object SLF4JSpec extends ZIOSpecDefault {
 
   val loggerDefault: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> SLF4J.slf4j()
+    Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   val loggerTraceAnnotation: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> SLF4J.slf4j(
