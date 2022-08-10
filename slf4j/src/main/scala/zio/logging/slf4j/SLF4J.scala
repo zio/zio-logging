@@ -139,6 +139,27 @@ object SLF4J {
     }
   }
 
+  @deprecated("use layer without logLevel", "2.0.1")
+  def slf4j(
+    logLevel: zio.LogLevel,
+    format: LogFormat,
+    loggerName: Trace => String
+  ): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(slf4jLogger(format, loggerName).filterLogLevel(_ >= logLevel))
+
+  @deprecated("use layer without logLevel", "2.0.1")
+  def slf4j(
+    logLevel: zio.LogLevel,
+    format: LogFormat
+  ): ZLayer[Any, Nothing, Unit] =
+    slf4j(logLevel, format, getLoggerName())
+
+  @deprecated("use layer without logLevel", "2.0.1")
+  def slf4j(
+    logLevel: zio.LogLevel
+  ): ZLayer[Any, Nothing, Unit] =
+    slf4j(logLevel, logFormatDefault, getLoggerName())
+
   def slf4j(
     format: LogFormat,
     loggerName: Trace => String
