@@ -11,7 +11,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
 
   private val logger =
     Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.default |-| LogFormat.annotation(LogAnnotation.TraceId) |-| LogFormat.annotation(
+      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
         userLogAnnotation
       )
     )

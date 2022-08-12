@@ -84,11 +84,12 @@ lazy val slf4j = project
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "dev.zio"            %%% "zio-test"                 % ZioVersion     % Test,
-      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion     % Test,
-      "ch.qos.logback"       % "logback-classic"          % logbackVersion % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"          % Test
+      "org.slf4j"               % "slf4j-api"                % slf4jVersion,
+      "dev.zio"               %%% "zio-test"                 % ZioVersion     % Test,
+      "dev.zio"               %%% "zio-test-sbt"             % ZioVersion     % Test,
+      "ch.qos.logback"          % "logback-classic"          % logbackVersion % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % "6.6"          % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.8.1"        % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
