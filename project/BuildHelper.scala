@@ -66,38 +66,6 @@ object BuildHelper {
       buildInfoPackage := packageName
     )
 
-  val scala3Settings = Seq(
-    crossScalaVersions += Scala3,
-    scalacOptions ++= {
-      if (scalaVersion.value == Scala3)
-        Seq("-noindent")
-      else
-        Seq()
-    },
-    scalacOptions --= {
-      if (scalaVersion.value == Scala3)
-        Seq("-Xfatal-warnings")
-      else
-        Seq()
-    },
-    Compile / doc / sources  := {
-      val old = (Compile / doc / sources).value
-      if (scalaVersion.value == Scala3) {
-        Nil
-      } else {
-        old
-      }
-    },
-    Test / parallelExecution := {
-      val old = (Test / parallelExecution).value
-      if (scalaVersion.value == Scala3) {
-        false
-      } else {
-        old
-      }
-    }
-  )
-
   val scalaReflectSettings = Seq(
     libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "2.1.3")
   )
@@ -236,7 +204,7 @@ object BuildHelper {
   def stdSettings(prjName: String) =
     Seq(
       name                                   := s"$prjName",
-      crossScalaVersions                     := Seq(Scala211, Scala212, Scala213),
+      crossScalaVersions                     := Seq(Scala211, Scala212, Scala213, Scala3),
       ThisBuild / scalaVersion               := Scala213,
       scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
       libraryDependencies ++= {
@@ -258,7 +226,15 @@ object BuildHelper {
         "com.github.liancheng" %% "organize-imports" % "0.5.0",
         "com.github.vovapolu"  %% "scaluzzi"         % "0.1.18"
       ),
-      Test / parallelExecution               := true,
+      Compile / doc / sources                := {
+        val old = (Compile / doc / sources).value
+        if (scalaVersion.value == Scala3) {
+          Nil
+        } else {
+          old
+        }
+      },
+      Test / parallelExecution               := scalaVersion.value != Scala3,
       incOptions ~= (_.withLogRecompileOnMacro(false)),
       autoAPIMappings                        := true,
       unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")

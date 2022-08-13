@@ -71,7 +71,6 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   )
 
 lazy val coreJVM = core.jvm
-  .settings(scala3Settings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test
 )
@@ -80,15 +79,15 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j"))
-  .settings(scala3Settings)
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j"            % "slf4j-api"                % slf4jVersion,
-      "dev.zio"            %%% "zio-test"                 % ZioVersion     % Test,
-      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion     % Test,
-      "ch.qos.logback"       % "logback-classic"          % logbackVersion % Test,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"          % Test
+      "org.slf4j"               % "slf4j-api"                % slf4jVersion,
+      "dev.zio"               %%% "zio-test"                 % ZioVersion     % Test,
+      "dev.zio"               %%% "zio-test-sbt"             % ZioVersion     % Test,
+      "ch.qos.logback"          % "logback-classic"          % logbackVersion % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % "6.6"          % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.8.1"        % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -97,7 +96,6 @@ lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j-bridge"))
-  .settings(scala3Settings)
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -140,7 +138,6 @@ lazy val examples = project
   .in(file("examples"))
   .dependsOn(slf4j)
   .settings(stdSettings("zio-logging-examples"))
-  .settings(scala3Settings)
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(

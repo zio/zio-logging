@@ -46,12 +46,12 @@ private[logging] trait LogAppender { self =>
   /**
    * Appends a key/value string pair to the log.
    */
-  final def appendKeyValue(key: String, value: String): Unit = appendKeyValue(key, _.appendText(value))
+  def appendKeyValue(key: String, value: String): Unit = appendKeyValue(key, _.appendText(value))
 
   /**
    * Appends a key/value pair, with the value it created with the log appender.
    */
-  final def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
+  def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
     openKey()
     try appendText(key)
     finally closeKeyOpenValue()
