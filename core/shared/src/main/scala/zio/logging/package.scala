@@ -39,7 +39,7 @@ package object logging {
    * to all log messages emitted by the `myResponseHandler(request)` effect.
    */
   val logContext: FiberRef[LogContext] =
-    zio.Unsafe.unsafeCompat { implicit u =>
+    zio.Unsafe.unsafe { implicit u =>
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
 
@@ -182,7 +182,7 @@ package object logging {
 
     val stringLogger: ZLogger[String, Any] =
       logger.map { (line: String) =>
-        zio.Unsafe.unsafeCompat { implicit u =>
+        zio.Unsafe.unsafe { implicit u =>
           Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
             try logWriter.writeln(line)
             catch {

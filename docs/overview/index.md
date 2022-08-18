@@ -82,7 +82,7 @@ Default `slf4j` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `SLF4J.loggerName` aspect
-* all annotations are placed at the beginning of log message
+* all annotations are placed into MDC context
 * cause is logged as throwable
 
 Custom logger name set by aspect:
@@ -105,7 +105,7 @@ Default `jpl` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `JPL.loggerName` aspect
-* all annotations are placed into MDC context
+* all annotations are placed at the beginning of log message
 * cause is logged as throwable
 
 Custom logger name set by aspect:
