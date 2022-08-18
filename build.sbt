@@ -144,12 +144,12 @@ lazy val docs = project
     docusaurusCreateSite                       := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
     docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
-  .dependsOn(coreJVM, slf4j)
+  .dependsOn(coreJVM, slf4j, jpl)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project
   .in(file("examples"))
-  .dependsOn(slf4j)
+  .dependsOn(slf4j, jpl)
   .settings(stdSettings("zio-logging-examples"))
   .settings(
     publish / skip := true,

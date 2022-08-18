@@ -11,24 +11,30 @@ import scala.annotation.tailrec
 
 object JPLSpec extends ZIOSpecDefault {
 
+  private def jplTest(
+    format: LogFormat = JPL.logFormatDefault,
+    loggerName: Trace => String = JPL.getLoggerName()
+  ): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(JPL.jplLogger(format, loggerName, TestJPLoggerSystem.getLogger))
+
   val loggerDefault: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> JPL.jpl
+    Runtime.removeDefaultLoggers >>> jplTest()
 
   val loggerTraceAnnotation: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> JPL.jpl(
+    Runtime.removeDefaultLoggers >>> jplTest(
       LogFormat.logAnnotation(LogAnnotation.TraceId) + LogFormat.line + LogFormat.cause
     )
 
   val loggerUserAnnotation: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> JPL.jpl(
+    Runtime.removeDefaultLoggers >>> jplTest(
       LogFormat.annotation("user") + LogFormat.line + LogFormat.cause
     )
 
   val loggerLineCause: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> JPL.jpl(LogFormat.line + LogFormat.cause)
+    Runtime.removeDefaultLoggers >>> jplTest(LogFormat.line + LogFormat.cause)
 
   val loggerLine: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> JPL.jpl(LogFormat.line)
+    Runtime.removeDefaultLoggers >>> jplTest(LogFormat.line)
 
   def startStop(): ZIO[Any, Nothing, (UUID, Chunk[UUID])] = {
     val users = Chunk.fill(2)(UUID.randomUUID())
@@ -129,47 +135,36 @@ object JPLSpec extends ZIOSpecDefault {
 //        )
 //      }
 //    }.provide(loggerDefault),
-//    test("logger name changes") {
-//      val users = Chunk.fill(2)(UUID.randomUUID())
-//      for {
-//        traceId <- ZIO.succeed(UUID.randomUUID())
-//        _        = TestAppender.reset()
-//        _       <- ZIO.logInfo("Start") @@ JPL.loggerName("root-logger")
-//        _       <- ZIO.foreach(users) { uId =>
-//                     {
-//                       ZIO.logInfo("Starting user operation") *> ZIO.sleep(500.millis) *> ZIO.logInfo(
-//                         "Stopping user operation"
-//                       )
-//                     } @@ ZIOAspect.annotated("user", uId.toString) @@ JPL.loggerName("user-logger")
-//                   } @@ LogAnnotation.TraceId(traceId) @@ JPL.loggerName("user-root-logger")
-//        _       <- ZIO.logInfo("Done") @@ JPL.loggerName("root-logger")
-//      } yield {
-//        val loggerOutput = TestAppender.logOutput
-//        assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
-//          equalTo(
-//            Chunk(
-//              "Start",
-//              "Starting user operation",
-//              "Stopping user operation",
-//              "Starting user operation",
-//              "Stopping user operation",
-//              "Done"
-//            )
-//          )
-//        ) && assert(loggerOutput.map(_.loggerName))(
-//          equalTo(
-//            Chunk(
-//              "root-logger",
-//              "user-logger",
-//              "user-logger",
-//              "user-logger",
-//              "user-logger",
-//              "root-logger"
-//            )
-//          )
-//        )
-//      }
-//    }.provide(loggerDefault),
+    test("logger name changes") {
+      val users = Chunk.fill(2)(UUID.randomUUID())
+      for {
+        traceId <- ZIO.succeed(UUID.randomUUID())
+        _        = TestAppender.reset()
+        _       <- ZIO.logInfo("Start") @@ JPL.loggerName("root-logger")
+        _       <- ZIO.foreach(users) { uId =>
+                     {
+                       ZIO.logInfo("Starting user operation") *> ZIO.sleep(500.millis) *> ZIO.logInfo(
+                         "Stopping user operation"
+                       )
+                     } @@ ZIOAspect.annotated("user", uId.toString) @@ JPL.loggerName("user-logger")
+                   } @@ LogAnnotation.TraceId(traceId) @@ JPL.loggerName("user-root-logger")
+        _       <- ZIO.logInfo("Done") @@ JPL.loggerName("root-logger")
+      } yield {
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.loggerName))(
+          equalTo(
+            Chunk(
+              "root-logger",
+              "user-logger",
+              "user-logger",
+              "user-logger",
+              "user-logger",
+              "root-logger"
+            )
+          )
+        )
+      }
+    }.provide(loggerDefault),
     test("log error with cause") {
       someError().map { _ =>
         val loggerOutput = TestAppender.logOutput

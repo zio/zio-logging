@@ -116,6 +116,13 @@ object JPL {
     format: LogFormat,
     loggerName: Trace => String
   ): ZLogger[String, Unit] =
+    jplLogger(format, loggerName, System.getLogger)
+
+  private[backend] def jplLogger(
+    format: LogFormat,
+    loggerName: Trace => String,
+    getJPLogger: String => System.Logger
+  ): ZLogger[String, Unit] =
     new ZLogger[String, Unit] {
       override def apply(
         trace: Trace,
@@ -127,10 +134,10 @@ object JPL {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val javaSystemLoggerName = annotations.getOrElse(loggerNameKey, loggerName(trace))
-        val javaSystemLogger     = System.getLogger(javaSystemLoggerName)
-        if (isLogLevelEnabled(javaSystemLogger, logLevel)) {
-          val appender = logAppender(javaSystemLogger, logLevel)
+        val jpLoggerName = annotations.getOrElse(loggerNameKey, loggerName(trace))
+        val jpLogger     = getJPLogger(jpLoggerName)
+        if (isLogLevelEnabled(jpLogger, logLevel)) {
+          val appender = logAppender(jpLogger, logLevel)
 
           format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
           appender.closeLogEntry()

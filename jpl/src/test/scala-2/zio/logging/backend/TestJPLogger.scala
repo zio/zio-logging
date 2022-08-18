@@ -4,6 +4,7 @@ import zio.logging.backend.TestAppender.{ LogEntry, logLevelMapping }
 
 import java.text.MessageFormat
 import java.util.ResourceBundle
+import java.util.concurrent.ConcurrentHashMap
 
 class TestJPLogger(val name: String) extends System.Logger {
   override def getName: String = name
@@ -43,4 +44,10 @@ class TestJPLogger(val name: String) extends System.Logger {
     ()
   }
 
+}
+
+object TestJPLoggerSystem {
+  private val loggers                        = new ConcurrentHashMap[String, TestJPLogger]()
+  def getLogger(name: String): System.Logger =
+    loggers.computeIfAbsent(name, n => new TestJPLogger(n))
 }
