@@ -49,7 +49,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, benchmarks, docs, examples)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, docs, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -100,6 +100,19 @@ lazy val slf4jBridge = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api"    % slf4jVersion,
+      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
+lazy val jpl = project
+  .in(file("jpl"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-jpl"))
+  .settings(mimaSettings(failOnProblem = true))
+  .settings(
+    libraryDependencies ++= Seq(
       "dev.zio" %%% "zio-test"     % ZioVersion % Test,
       "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
     ),
