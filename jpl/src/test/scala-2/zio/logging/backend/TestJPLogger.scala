@@ -47,7 +47,8 @@ class TestJPLogger(val name: String) extends System.Logger {
 }
 
 object TestJPLoggerSystem {
-  private val loggers                        = new ConcurrentHashMap[String, TestJPLogger]()
+  private val loggers = new ConcurrentHashMap[String, TestJPLogger]()
+
   def getLogger(name: String): System.Logger =
     loggers.computeIfAbsent(name, n => new TestJPLogger(n))
 }

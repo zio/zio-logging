@@ -25,11 +25,6 @@ object JPLSpec extends ZIOSpecDefault {
       LogFormat.logAnnotation(LogAnnotation.TraceId) + LogFormat.line + LogFormat.cause
     )
 
-  val loggerUserAnnotation: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> jplTest(
-      LogFormat.annotation("user") + LogFormat.line + LogFormat.cause
-    )
-
   val loggerLineCause: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> jplTest(LogFormat.line + LogFormat.cause)
 
@@ -49,24 +44,6 @@ object JPLSpec extends ZIOSpecDefault {
       _       <- ZIO.logInfo("Done")
     } yield traceId -> users
   }
-
-  def startStopAssert(
-    loggerOutput: Chunk[LogEntry],
-    loggerName: String = "zio.logging.backend.JPLSpec"
-  ): TestResult =
-    assertTrue(loggerOutput.size == 5) && assertTrue(
-      loggerOutput.forall(_.loggerName == loggerName)
-    ) && assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
-      equalTo(
-        Chunk(
-          "Starting operation",
-          "Stopping operation",
-          "Starting operation",
-          "Stopping operation",
-          "Done"
-        )
-      )
-    )
 
   def someError(): ZIO[Any, Nothing, Unit] = {
     def someTestFunction(input: Int): Int = {
@@ -101,40 +78,61 @@ object JPLSpec extends ZIOSpecDefault {
     )
 
   val spec: Spec[Environment, Any] = suite("JPLSpec")(
-//    test("log only user annotation into MDC") {
-//      startStop().map { case (_, users) =>
-//        val loggerOutput = TestAppender.logOutput
-//        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
-//          equalTo(Chunk.fill(5)(None))
-//        ) && assert(loggerOutput.map(_.mdc.get("user")))(
-//          equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-//        )
-//      }
-//    }.provide(loggerUserAnnotation),
-//    test("log only trace annotation into MDC") {
-//      startStop().map { case (traceId, _) =>
-//        val loggerOutput = TestAppender.logOutput
-//        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
-//          equalTo(
-//            Chunk.fill(4)(Some(traceId.toString)) :+ None
-//          )
-//        ) && assert(loggerOutput.map(_.mdc.get("user")))(
-//          equalTo(Chunk.fill(5)(None))
-//        )
-//      }
-//    }.provide(loggerTraceAnnotation),
-//    test("log all annotations into MDC with custom logger name") {
-//      (startStop() @@ JPL.loggerName("my-logger")).map { case (traceId, users) =>
-//        val loggerOutput = TestAppender.logOutput
-//        startStopAssert(loggerOutput, "my-logger") && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
-//          equalTo(
-//            Chunk.fill(4)(Some(traceId.toString)) :+ None
-//          )
-//        ) && assert(loggerOutput.map(_.mdc.get("user")))(
-//          equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-//        )
-//      }
-//    }.provide(loggerDefault),
+    test("log with default logger name") {
+      startStop().map { case (traceId, users) =>
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(loggerOutput.size == 5) && assertTrue(
+          loggerOutput.forall(_.loggerName == "zio.logging.backend.JPLSpec")
+        ) && assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
+          equalTo(
+            Chunk(
+              s"user=${users(0)} trace_id=$traceId Starting operation",
+              s"user=${users(0)} trace_id=$traceId Stopping operation",
+              s"user=${users(1)} trace_id=$traceId Starting operation",
+              s"user=${users(1)} trace_id=$traceId Stopping operation",
+              s"Done"
+            )
+          )
+        )
+      }
+    }.provide(loggerDefault),
+    test("log with custom logger name") {
+      val loggerName = "my-logger"
+      (startStop() @@ JPL.loggerName(loggerName)).map { case (traceId, users) =>
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(loggerOutput.size == 5) && assertTrue(
+          loggerOutput.forall(_.loggerName == loggerName)
+        ) && assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
+          equalTo(
+            Chunk(
+              s"jpl_logger_name=$loggerName user=${users(0)} trace_id=$traceId Starting operation",
+              s"jpl_logger_name=$loggerName user=${users(0)} trace_id=$traceId Stopping operation",
+              s"jpl_logger_name=$loggerName user=${users(1)} trace_id=$traceId Starting operation",
+              s"jpl_logger_name=$loggerName user=${users(1)} trace_id=$traceId Stopping operation",
+              s"jpl_logger_name=$loggerName Done"
+            )
+          )
+        )
+      }
+    }.provide(loggerDefault),
+    test("log only trace annotation") {
+      startStop().map { case (traceId, _) =>
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(loggerOutput.size == 5) && assertTrue(
+          loggerOutput.forall(_.loggerName == "zio.logging.backend.JPLSpec")
+        ) && assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
+          equalTo(
+            Chunk(
+              s"trace_id=$traceId Starting operation",
+              s"trace_id=$traceId Stopping operation",
+              s"trace_id=$traceId Starting operation",
+              s"trace_id=$traceId Stopping operation",
+              s"Done"
+            )
+          )
+        )
+      }
+    }.provide(loggerTraceAnnotation),
     test("logger name changes") {
       val users = Chunk.fill(2)(UUID.randomUUID())
       for {
