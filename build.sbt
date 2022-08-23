@@ -46,7 +46,7 @@ addCommandAlias(
 
 addCommandAlias(
   "mimaChecks",
-  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues jpl/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
+  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
 )
 
 lazy val root = project
