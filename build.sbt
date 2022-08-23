@@ -30,8 +30,13 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 
 addCommandAlias(
-  "testJVM",
+  "testJVM8",
   ";coreJVM/test;slf4j/test;slf4jBridge/test"
+)
+
+addCommandAlias(
+  "testJVM",
+  ";coreJVM/test;slf4j/test;jpl/test;slf4jBridge/test"
 )
 
 addCommandAlias(
@@ -41,7 +46,7 @@ addCommandAlias(
 
 addCommandAlias(
   "mimaChecks",
-  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
+  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues jpl/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
 )
 
 lazy val root = project
