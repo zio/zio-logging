@@ -304,18 +304,24 @@ object LogFormat {
       builder.appendText(line())
     }
 
-  val traceLine = LogFormat.make {
-    (builder, trace, _, _, _, _, _, _, _) =>
-      trace match {
-        case Trace(_, _, line) => builder.appendNumeric(line)
-        case _ => ()
-      }
+  val traceLine: LogFormat = LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
+    trace match {
+      case Trace(_, _, line) => builder.appendNumeric(line)
+      case _                 => ()
+    }
   }
 
   val cause: LogFormat =
     LogFormat.make { (builder, _, _, _, _, cause, _, _, _) =>
       if (!cause.isEmpty) {
         builder.appendCause(cause)
+      }
+    }
+
+  def ifCauseNonEmpty(format: LogFormat): LogFormat =
+    LogFormat.make { (builder, trace, fiberId, logLevel, message, cause, spans, location, annotations) =>
+      if (!cause.isEmpty) {
+        format.unsafeFormat(builder)(trace, fiberId, logLevel, message, cause, spans, location, annotations)
       }
     }
 
@@ -330,6 +336,8 @@ object LogFormat {
     }
 
   val newLine: LogFormat = text(NL)
+
+  val space: LogFormat = text(" ")
 
   val quote: LogFormat = text("\"")
 
@@ -374,14 +382,14 @@ object LogFormat {
     label("timestamp", timestamp.fixed(32)) |-|
       label("level", level) |-|
       label("thread", fiberId) |-|
-      label("message", quoted(line)) |-|
-      label("cause", cause)
+      label("message", quoted(line)) +
+      ifCauseNonEmpty(space + label("cause", cause))
 
   val colored: LogFormat =
     label("timestamp", timestamp.fixed(32)).color(LogColor.BLUE) |-|
       label("level", level).highlight |-|
       label("thread", fiberId).color(LogColor.WHITE) |-|
-      label("message", quoted(line)).highlight |-|
-      label("cause", cause).highlight
+      label("message", quoted(line)).highlight +
+      ifCauseNonEmpty(space + label("cause", cause).highlight)
 
 }
