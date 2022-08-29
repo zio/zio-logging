@@ -224,6 +224,22 @@ object LogFormatSpec extends ZIOSpecDefault {
         assertTrue(result.size == 10)
       }
     },
+    test("traceLine") {
+      val format = traceLine
+      check(Gen.int) { tLine =>
+        val result = format.toLogger(
+          Trace("location", "file", tLine),
+          FiberId.None,
+          LogLevel.Info,
+          () => "line",
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == tLine.toString)
+      }
+    },
     test("cause") {
       val format = cause
       check(Gen.string) { msg =>
@@ -239,6 +255,80 @@ object LogFormatSpec extends ZIOSpecDefault {
           Map.empty
         )
         assertTrue(result == failure.prettyPrint)
+      }
+    },
+    test("cause empty") {
+      val format = cause
+
+      val failure = Cause.empty
+      val result  = format.toLogger(
+        Trace.empty,
+        FiberId.None,
+        LogLevel.Info,
+        () => "",
+        failure,
+        FiberRefs.empty,
+        Nil,
+        Map.empty
+      )
+      assertTrue(result == failure.prettyPrint)
+    },
+    test("not empty cause with label if not empty") {
+      val format = ifCauseNonEmpty(label("cause", cause))
+      check(Gen.string) { msg =>
+        val failure = Cause.fail(new Exception(msg))
+        val result  = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          failure,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == s"cause=${failure.prettyPrint}")
+      }
+    },
+    test("empty cause with label if not empty") {
+      val format = ifCauseNonEmpty(label("cause", cause))
+
+      val failure = Cause.empty
+      val result  = format.toLogger(
+        Trace.empty,
+        FiberId.None,
+        LogLevel.Info,
+        () => "",
+        failure,
+        FiberRefs.empty,
+        Nil,
+        Map.empty
+      )
+      assertTrue(result == "")
+    },
+    test("default without timestamp") {
+      val format = label("level", level) |-|
+        label("thread", fiberId) |-|
+        label("message", quoted(line)) +
+        ifCauseNonEmpty(space + label("cause", cause))
+
+      check(Gen.int, Gen.string, Gen.string, Gen.boolean) { (fiberId, message, cause, hasCause) =>
+        val failure                    = if (hasCause) Cause.fail(new Exception(cause)) else Cause.empty
+        val result                     = format.toLogger(
+          Trace.empty,
+          FiberId(fiberId, 1, Trace.empty),
+          LogLevel.Info,
+          () => message,
+          failure,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+        val expectedResultWithoutCause =
+          s"""level=${LogLevel.Info.label} thread=zio-fiber-$fiberId message="${message}""""
+        val expectedResult             =
+          if (hasCause) s"$expectedResultWithoutCause cause=${failure.prettyPrint}" else expectedResultWithoutCause
+        assertTrue(result == expectedResult)
       }
     }
   )
