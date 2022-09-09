@@ -143,7 +143,7 @@ private[logging] object LogAppender {
       var textContent: mutable.StringBuilder = new mutable.StringBuilder,
       var quoteTextContent: Boolean = false
     ) {
-      def appendContent(str: CharSequence): Unit     = { content.append(str); () }
+      def appendContent(str: CharSequence): Unit                     = { content.append(str); () }
       def appendTextContent(str: CharSequence, quote: Boolean): Unit = {
         quoteTextContent |= quote
         textContent.append(str)
@@ -178,12 +178,11 @@ private[logging] object LogAppender {
         current.textContent.toString()
       }
 
-
       if (current.content.isEmpty && !current.root) {
         // Simple value
         if (current.quoteTextContent) result.append("\"")
         result.append(JsonEscape(cleanedTextContent))
-        if (current.quoteTextContent)result.append("\"")
+        if (current.quoteTextContent) result.append("\"")
       } else {
         // Structure
         result.append("{")
