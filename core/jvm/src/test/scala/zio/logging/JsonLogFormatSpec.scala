@@ -169,7 +169,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           Map.empty
         )
 
-        val msg = JsonEscape(i + " " + line)
+        val msg = JsonEscape(s"$i $line")
         assertTrue(result == s"""{"line":"$msg"}""")
       }
     }
