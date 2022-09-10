@@ -40,7 +40,7 @@ object JPL {
         ZIO.logAnnotate(loggerNameKey, value)(zio)
     }
 
-  def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
+  private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
     _ match {
       case Trace(location, _, _) =>
         val last = location.lastIndexOf(".")
@@ -109,12 +109,12 @@ object JPL {
   ): ZLayer[Any, Nothing, Unit] =
     jpl(format, getLoggerName())
 
-  def jpl: ZLayer[Any, Nothing, Unit] =
+  val jpl: ZLayer[Any, Nothing, Unit] =
     jpl(logFormatDefault)
 
   def jplLogger(
     format: LogFormat,
-    loggerName: Trace => String
+    loggerName: Trace => String = getLoggerName()
   ): ZLogger[String, Unit] =
     jplLogger(format, loggerName, System.getLogger)
 
