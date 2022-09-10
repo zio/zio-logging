@@ -172,6 +172,24 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
         val msg = JsonEscape(s"$i $line")
         assertTrue(result == s"""{"line":"$msg"}""")
       }
+    },
+    test("Don't show ansi escape codes from colored log format") {
+      val format = line.color(LogColor.WHITE) |-| line |-| line.color(LogColor.BLUE)
+      check(nonEmptyString) { line =>
+        val result = format
+          .toJsonLogger(
+            Trace.empty,
+            FiberId.None,
+            LogLevel.Info,
+            () => line,
+            Cause.empty,
+            FiberRefs.empty,
+            Nil,
+            Map.empty
+          )
+        val msg    = JsonEscape(line)
+        assertTrue(result == s"""{"text_content":"$msg $msg $msg"}""")
+      }
     }
   )
 }
