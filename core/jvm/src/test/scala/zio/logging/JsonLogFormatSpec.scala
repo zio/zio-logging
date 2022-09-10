@@ -137,6 +137,41 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           result == s"""{"text_content":"hi there","msg":"$msg","nested":{"fiber":{"text_content":"$fiber abc","third":"3"},"test":"$ann"}}"""
         )
       }
+    },
+    test("numeric value") {
+      val format = label("line", traceLine)
+      check(Gen.int) { i =>
+        val result = format.toJsonLogger(
+          Trace.apply("", "", i),
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+
+        assertTrue(result == s"""{"line":$i}""")
+      }
+    },
+    test("numeric value concatenated with string") {
+      val format = label("line", traceLine |-| line)
+      check(Gen.alphaNumericString, Gen.int) { (line, i) =>
+        val result = format.toJsonLogger(
+          Trace.apply("", "", i),
+          FiberId.None,
+          LogLevel.Info,
+          () => line,
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+
+        val msg = JsonEscape(s"$i $line")
+        assertTrue(result == s"""{"line":"$msg"}""")
+      }
     }
   )
 }

@@ -140,10 +140,15 @@ private[logging] object LogAppender {
       var separateKeyValue: Boolean = false,
       var writingKey: Boolean = false,
       val content: mutable.StringBuilder = new mutable.StringBuilder,
-      var textContent: mutable.StringBuilder = new mutable.StringBuilder
+      var textContent: mutable.StringBuilder = new mutable.StringBuilder,
+      var quoteTextContent: Boolean = false
     ) {
-      def appendContent(str: CharSequence): Unit     = { content.append(str); () }
-      def appendTextContent(str: CharSequence): Unit = { textContent.append(str); () }
+      def appendContent(str: CharSequence): Unit                     = { content.append(str); () }
+      def appendTextContent(str: CharSequence, quote: Boolean): Unit = {
+        quoteTextContent |= quote
+        textContent.append(str)
+        ()
+      }
     }
 
     val stack = new mutable.Stack[State]()
@@ -152,11 +157,13 @@ private[logging] object LogAppender {
 
     override def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
 
-    override def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
+    override def appendNumeric[A](numeric: A): Unit =
+      if (current.writingKey) current.appendContent(numeric.toString)
+      else current.appendTextContent(numeric.toString, false)
 
     override def appendText(text: String): Unit =
       if (current.writingKey) current.appendContent(text)
-      else current.appendTextContent(text)
+      else current.appendTextContent(text, true)
 
     def beginStructure(root: Boolean = false): Unit = { stack.push(new State(root = root)); () }
 
@@ -173,14 +180,18 @@ private[logging] object LogAppender {
 
       if (current.content.isEmpty && !current.root) {
         // Simple value
-        result.append("\"").append(JsonEscape(cleanedTextContent)).append("\"")
+        if (current.quoteTextContent) result.append("\"")
+        result.append(JsonEscape(cleanedTextContent))
+        if (current.quoteTextContent) result.append("\"")
       } else {
         // Structure
         result.append("{")
 
         if (current.textContent.nonEmpty) {
           result.append(""""text_content":""")
-          result.append("\"").append(JsonEscape(cleanedTextContent)).append("\"")
+          if (current.quoteTextContent) result.append("\"")
+          result.append(JsonEscape(cleanedTextContent))
+          if (current.quoteTextContent) result.append("\"")
         }
 
         if (current.content.nonEmpty) {
