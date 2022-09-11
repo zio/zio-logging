@@ -97,6 +97,8 @@ jobs:
           fetch-depth: 0
       - name: Setup Scala and Java
         uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Release artifacts
