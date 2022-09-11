@@ -21,7 +21,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion           = "2.0.0"
+val ZioVersion           = "2.0.2"
 val scalaJavaTimeVersion = "2.3.0"
 val slf4jVersion         = "1.7.36"
 val logbackVersion       = "1.2.11"
@@ -30,8 +30,13 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 
 addCommandAlias(
-  "testJVM",
+  "testJVM8",
   ";coreJVM/test;slf4j/test;slf4jBridge/test"
+)
+
+addCommandAlias(
+  "testJVM",
+  ";coreJVM/test;slf4j/test;jpl/test;slf4jBridge/test"
 )
 
 addCommandAlias(
@@ -49,7 +54,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, benchmarks, docs, examples)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, docs, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -106,6 +111,19 @@ lazy val slf4jBridge = project
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
+lazy val jpl = project
+  .in(file("jpl"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-jpl"))
+  .settings(mimaSettings(failOnProblem = true))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
 lazy val benchmarks = project
   .in(file("benchmarks"))
   .settings(stdSettings("zio-logging-benchmarks"))
@@ -131,12 +149,12 @@ lazy val docs = project
     docusaurusCreateSite                       := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
     docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
-  .dependsOn(coreJVM, slf4j)
+  .dependsOn(coreJVM, slf4j, jpl)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project
   .in(file("examples"))
-  .dependsOn(slf4j)
+  .dependsOn(slf4j, jpl)
   .settings(stdSettings("zio-logging-examples"))
   .settings(
     publish / skip := true,

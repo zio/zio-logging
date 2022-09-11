@@ -23,6 +23,8 @@ jobs:
           fetch-depth: 0
       - name: Setup Scala and Java
         uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
@@ -36,6 +38,8 @@ jobs:
         uses: actions/checkout@v3.0.2
       - name: Setup Scala and Java
         uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adopt@1.11
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
@@ -62,12 +66,16 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Mima Checks
-        if: ${{ !startsWith(matrix.scala, '3.') }}
+        if: ${{ !startsWith(matrix.scala, '3.') && endsWith(matrix.java, '.11') }}
         run: ./sbt ++${{ matrix.scala }}! mimaChecks
       - name: Run tests
+        if: ${{ endsWith(matrix.java, '.11') }}
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
+      - name: Run tests JVM8
+        if: ${{ endsWith(matrix.java, '.8') && matrix.platform == 'JVM' }}
+        run: sbt ++${{ matrix.scala }}! testJVM8
       - name: Compile additional subprojects
-        if: ${{ startsWith(matrix.scala, '2.12.') || startsWith(matrix.scala, '2.13.') }}
+        if: ${{ ( startsWith(matrix.scala, '2.12.') || startsWith(matrix.scala, '2.13.') ) && endsWith(matrix.java, '.11') }}
         run: sbt ++${{ matrix.scala }}! examples/compile docs/compile benchmarks/compile
 
   ci:

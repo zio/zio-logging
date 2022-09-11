@@ -16,7 +16,7 @@ class ZioLoggerFactory extends ILoggerFactory {
 
   private[impl] def run(f: ZIO[Any, Nothing, Any]): Unit =
     if (runtime != null) {
-      zio.Unsafe.unsafeCompat { implicit u =>
+      zio.Unsafe.unsafe { implicit u =>
         runtime.unsafe.run(f)
         ()
       }
