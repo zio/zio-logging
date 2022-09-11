@@ -135,6 +135,8 @@ private[logging] object LogAppender {
   }
 
   def json(textAppender: String => Any): LogAppender = new LogAppender { self =>
+    val AnsiColorRegex = "\\u001b\\[\\d+m".r
+
     class State(
       var root: Boolean = false,
       var separateKeyValue: Boolean = false,
@@ -171,9 +173,16 @@ private[logging] object LogAppender {
       val result = new mutable.StringBuilder
 
       val cleanedTextContent = {
-        // Do a little cleanup to handle default log formats (quoted and spaced)
+        // Do a little cleanup to handle default log formats (quoted, colored and spaced)
         if (current.textContent.startsWith("\"") && current.textContent.endsWith("\""))
           current.textContent = current.textContent.drop(1).dropRight(1)
+
+        if (AnsiColorRegex.findFirstMatchIn(current.textContent).nonEmpty) {
+          val cleaned = AnsiColorRegex.replaceAllIn(current.textContent, "")
+          current.textContent.clear()
+          current.textContent.appendAll(cleaned)
+        }
+
         if (current.textContent.forall(_ == ' ')) current.textContent.clear()
         current.textContent.toString()
       }
