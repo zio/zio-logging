@@ -5,7 +5,7 @@ import zio.{ LogLevel, Trace }
 
 object LogFilteringSpec extends ZIOSpecDefault {
 
-  val filter: (zio.Trace, LogLevel) => Boolean = LogFiltering.filterBy(
+  val filter: LogFiltering.Filter = LogFiltering.filterBy(
     LogLevel.Debug,
     "a"     -> LogLevel.Info,
     "a.b.c" -> LogLevel.Warning,
@@ -13,7 +13,7 @@ object LogFilteringSpec extends ZIOSpecDefault {
   )
 
   private def testFilter(
-    filter: (Trace, LogLevel) => Boolean,
+    filter: LogFiltering.Filter,
     location: String,
     level: LogLevel,
     expectation: Assertion[Boolean]
@@ -21,7 +21,7 @@ object LogFilteringSpec extends ZIOSpecDefault {
     assert(filter(Trace(location, "", 0), level))(expectation ?? s"$location with $level")
 
   val spec: Spec[Environment, Any] = suite("LogFilteringSpec")(
-    test("can be built from list of nodes") {
+    test("log filtering") {
       testFilter(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
       testFilter(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
       testFilter(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
