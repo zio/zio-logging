@@ -50,15 +50,7 @@ object SLF4J {
    * will have ''example.LivePingService'' as logger name
    */
   def getLoggerName(default: String = "zio-slf4j-logger"): Trace => String =
-    _ match {
-      case Trace(location, _, _) =>
-        val last = location.lastIndexOf(".")
-        if (last > 0) {
-          location.substring(0, last)
-        } else location
-
-      case _ => default
-    }
+    zio.logging.getLoggerName(default)
 
   private def isLogLevelEnabled(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): Boolean =
     logLevel match {

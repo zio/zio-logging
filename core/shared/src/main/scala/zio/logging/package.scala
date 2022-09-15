@@ -43,6 +43,17 @@ package object logging {
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
 
+  def getLoggerName(default: String = "zio-logger"): Trace => String =
+    _ match {
+      case Trace(location, _, _) =>
+        val last = location.lastIndexOf(".")
+        if (last > 0) {
+          location.substring(0, last)
+        } else location
+
+      case _ => default
+    }
+
   def console(
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info

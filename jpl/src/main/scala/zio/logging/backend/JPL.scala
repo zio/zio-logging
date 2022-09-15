@@ -37,15 +37,7 @@ object JPL {
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
-    _ match {
-      case Trace(location, _, _) =>
-        val last = location.lastIndexOf(".")
-        if (last > 0) {
-          location.substring(0, last)
-        } else location
-
-      case _ => default
-    }
+    zio.logging.getLoggerName(default)
 
   private def logAppender(systemLogger: System.Logger, logLevel: LogLevel): LogAppender = new LogAppender {
     self =>
