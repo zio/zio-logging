@@ -10,6 +10,8 @@ object LogFiltering {
 
   type Filter = (Trace, LogLevel) => Boolean
 
+  val default: Filter = (_, _) => true
+
   /**
    * Defines a filter function from a list of log-levels specified per tree node
    *
@@ -141,6 +143,5 @@ object LogFiltering {
             Some(logger(trace, fiberId, logLevel, message, cause, context, spans, annotations))
           } else None
       }
-
   }
 }

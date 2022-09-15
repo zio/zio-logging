@@ -58,25 +58,49 @@ package object logging {
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toLogger, java.lang.System.out, logLevel)
+    console(format, LogFiltering.filterBy(logLevel))
+
+  def console(
+    format: LogFormat,
+    logFilter: LogFiltering.Filter
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toLogger, java.lang.System.out, logFilter)
 
   def consoleJson(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toJsonLogger, java.lang.System.out, logLevel)
+    consoleJson(format, LogFiltering.filterBy(logLevel))
+
+  def consoleJson(
+    format: LogFormat,
+    logFilter: LogFiltering.Filter
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toJsonLogger, java.lang.System.out, logFilter)
 
   def consoleErr(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toLogger, java.lang.System.err, logLevel)
+    consoleErr(format, LogFiltering.filterBy(logLevel))
+
+  def consoleErr(
+    format: LogFormat,
+    logFilter: LogFiltering.Filter
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toLogger, java.lang.System.err, logFilter)
 
   def consoleErrJson(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toJsonLogger, java.lang.System.err, logLevel)
+    consoleErrJson(format, LogFiltering.filterBy(logLevel))
+
+  def consoleErrJson(
+    format: LogFormat,
+    logFilter: LogFiltering.Filter
+  ): ZLayer[Any, Nothing, Unit] =
+    makeConsole(format.toJsonLogger, java.lang.System.err, logFilter)
 
   def file(
     destination: Path,
@@ -86,8 +110,25 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
+    file(destination, format, LogFiltering.filterBy(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
+
+  def file(
+    destination: Path,
+    format: LogFormat,
+    logFilter: LogFiltering.Filter,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(
-      makeStringLogger(destination, format.toLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+      makeStringLogger(
+        destination,
+        format.toLogger,
+        logFilter,
+        charset,
+        autoFlushBatchSize,
+        bufferedIOSize
+      )
     )
 
   def fileJson(
@@ -98,8 +139,25 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
+    fileJson(destination, format, LogFiltering.filterBy(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
+
+  def fileJson(
+    destination: Path,
+    format: LogFormat,
+    logFilter: LogFiltering.Filter,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(
-      makeStringLogger(destination, format.toJsonLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+      makeStringLogger(
+        destination,
+        format.toJsonLogger,
+        logFilter,
+        charset,
+        autoFlushBatchSize,
+        bufferedIOSize
+      )
     )
 
   def fileAsync(
@@ -110,7 +168,31 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
-    makeFileAsync(destination, format.toLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+    fileAsync(
+      destination,
+      format,
+      LogFiltering.filterBy(logLevel),
+      charset,
+      autoFlushBatchSize,
+      bufferedIOSize
+    )
+
+  def fileAsync(
+    destination: Path,
+    format: LogFormat,
+    logFilter: LogFiltering.Filter,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLayer[Any, Nothing, Unit] =
+    makeFileAsync(
+      destination,
+      format.toLogger,
+      logFilter,
+      charset,
+      autoFlushBatchSize,
+      bufferedIOSize
+    )
 
   def fileAsyncJson(
     destination: Path,
@@ -120,22 +202,47 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
-    makeFileAsync(destination, format.toJsonLogger, logLevel, charset, autoFlushBatchSize, bufferedIOSize)
+    fileAsyncJson(
+      destination,
+      format,
+      LogFiltering.filterBy(logLevel),
+      charset,
+      autoFlushBatchSize,
+      bufferedIOSize
+    )
+
+  def fileAsyncJson(
+    destination: Path,
+    format: LogFormat,
+    logFilter: LogFiltering.Filter,
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLayer[Any, Nothing, Unit] =
+    makeFileAsync(
+      destination,
+      format.toJsonLogger,
+      logFilter,
+      charset,
+      autoFlushBatchSize,
+      bufferedIOSize
+    )
 
   val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers
 
   private def makeConsole(
     logger: ZLogger[String, String],
     stream: PrintStream,
-    logLevel: LogLevel
+    logFilter: LogFiltering.Filter
   ): ZLayer[Any, Nothing, Unit] = {
+    import LogFiltering.ZLoggerFilterOps
     val stringLogger = logger.map { line =>
       try stream.println(line)
       catch {
         case t: VirtualMachineError => throw t
         case _: Throwable           => ()
       }
-    }.filterLogLevel(_ >= logLevel)
+    }.filter(logFilter)
 
     Runtime.addLogger(stringLogger)
   }
@@ -143,11 +250,12 @@ package object logging {
   private def makeStringLogger(
     destination: Path,
     logger: ZLogger[String, String],
-    logLevel: LogLevel,
+    logFilter: LogFiltering.Filter,
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
   ): ZLogger[String, Any] = {
+    import LogFiltering.ZLoggerFilterOps
     val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
 
     val stringLogger: ZLogger[String, Any] =
@@ -157,7 +265,7 @@ package object logging {
           case t: VirtualMachineError => throw t
           case _: Throwable           => ()
         }
-      }.filterLogLevel(_ >= logLevel)
+      }.filter(logFilter)
 
     stringLogger
   }
@@ -165,7 +273,7 @@ package object logging {
   private def makeFileAsync(
     destination: Path,
     logger: ZLogger[String, String],
-    logLevel: LogLevel,
+    logFilter: LogFiltering.Filter,
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
@@ -174,7 +282,7 @@ package object logging {
       for {
         queue       <- Queue.bounded[UIO[Any]](1000)
         stringLogger =
-          makeAsyncStringLogger(destination, logger, logLevel, charset, autoFlushBatchSize, bufferedIOSize, queue)
+          makeAsyncStringLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue)
         _           <- FiberRef.currentLoggers.locallyScopedWith(_ + stringLogger)
         _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
       } yield ()
@@ -183,12 +291,13 @@ package object logging {
   private def makeAsyncStringLogger(
     destination: Path,
     logger: ZLogger[String, String],
-    logLevel: LogLevel,
+    logFilter: LogFiltering.Filter,
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
     queue: Queue[UIO[Any]]
   ): ZLogger[String, Any] = {
+    import LogFiltering.ZLoggerFilterOps
     val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
 
     val stringLogger: ZLogger[String, Any] =
@@ -202,7 +311,7 @@ package object logging {
             }
           }))
         }
-      }.filterLogLevel(_ >= logLevel)
+      }.filter(logFilter)
     stringLogger
   }
 }
