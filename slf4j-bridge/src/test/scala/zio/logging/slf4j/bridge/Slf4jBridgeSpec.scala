@@ -25,6 +25,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
                       _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
                       _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
                       _      <- ZIO.attempt(logger.error("error", testFailure))
+                      _      <- ZIO.attempt(logger.error("error", null))
                     } yield ()).exit
           output <- ZTestLogger.logOutput
           lines   = output.map { logEntry =>
@@ -72,6 +73,13 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
               Map.empty,
               "error",
               Cause.die(testFailure)
+            ),
+            LogEntry(
+              List("test.logger"),
+              LogLevel.Error,
+              Map.empty,
+              "error",
+              Cause.empty
             )
           )
         )
