@@ -13,7 +13,17 @@ object LogFilteringSpec extends ZIOSpecDefault {
     level: LogLevel,
     expectation: Assertion[Boolean]
   ): TestResult =
-    assert(filter(Trace(location, "", 0), level))(expectation ?? s"$location with $level")
+    assert(filter(Trace(location, "", 0), level, FiberRefs.empty, Map.empty))(expectation ?? s"$location with $level")
+
+  private def testFilterAnnotation(
+    filter: LogFiltering.Filter,
+    location: String,
+    level: LogLevel,
+    expectation: Assertion[Boolean]
+  ): TestResult =
+    assert(filter(Trace.empty, level, FiberRefs.empty, Map("name" -> location)))(
+      expectation ?? s"$location with $level"
+    )
 
   private def testLogger(
     logOutput: java.util.concurrent.atomic.AtomicReference[Chunk[LogEntry]],
@@ -65,6 +75,28 @@ object LogFilteringSpec extends ZIOSpecDefault {
       testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
       testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
       testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+    },
+    test("log filtering with annotation") {
+      val loggerName: (Trace, FiberRefs, Map[String, String]) => String =
+        (_, _, annotations) => annotations.getOrElse("name", "")
+
+      val filter: LogFiltering.Filter = LogFiltering.filterBy(
+        LogLevel.Debug,
+        loggerName,
+        "a"     -> LogLevel.Info,
+        "a.b.c" -> LogLevel.Warning,
+        "e.f"   -> LogLevel.Error
+      )
+
+      testFilterAnnotation(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+      testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+      testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+      testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
     },
     test("log with filtered default") {
       val logOutputRef = new java.util.concurrent.atomic.AtomicReference[Chunk[LogEntry]](Chunk.empty)

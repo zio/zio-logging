@@ -8,9 +8,12 @@ import scala.annotation.tailrec
 object LogFiltering {
   final case class LogFilterNode(logLevel: LogLevel, children: Map[String, LogFilterNode])
 
-  type Filter = (Trace, LogLevel) => Boolean
+  type Filter = (Trace, LogLevel, FiberRefs, Map[String, String]) => Boolean
 
-  val default: Filter = (_, _) => true
+  private val loggerNameDefault: (Trace, FiberRefs, Map[String, String]) => String = (trace, _, _) =>
+    getLoggerName()(trace)
+
+  val default: Filter = (_, _, _, _) => true
 
   /**
    * Defines a filter function from a list of log-levels specified per tree node
@@ -34,17 +37,24 @@ object LogFiltering {
    * @return A filter function for customizing appenders
    */
   def filterBy(rootLevel: LogLevel, mappings: (String, LogLevel)*): Filter =
-    filterByTree(buildLogFilterTree(rootLevel, mappings))
+    filterBy(rootLevel, loggerNameDefault, mappings: _*)
 
-  def filterByTree(root: LogFilterNode): Filter =
-    (trace, logLevel) => {
-      val loggerName     = getLoggerNames(trace)
-      val loggerLogLevel = findMostSpecificLogLevel(loggerName, root)
-      logLevel >= loggerLogLevel
+  def filterBy(
+    rootLevel: LogLevel,
+    loggerName: (Trace, FiberRefs, Map[String, String]) => String,
+    mappings: (String, LogLevel)*
+  ): Filter =
+    filterByTree(buildLogFilterTree(rootLevel, mappings), loggerName)
+
+  private def filterByTree(root: LogFilterNode, loggerName: (Trace, FiberRefs, Map[String, String]) => String): Filter =
+    (trace, level, context, annotations) => {
+      val loggerNames    = loggerName(trace, context, annotations).split('.').toList
+      val loggerLogLevel = findMostSpecificLogLevel(loggerNames, root)
+      level >= loggerLogLevel
     }
 
   def filterBy(rootLevel: LogLevel): Filter =
-    (_, logLevel) => logLevel >= rootLevel
+    (_, level, _, _) => level >= rootLevel
 
   type FilterCache = TMap[(List[String], LogLevel), Boolean]
 
@@ -53,12 +63,24 @@ object LogFiltering {
     rootLevel: LogLevel,
     mappings: (String, LogLevel)*
   ): Filter =
-    cachedFilterByTree(cache, buildLogFilterTree(rootLevel, mappings))
+    cachedFilterBy(cache, rootLevel, loggerNameDefault, mappings: _*)
 
-  def cachedFilterByTree(cache: FilterCache, root: LogFilterNode): Filter =
-    (trace, level) => {
-      val loggerName = getLoggerNames(trace)
-      val key        = (loggerName, level)
+  def cachedFilterBy(
+    cache: FilterCache,
+    rootLevel: LogLevel,
+    loggerName: (Trace, FiberRefs, Map[String, String]) => String,
+    mappings: (String, LogLevel)*
+  ): Filter =
+    cachedFilterByTree(cache, buildLogFilterTree(rootLevel, mappings), loggerName)
+
+  private def cachedFilterByTree(
+    cache: FilterCache,
+    root: LogFilterNode,
+    loggerName: (Trace, FiberRefs, Map[String, String]) => String
+  ): Filter =
+    (trace, level, context, annotations) => {
+      val loggerNames = loggerName(trace, context, annotations).split('.').toList
+      val key         = (loggerNames, level)
       zio.Unsafe.unsafe { implicit u =>
         zio.Runtime.default.unsafe.run {
           val stm = for {
@@ -67,7 +89,7 @@ object LogFiltering {
                         case Some(value) =>
                           ZSTM.succeed(value)
                         case None        =>
-                          val mostSpecificLogLevel = findMostSpecificLogLevel(loggerName, root)
+                          val mostSpecificLogLevel = findMostSpecificLogLevel(loggerNames, root)
                           val answer               = level >= mostSpecificLogLevel
                           cache.put(key, answer).as(answer)
                       }
@@ -76,11 +98,6 @@ object LogFiltering {
         }.getOrThrowFiberFailure()
       }
     }
-
-  private def getLoggerNames(trace: Trace): List[String] = {
-    val name = getLoggerName()(trace)
-    name.split('.').toList
-  }
 
   private def buildLogFilterTree(rootLevel: LogLevel, mappings: Seq[(String, LogLevel)]): LogFilterNode = {
     def add(tree: LogFilterNode, names: List[String], level: LogLevel): LogFilterNode =
@@ -139,7 +156,7 @@ object LogFiltering {
           spans: List[LogSpan],
           annotations: Map[String, String]
         ): Option[O] =
-          if (filter(trace, logLevel)) {
+          if (filter(trace, logLevel, context, annotations)) {
             Some(logger(trace, fiberId, logLevel, message, cause, context, spans, annotations))
           } else None
       }
