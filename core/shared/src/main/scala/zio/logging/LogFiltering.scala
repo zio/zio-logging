@@ -99,6 +99,39 @@ object LogFiltering {
       }
     }
 
+  def cachedFilterBy(
+    rootLevel: LogLevel,
+    mappings: (String, LogLevel)*
+  ): Filter =
+    cachedFilterBy(rootLevel, loggerNameDefault, mappings: _*)
+
+  def cachedFilterBy(
+    rootLevel: LogLevel,
+    loggerName: (Trace, FiberRefs, Map[String, String]) => String,
+    mappings: (String, LogLevel)*
+  ): Filter =
+    cachedFilterByTree(buildLogFilterTree(rootLevel, mappings), loggerName)
+
+  private def cachedFilterByTree(
+    root: LogFilterNode,
+    loggerName: (Trace, FiberRefs, Map[String, String]) => String
+  ): Filter = {
+    val cache = new java.util.concurrent.ConcurrentHashMap[(List[String], LogLevel), Boolean]()
+    (trace, level, context, annotations) => {
+      val loggerNames                   = loggerName(trace, context, annotations).split('.').toList
+      val key: (List[String], LogLevel) = (loggerNames, level)
+
+      cache.computeIfAbsent(
+        key,
+        _ => {
+          val mostSpecificLogLevel = findMostSpecificLogLevel(loggerNames, root)
+          val answer               = level >= mostSpecificLogLevel
+          answer
+        }
+      )
+    }
+  }
+
   private def buildLogFilterTree(rootLevel: LogLevel, mappings: Seq[(String, LogLevel)]): LogFilterNode = {
     def add(tree: LogFilterNode, names: List[String], level: LogLevel): LogFilterNode =
       names match {

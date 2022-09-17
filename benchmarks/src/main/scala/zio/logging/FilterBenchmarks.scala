@@ -46,7 +46,7 @@ class FilterBenchmarks {
       )
     )
 
-  val cachedFilterLogging: ZLayer[Any, Nothing, Unit] =
+  val tmapCachedFilterLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> ZLayer.fromZIO {
       TMap.empty[(List[String], LogLevel), Boolean].commit.map { cache =>
         cachedFilterBy(
@@ -61,6 +61,18 @@ class FilterBenchmarks {
     }.flatMap { env =>
       console(LogFormat.default, env.get[LogFiltering.Filter])
     }
+
+  val cachedFilterLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> console(
+      LogFormat.default,
+      cachedFilterBy(
+        LogLevel.Debug,
+        loggerName,
+        "a.b.c" -> LogLevel.Info,
+        "a.b.d" -> LogLevel.Warning,
+        "e"     -> LogLevel.Info
+      )
+    )
 
   val names: List[String] = List(
     "a",
@@ -85,6 +97,7 @@ class FilterBenchmarks {
         (ZIO.logDebug("test") @@ ZIOAspect.annotated("name", name)).provide(logging)
       }
     }
+    ()
   }
 
   /**
@@ -92,11 +105,12 @@ class FilterBenchmarks {
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
-   * Benchmark                                   Mode  Cnt      Score       Error  Units
-   * FilterBenchmarks.cachedFilterTreeLog       thrpt    3   9032.190 ±  3481.996  ops/s
-   * FilterBenchmarks.filterTreeLog             thrpt    3  13544.625 ± 12022.233  ops/s
-   * FilterBenchmarks.handWrittenFilterLogging  thrpt    3  12316.480 ±  4649.164  ops/s
-   * FilterBenchmarks.noFilteringLogging        thrpt    3  12690.704 ±   367.390  ops/s
+   * Benchmark                                   Mode  Cnt      Score      Error  Units
+   * FilterBenchmarks.cachedFilterTreeLog       thrpt    3  14454.032 ± 1120.502  ops/s
+   * FilterBenchmarks.filterTreeLog             thrpt    3  14731.968 ± 1083.599  ops/s
+   * FilterBenchmarks.handWrittenFilterLogging  thrpt    3  12140.290 ± 7798.248  ops/s
+   * FilterBenchmarks.noFilteringLogging        thrpt    3  13127.773 ± 2033.250  ops/s
+   * FilterBenchmarks.tmapCachedFilterTreeLog   thrpt    3   9714.169 ±  949.069  ops/s
    */
 
   @Benchmark
@@ -110,6 +124,10 @@ class FilterBenchmarks {
   @Benchmark
   def filterTreeLog(): Unit =
     testLoggingWith(filterTreeLogging)
+
+  @Benchmark
+  def tmapCachedFilterTreeLog(): Unit =
+    testLoggingWith(tmapCachedFilterLogging)
 
   @Benchmark
   def cachedFilterTreeLog(): Unit =
