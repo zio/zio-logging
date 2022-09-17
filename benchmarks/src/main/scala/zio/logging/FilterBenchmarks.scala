@@ -1,7 +1,7 @@
 package zio.logging
 
 import org.openjdk.jmh.annotations._
-import zio.logging.LogFiltering.{ cachedFilterBy, filterBy }
+import zio.logging.LogFilter.{ cachedLogLevelAndName, logLevelAndName }
 import zio.stm.TMap
 import zio.{ FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZIO, ZIOAspect, ZLayer }
 
@@ -19,10 +19,10 @@ class FilterBenchmarks {
   val runtime = Runtime.default
 
   val unfilteredLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFiltering.default)
+    Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
-    val filter: LogFiltering.Filter = (trace, level, context, annotations) => {
+    val filter: LogFilter = (trace, level, context, annotations) => {
       val loggerNames = loggerName(trace, context, annotations).split(".").toList
       loggerNames match {
         case List("a", "b", "c") => level >= LogLevel.Info
@@ -34,10 +34,10 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(LogFormat.default, filter)
   }
 
-  val filterTreeLogging: ZLayer[Any, Nothing, Unit] =
+  val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      filterBy(
+      logLevelAndName(
         LogLevel.Debug,
         loggerName,
         "a.b.c" -> LogLevel.Info,
@@ -46,10 +46,10 @@ class FilterBenchmarks {
       )
     )
 
-  val tmapCachedFilterLogging: ZLayer[Any, Nothing, Unit] =
+  val tmapCachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> ZLayer.fromZIO {
       TMap.empty[(List[String], LogLevel), Boolean].commit.map { cache =>
-        cachedFilterBy(
+        cachedLogLevelAndName(
           cache,
           LogLevel.Debug,
           loggerName,
@@ -59,13 +59,13 @@ class FilterBenchmarks {
         )
       }
     }.flatMap { env =>
-      console(LogFormat.default, env.get[LogFiltering.Filter])
+      console(LogFormat.default, env.get[LogFilter])
     }
 
-  val cachedFilterLogging: ZLayer[Any, Nothing, Unit] =
+  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      cachedFilterBy(
+      cachedLogLevelAndName(
         LogLevel.Debug,
         loggerName,
         "a.b.c" -> LogLevel.Info,
@@ -105,32 +105,32 @@ class FilterBenchmarks {
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
-   * Benchmark                                   Mode  Cnt      Score      Error  Units
-   * FilterBenchmarks.cachedFilterTreeLog       thrpt    3  14454.032 ± 1120.502  ops/s
-   * FilterBenchmarks.filterTreeLog             thrpt    3  14731.968 ± 1083.599  ops/s
-   * FilterBenchmarks.handWrittenFilterLogging  thrpt    3  12140.290 ± 7798.248  ops/s
-   * FilterBenchmarks.noFilteringLogging        thrpt    3  13127.773 ± 2033.250  ops/s
-   * FilterBenchmarks.tmapCachedFilterTreeLog   thrpt    3   9714.169 ±  949.069  ops/s
+   * Benchmark                                               Mode  Cnt      Score      Error  Units
+   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog      thrpt    3  14830.705 ± 2042.084  ops/s
+   * FilterBenchmarks.filterByLogLevelAndNameLog            thrpt    3  14794.678 ± 1603.926  ops/s
+   * FilterBenchmarks.handWrittenFilterLog                  thrpt    3  13041.006 ± 1225.018  ops/s
+   * FilterBenchmarks.noFilteringLog                        thrpt    3  13074.786 ±  512.533  ops/s
+   * FilterBenchmarks.tmapCachedFilterByLogLevelAndNameLog  thrpt    3   9875.576 ± 5103.356  ops/s
    */
 
   @Benchmark
-  def noFilteringLogging(): Unit =
+  def noFilteringLog(): Unit =
     testLoggingWith(unfilteredLogging)
 
   @Benchmark
-  def handWrittenFilterLogging(): Unit =
+  def handWrittenFilterLog(): Unit =
     testLoggingWith(handWrittenFilteredLogging)
 
   @Benchmark
-  def filterTreeLog(): Unit =
-    testLoggingWith(filterTreeLogging)
+  def filterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(filterByLogLevelAndNameLogging)
 
   @Benchmark
-  def tmapCachedFilterTreeLog(): Unit =
-    testLoggingWith(tmapCachedFilterLogging)
+  def tmapCachedFilterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(tmapCachedFilterByLogLevelAndNameLogging)
 
   @Benchmark
-  def cachedFilterTreeLog(): Unit =
-    testLoggingWith(cachedFilterLogging)
+  def cachedFilterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(cachedFilterByLogLevelAndNameLogging)
 
 }
