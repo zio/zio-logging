@@ -1,7 +1,6 @@
 package zio.logging
 
 import org.openjdk.jmh.annotations._
-import zio.logging.LogFilter.{ cachedLogLevelAndName, logLevelAndName }
 import zio.stm.TMap
 import zio.{ FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZIO, ZIOAspect, ZLayer }
 
@@ -37,7 +36,7 @@ class FilterBenchmarks {
   val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      logLevelAndName(
+      LogFilter.logLevelAndName(
         LogLevel.Debug,
         loggerName,
         "a.b.c" -> LogLevel.Info,
@@ -49,7 +48,7 @@ class FilterBenchmarks {
   val tmapCachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> ZLayer.fromZIO {
       TMap.empty[(List[String], LogLevel), Boolean].commit.map { cache =>
-        cachedLogLevelAndName(
+        LogFilter.cachedLogLevelAndName(
           cache,
           LogLevel.Debug,
           loggerName,
@@ -65,7 +64,7 @@ class FilterBenchmarks {
   val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      cachedLogLevelAndName(
+      LogFilter.cachedLogLevelAndName(
         LogLevel.Debug,
         loggerName,
         "a.b.c" -> LogLevel.Info,
