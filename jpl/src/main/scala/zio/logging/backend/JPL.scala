@@ -19,7 +19,7 @@ import zio.{
 
 object JPL {
 
-  private val logLevelMapping: Map[LogLevel, System.Logger.Level] = Map(
+  private[backend] val logLevelMapping: Map[LogLevel, System.Logger.Level] = Map(
     LogLevel.All     -> System.Logger.Level.ALL,
     LogLevel.Trace   -> System.Logger.Level.TRACE,
     LogLevel.Debug   -> System.Logger.Level.DEBUG,
@@ -30,14 +30,15 @@ object JPL {
     LogLevel.None    -> System.Logger.Level.OFF
   )
 
-  private val loggerNameKey = "jpl_logger_name"
+  private[backend] val loggerNameAnnotationName = "jpl_logger_name"
 
-  val logFormatDefault: LogFormat = LogFormat.allAnnotations + LogFormat.line + LogFormat.cause
+  val logFormatDefault: LogFormat =
+    LogFormat.allAnnotations(excludeNames = Set(loggerNameAnnotationName)) + LogFormat.line + LogFormat.cause
 
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
       def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        ZIO.logAnnotate(loggerNameKey, value)(zio)
+        ZIO.logAnnotate(loggerNameAnnotationName, value)(zio)
     }
 
   private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
@@ -134,7 +135,7 @@ object JPL {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val jpLoggerName = annotations.getOrElse(loggerNameKey, loggerName(trace))
+        val jpLoggerName = annotations.getOrElse(loggerNameAnnotationName, loggerName(trace))
         val jpLogger     = getJPLogger(jpLoggerName)
         if (isLogLevelEnabled(jpLogger, logLevel)) {
           val appender = logAppender(jpLogger, logLevel)

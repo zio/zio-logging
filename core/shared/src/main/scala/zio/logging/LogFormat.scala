@@ -234,9 +234,7 @@ object LogFormat {
     LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
       fiberRefs
         .get(logContext)
-        .foreach { anyRef =>
-          val context = anyRef.asInstanceOf[LogContext]
-
+        .foreach { context =>
           context.get(ann).foreach { value =>
             builder.appendKeyValue(ann.name, ann.render(value))
           }
@@ -249,25 +247,37 @@ object LogFormat {
    * Returns a new log format that appends all annotations to the log output.
    */
   def annotations: LogFormat =
+    annotations(Set.empty)
+
+  def annotations(excludeNames: Set[String]): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
       annotations.foreach { case (key, value) =>
-        builder.appendKeyValue(key, value)
+        if (!excludeNames.contains(key)) {
+          builder.appendKeyValue(key, value)
+        }
       }
     }
 
   def logAnnotations: LogFormat =
+    logAnnotations(Set.empty)
+
+  def logAnnotations(excludeNames: Set[String]): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
       fiberRefs
         .get(logContext)
         .foreach { context =>
           context.asMap.foreach { case (key, value) =>
-            builder.appendKeyValue(key, value)
+            if (!excludeNames.contains(key)) {
+              builder.appendKeyValue(key, value)
+            }
           }
         }
       ()
     }
 
-  def allAnnotations: LogFormat = annotations + logAnnotations
+  def allAnnotations: LogFormat = allAnnotations(Set.empty)
+
+  def allAnnotations(excludeNames: Set[String]): LogFormat = annotations(excludeNames) + logAnnotations(excludeNames)
 
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd

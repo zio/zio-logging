@@ -1,5 +1,6 @@
 package zio.logging.backend
 
+import org.slf4j.MarkerFactory
 import zio.logging.backend.TestAppender.LogEntry
 import zio.logging.{ LogAnnotation, LogFormat }
 import zio.test.Assertion._
@@ -120,6 +121,8 @@ object SLF4JSpec extends ZIOSpecDefault {
           )
         ) && assert(loggerOutput.map(_.mdc.get("user")))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
+        ) && assert(loggerOutput.map(_.mdc.contains(SLF4J.loggerNameAnnotationName)))(
+          equalTo(Chunk.fill(5)(false))
         )
       }
     }.provide(loggerDefault),
@@ -173,7 +176,10 @@ object SLF4JSpec extends ZIOSpecDefault {
     test("log error with cause with custom logger name") {
       (someError() @@ SLF4J.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
-        someErrorAssert(loggerOutput, "my-logger") && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
+        someErrorAssert(loggerOutput, "my-logger") && assertTrue(
+          loggerOutput(0).cause.exists(_.contains("input < 1"))
+        ) &&
+        assertTrue(!loggerOutput(0).mdc.contains(SLF4J.loggerNameAnnotationName))
       }
     }.provide(loggerLineCause),
     test("log error without cause") {
@@ -200,6 +206,40 @@ object SLF4JSpec extends ZIOSpecDefault {
               "warn",
               "error",
               "fatal"
+            )
+          )
+        ) && assert(loggerOutput.map(_.logLevel))(
+          equalTo(
+            Chunk(
+              LogLevel.Info,
+              LogLevel.Warning,
+              LogLevel.Error,
+              LogLevel.Error
+            )
+          )
+        )
+      }
+    }.provide(loggerDefault),
+    test("not log messages denied by marker") {
+      val confidentialMarker = SLF4J.LogMarker(MarkerFactory.getMarker("CONFIDENTIAL"))
+      for {
+        _ <- ZIO.succeed(TestAppender.reset())
+        _ <- ZIO.logInfo("not confidential info")
+        _ <- ZIO.logInfo("confidential info") @@ confidentialMarker
+        _ <- ZIO.logWarning("not confidential warn")
+        _ <- ZIO.logWarning("confidential warn") @@ confidentialMarker
+        _ <- ZIO.logError("not confidential error")
+        _ <- ZIO.logError("confidential error") @@ confidentialMarker
+        _ <- ZIO.logFatal("not confidential fatal")
+      } yield {
+        val loggerOutput = TestAppender.logOutput
+        assert(loggerOutput.map(_.message))(
+          equalTo(
+            Chunk(
+              "not confidential info",
+              "not confidential warn",
+              "not confidential error",
+              "not confidential fatal"
             )
           )
         ) && assert(loggerOutput.map(_.logLevel))(

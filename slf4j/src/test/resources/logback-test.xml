@@ -11,6 +11,12 @@
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
 
+    <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
+        <Name>CONFIDENTIAL_FILTER</Name>
+        <Marker>CONFIDENTIAL</Marker>
+        <OnMatch>DENY</OnMatch>
+    </turboFilter>
+
     <root level="info">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="logstash" />
