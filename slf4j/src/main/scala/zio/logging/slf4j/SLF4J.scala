@@ -1,8 +1,8 @@
 package zio.logging.backend
 
-import org.slf4j.{ Logger, LoggerFactory, MDC, Marker }
+import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
+import zio.logging.LogFormat
 import zio.logging.internal.LogAppender
-import zio.logging.{ LogAnnotation, LogFormat, logContext }
 import zio.{
   Cause,
   FiberFailure,
@@ -23,19 +23,27 @@ import java.util
 object SLF4J {
   private[backend] val loggerNameAnnotationName = "slf4j_logger_name"
 
-  private[backend] val logMarkerAnnotationName = "slf4j_log_marker"
+//  private[backend] val logMarkerAnnotationName = "slf4j_log_marker"
 
-  val LogMarker: LogAnnotation[Marker] = LogAnnotation[Marker](logMarkerAnnotationName, (_, m) => m, _.toString)
+  private[backend] val logMarkerNameAnnotationName = "slf4j_log_marker_name"
+
+//  val LogMarker: zio.logging.LogAnnotation[Marker] = zio.logging.LogAnnotation[Marker](logMarkerAnnotationName, (_, m) => m, _.toString)
 
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeNames =
-      Set(loggerNameAnnotationName, logMarkerAnnotationName)
+      Set(loggerNameAnnotationName, logMarkerNameAnnotationName)
     ) + LogFormat.line + LogFormat.cause
 
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
       def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
         ZIO.logAnnotate(loggerNameAnnotationName, value)(zio)
+    }
+
+  def logMarkerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
+    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
+      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
+        ZIO.logAnnotate(logMarkerNameAnnotationName, value)(zio)
     }
 
   /**
@@ -220,7 +228,9 @@ object SLF4J {
       ): Unit = {
         val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationName, loggerName(trace))
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
-        val slf4jMarker     = context.get(logContext).flatMap(_.get(LogMarker))
+//        val slf4jMarker     = context.get(zio.logging.logContext).flatMap(_.get(LogMarker))
+        val slf4jMarkerName = annotations.get(logMarkerNameAnnotationName)
+        val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
         if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
           val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
 

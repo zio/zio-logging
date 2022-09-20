@@ -1,6 +1,5 @@
 package zio.logging.backend
 
-import org.slf4j.MarkerFactory
 import zio.logging.backend.TestAppender.LogEntry
 import zio.logging.{ LogAnnotation, LogFormat }
 import zio.test.Assertion._
@@ -221,7 +220,8 @@ object SLF4JSpec extends ZIOSpecDefault {
       }
     }.provide(loggerDefault),
     test("not log messages denied by marker") {
-      val confidentialMarker = SLF4J.LogMarker(MarkerFactory.getMarker("CONFIDENTIAL"))
+//      val confidentialMarker = SLF4J.LogMarker(org.slf4j.MarkerFactory.getMarker("CONFIDENTIAL"))
+      val confidentialMarker = SLF4J.logMarkerName("CONFIDENTIAL")
       for {
         _ <- ZIO.succeed(TestAppender.reset())
         _ <- ZIO.logInfo("not confidential info")
