@@ -3,48 +3,45 @@ package zio.logging.backend
 import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
 import zio.logging.LogFormat
 import zio.logging.internal.LogAppender
-import zio.{
-  Cause,
-  FiberFailure,
-  FiberId,
-  FiberRefs,
-  LogLevel,
-  LogSpan,
-  Runtime,
-  Trace,
-  ZIO,
-  ZIOAspect,
-  ZLayer,
-  ZLogger
-}
+import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
 
 import java.util
 
 object SLF4J {
-  private[backend] val loggerNameAnnotationName = "slf4j_logger_name"
 
-//  private[backend] val logMarkerAnnotationName = "slf4j_log_marker"
+  /**
+   * log aspect annotation key for slf4j logger name
+   */
+  val loggerNameAnnotationKey = "slf4j_logger_name"
 
-  private[backend] val logMarkerNameAnnotationName = "slf4j_log_marker_name"
+  /**
+   * log aspect annotation key for slf4j marker name
+   */
+  val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
 
-//  val LogMarker: zio.logging.LogAnnotation[Marker] = zio.logging.LogAnnotation[Marker](logMarkerAnnotationName, (_, m) => m, _.toString)
-
+  /**
+   * default log format for slf4j logger
+   */
   val logFormatDefault: LogFormat =
-    LogFormat.allAnnotations(excludeNames =
-      Set(loggerNameAnnotationName, logMarkerNameAnnotationName)
+    LogFormat.allAnnotations(excludeKeys =
+      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey)
     ) + LogFormat.line + LogFormat.cause
 
+  /**
+   * slf4j logger name aspect, by this aspect is possible to change default logger name (default logger name is extracted from [[Trace]])
+   *
+   * annotation key: [[SLF4J.loggerNameAnnotationKey]]
+   */
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        ZIO.logAnnotate(loggerNameAnnotationName, value)(zio)
-    }
+    ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
+  /**
+   * slf4j marker name aspect
+   *
+   * annotation key: [[SLF4J.logMarkerNameAnnotationKey]]
+   */
   def logMarkerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        ZIO.logAnnotate(logMarkerNameAnnotationName, value)(zio)
-    }
+    ZIOAspect.annotated(logMarkerNameAnnotationKey, value)
 
   /**
    * get logger name from [[Trace]]
@@ -226,10 +223,9 @@ object SLF4J {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationName, loggerName(trace))
+        val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
-//        val slf4jMarker     = context.get(zio.logging.logContext).flatMap(_.get(LogMarker))
-        val slf4jMarkerName = annotations.get(logMarkerNameAnnotationName)
+        val slf4jMarkerName = annotations.get(logMarkerNameAnnotationKey)
         val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
         if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
           val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)

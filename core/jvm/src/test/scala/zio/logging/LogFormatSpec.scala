@@ -145,7 +145,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("allAnnotations with exclusion") {
-      val format = allAnnotations(excludeNames = Set("test2", LogAnnotation.TraceId.name))
+      val format = allAnnotations(excludeKeys = Set("test2", LogAnnotation.TraceId.name))
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
           Trace.empty,

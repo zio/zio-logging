@@ -120,7 +120,7 @@ object SLF4JSpec extends ZIOSpecDefault {
           )
         ) && assert(loggerOutput.map(_.mdc.get("user")))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-        ) && assert(loggerOutput.map(_.mdc.contains(SLF4J.loggerNameAnnotationName)))(
+        ) && assert(loggerOutput.map(_.mdc.contains(SLF4J.loggerNameAnnotationKey)))(
           equalTo(Chunk.fill(5)(false))
         )
       }
@@ -178,7 +178,7 @@ object SLF4JSpec extends ZIOSpecDefault {
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(
           loggerOutput(0).cause.exists(_.contains("input < 1"))
         ) &&
-        assertTrue(!loggerOutput(0).mdc.contains(SLF4J.loggerNameAnnotationName))
+        assertTrue(!loggerOutput(0).mdc.contains(SLF4J.loggerNameAnnotationKey))
       }
     }.provide(loggerLineCause),
     test("log error without cause") {
@@ -220,7 +220,6 @@ object SLF4JSpec extends ZIOSpecDefault {
       }
     }.provide(loggerDefault),
     test("not log messages denied by marker") {
-//      val confidentialMarker = SLF4J.LogMarker(org.slf4j.MarkerFactory.getMarker("CONFIDENTIAL"))
       val confidentialMarker = SLF4J.logMarkerName("CONFIDENTIAL")
       for {
         _ <- ZIO.succeed(TestAppender.reset())

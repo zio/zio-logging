@@ -246,28 +246,26 @@ object LogFormat {
   /**
    * Returns a new log format that appends all annotations to the log output.
    */
-  def annotations: LogFormat =
-    annotations(Set.empty)
+  def annotations: LogFormat = annotations(Set.empty)
 
-  def annotations(excludeNames: Set[String]): LogFormat =
+  def annotations(excludeKeys: Set[String]): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
       annotations.foreach { case (key, value) =>
-        if (!excludeNames.contains(key)) {
+        if (!excludeKeys.contains(key)) {
           builder.appendKeyValue(key, value)
         }
       }
     }
 
-  def logAnnotations: LogFormat =
-    logAnnotations(Set.empty)
+  def logAnnotations: LogFormat = logAnnotations(Set.empty)
 
-  def logAnnotations(excludeNames: Set[String]): LogFormat =
+  def logAnnotations(excludeKeys: Set[String]): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
       fiberRefs
         .get(logContext)
         .foreach { context =>
           context.asMap.foreach { case (key, value) =>
-            if (!excludeNames.contains(key)) {
+            if (!excludeKeys.contains(key)) {
               builder.appendKeyValue(key, value)
             }
           }
@@ -277,7 +275,7 @@ object LogFormat {
 
   def allAnnotations: LogFormat = allAnnotations(Set.empty)
 
-  def allAnnotations(excludeNames: Set[String]): LogFormat = annotations(excludeNames) + logAnnotations(excludeNames)
+  def allAnnotations(excludeKeys: Set[String]): LogFormat = annotations(excludeKeys) + logAnnotations(excludeKeys)
 
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd

@@ -19,6 +19,7 @@ object Slf4jSimpleApp extends ZIOAppDefault {
       _       <- ZIO.foreachPar(users) { uId =>
                    {
                      ZIO.logInfo("Starting user operation") *>
+                       ZIO.logInfo("Confidential user operation") @@ SLF4J.logMarkerName("CONFIDENTIAL") *>
                        ZIO.sleep(500.millis) *>
                        ZIO.logInfo("Stopping user operation")
                    } @@ ZIOAspect.annotated("user", uId.toString)
