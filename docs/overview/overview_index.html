@@ -114,11 +114,14 @@ to all log messages emitted by the <code>myResponseHandler(request)</code> effec
 <li>for example, trace <code>zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)</code> will have <code>zio.logging.example.Slf4jSimpleApp</code> as logger name</li>
 <li>NOTE: custom logger name may be set by <code>SLF4J.loggerName</code> aspect</li>
 </ul></li>
-<li>all annotations are placed into MDC context</li>
+<li>all annotations (logger name and log marker name annotations are excluded) are placed into MDC context</li>
 <li>cause is logged as throwable</li>
 </ul>
 <p>Custom logger name set by aspect:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Starting user operation"</span>) @@ <span class="hljs-type">SLF4J</span>.loggerName(<span class="hljs-string">"zio.logging.example.UserOperation"</span>)
+</code></pre>
+<p>Log marker name set by aspect:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Confidential user operation"</span>) @@ <span class="hljs-type">SLF4J</span>.logMarkerName(<span class="hljs-string">"CONFIDENTIAL"</span>)
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="java-platformsystem-logger"></a><a href="#java-platformsystem-logger" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Java Platform/System logger</h3>
 <p><code>jpl</code> logger layer:</p>
@@ -133,7 +136,7 @@ to all log messages emitted by the <code>myResponseHandler(request)</code> effec
 <li>for example, trace <code>zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)</code> will have <code>zio.logging.example.Slf4jSimpleApp</code> as logger name</li>
 <li>NOTE: custom logger name may be set by <code>JPL.loggerName</code> aspect</li>
 </ul></li>
-<li>all annotations are placed at the beginning of log message</li>
+<li>all annotations (logger name annotation is excluded) are placed at the beginning of log message</li>
 <li>cause is logged as throwable</li>
 </ul>
 <p>Custom logger name set by aspect:</p>
@@ -225,6 +228,7 @@ to all log messages emitted by the <code>myResponseHandler(request)</code> effec
       _       &lt;- <span class="hljs-type">ZIO</span>.foreachPar(users) { uId =&gt;
         {
           <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Starting user operation"</span>) *&gt;
+            <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Confidential user operation"</span>) @@ <span class="hljs-type">SLF4J</span>.logMarkerName(<span class="hljs-string">"CONFIDENTIAL"</span>) *&gt;
             <span class="hljs-type">ZIO</span>.sleep(<span class="hljs-number">500.</span>millis) *&gt;
             <span class="hljs-type">ZIO</span>.logInfo(<span class="hljs-string">"Stopping user operation"</span>)
         } @@ <span class="hljs-type">ZIOAspect</span>.annotated(<span class="hljs-string">"user"</span>, uId.toString)
@@ -243,6 +247,11 @@ to all log messages emitted by the <code>myResponseHandler(request)</code> effec
             <span class="hljs-tag">&lt;<span class="hljs-name">Pattern</span>&gt;</span>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n<span class="hljs-tag">&lt;/<span class="hljs-name">Pattern</span>&gt;</span>
         <span class="hljs-tag">&lt;/<span class="hljs-name">layout</span>&gt;</span>
     <span class="hljs-tag">&lt;/<span class="hljs-name">appender</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">turboFilter</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"ch.qos.logback.classic.turbo.MarkerFilter"</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Name</span>&gt;</span>CONFIDENTIAL_FILTER<span class="hljs-tag">&lt;/<span class="hljs-name">Name</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Marker</span>&gt;</span>CONFIDENTIAL<span class="hljs-tag">&lt;/<span class="hljs-name">Marker</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">OnMatch</span>&gt;</span>DENY<span class="hljs-tag">&lt;/<span class="hljs-name">OnMatch</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">turboFilter</span>&gt;</span>
     <span class="hljs-tag">&lt;<span class="hljs-name">root</span> <span class="hljs-attr">level</span>=<span class="hljs-string">"debug"</span>&gt;</span>
         <span class="hljs-tag">&lt;<span class="hljs-name">appender-ref</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"STDOUT"</span> /&gt;</span>
     <span class="hljs-tag">&lt;/<span class="hljs-name">root</span>&gt;</span>
@@ -292,13 +301,13 @@ to all log messages emitted by the <code>myResponseHandler(request)</code> effec
 <pre><code class="hljs">Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$<span class="hljs-variable">$anon</span><span class="hljs-variable">$2</span> <span class="hljs-variable">$anonfun</span><span class="hljs-variable">$closeLogEntry</span><span class="hljs-variable">$1</span>
 INFO: Start
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$<span class="hljs-variable">$anon</span><span class="hljs-variable">$2</span> <span class="hljs-variable">$anonfun</span><span class="hljs-variable">$closeLogEntry</span><span class="hljs-variable">$1</span>
-INFO: <span class="hljs-attribute">jpl_logger_name</span>=zio.logging.example.UserOperation <span class="hljs-attribute">user</span>=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting<span class="hljs-built_in"> user </span>operation
+INFO:  <span class="hljs-attribute">user</span>=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting<span class="hljs-built_in"> user </span>operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$<span class="hljs-variable">$anon</span><span class="hljs-variable">$2</span> <span class="hljs-variable">$anonfun</span><span class="hljs-variable">$closeLogEntry</span><span class="hljs-variable">$1</span>
-INFO: <span class="hljs-attribute">jpl_logger_name</span>=zio.logging.example.UserOperation <span class="hljs-attribute">user</span>=f4327982-c838-4c03-8839-49ebc95f2b6b <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting<span class="hljs-built_in"> user </span>operation
+INFO:  <span class="hljs-attribute">user</span>=f4327982-c838-4c03-8839-49ebc95f2b6b <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting<span class="hljs-built_in"> user </span>operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$<span class="hljs-variable">$anon</span><span class="hljs-variable">$2</span> <span class="hljs-variable">$anonfun</span><span class="hljs-variable">$closeLogEntry</span><span class="hljs-variable">$1</span>
-INFO: <span class="hljs-attribute">jpl_logger_name</span>=zio.logging.example.UserOperation <span class="hljs-attribute">user</span>=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping<span class="hljs-built_in"> user </span>operation
+INFO:  <span class="hljs-attribute">user</span>=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping<span class="hljs-built_in"> user </span>operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$<span class="hljs-variable">$anon</span><span class="hljs-variable">$2</span> <span class="hljs-variable">$anonfun</span><span class="hljs-variable">$closeLogEntry</span><span class="hljs-variable">$1</span>
-INFO: <span class="hljs-attribute">jpl_logger_name</span>=zio.logging.example.UserOperation <span class="hljs-attribute">user</span>=f4327982-c838-4c03-8839-49ebc95f2b6b <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping<span class="hljs-built_in"> user </span>operation
+INFO:  <span class="hljs-attribute">user</span>=f4327982-c838-4c03-8839-49ebc95f2b6b <span class="hljs-attribute">trace_id</span>=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping<span class="hljs-built_in"> user </span>operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$<span class="hljs-variable">$anon</span><span class="hljs-variable">$2</span> <span class="hljs-variable">$anonfun</span><span class="hljs-variable">$closeLogEntry</span><span class="hljs-variable">$1</span>
 INFO: Done
 </code></pre>
