@@ -3,6 +3,8 @@ package zio.logging
 import zio.test._
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
 
+import java.util.UUID
+
 import LogFormat.{ level, line, _ }
 
 object LogFormatSpec extends ZIOSpecDefault {
@@ -138,6 +140,27 @@ object LogFormatSpec extends ZIOSpecDefault {
           ),
           Nil,
           Map("test" -> annotationValue)
+        )
+        assertTrue(result == s"test=${annotationValue}user_id=${annotationValue}")
+      }
+    },
+    test("allAnnotations with exclusion") {
+      val format = allAnnotations(excludeKeys = Set("test2", LogAnnotation.TraceId.name))
+      check(Gen.string) { annotationValue =>
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty.updatedAs(FiberId.Runtime(0, 0, Trace.empty))(
+            logContext,
+            LogContext.empty
+              .annotate(LogAnnotation.UserId, annotationValue)
+              .annotate(LogAnnotation.TraceId, UUID.randomUUID())
+          ),
+          Nil,
+          Map("test" -> annotationValue, "test2" -> annotationValue)
         )
         assertTrue(result == s"test=${annotationValue}user_id=${annotationValue}")
       }

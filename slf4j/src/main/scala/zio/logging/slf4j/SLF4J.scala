@@ -1,35 +1,47 @@
 package zio.logging.backend
 
-import org.slf4j.{ Logger, LoggerFactory, MDC }
+import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
 import zio.logging.LogFormat
 import zio.logging.internal.LogAppender
-import zio.{
-  Cause,
-  FiberFailure,
-  FiberId,
-  FiberRefs,
-  LogLevel,
-  LogSpan,
-  Runtime,
-  Trace,
-  ZIO,
-  ZIOAspect,
-  ZLayer,
-  ZLogger
-}
+import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
 
 import java.util
 
 object SLF4J {
-  private val loggerNameKey = "slf4j_logger_name"
 
-  val logFormatDefault: LogFormat = LogFormat.allAnnotations + LogFormat.line + LogFormat.cause
+  /**
+   * log aspect annotation key for slf4j logger name
+   */
+  val loggerNameAnnotationKey = "slf4j_logger_name"
 
+  /**
+   * log aspect annotation key for slf4j marker name
+   */
+  val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
+
+  /**
+   * default log format for slf4j logger
+   */
+  val logFormatDefault: LogFormat =
+    LogFormat.allAnnotations(excludeKeys =
+      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey)
+    ) + LogFormat.line + LogFormat.cause
+
+  /**
+   * slf4j logger name aspect, by this aspect is possible to change default logger name (default logger name is extracted from [[Trace]])
+   *
+   * annotation key: [[SLF4J.loggerNameAnnotationKey]]
+   */
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        ZIO.logAnnotate(loggerNameKey, value)(zio)
-    }
+    ZIOAspect.annotated(loggerNameAnnotationKey, value)
+
+  /**
+   * slf4j marker name aspect
+   *
+   * annotation key: [[SLF4J.logMarkerNameAnnotationKey]]
+   */
+  def logMarkerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
+    ZIOAspect.annotated(logMarkerNameAnnotationKey, value)
 
   /**
    * get logger name from [[Trace]]
@@ -48,96 +60,118 @@ object SLF4J {
       case _ => default
     }
 
-  private def isLogLevelEnabled(slf4jLogger: Logger, logLevel: LogLevel): Boolean =
+  private def isLogLevelEnabled(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): Boolean =
     logLevel match {
-      case LogLevel.All     => slf4jLogger.isTraceEnabled
-      case LogLevel.Trace   => slf4jLogger.isTraceEnabled
-      case LogLevel.Debug   => slf4jLogger.isDebugEnabled
-      case LogLevel.Info    => slf4jLogger.isInfoEnabled
-      case LogLevel.Warning => slf4jLogger.isWarnEnabled
-      case LogLevel.Error   => slf4jLogger.isErrorEnabled
-      case LogLevel.Fatal   => slf4jLogger.isErrorEnabled
+      case LogLevel.All     => slf4jMarker.fold(slf4jLogger.isTraceEnabled)(m => slf4jLogger.isTraceEnabled(m))
+      case LogLevel.Trace   => slf4jMarker.fold(slf4jLogger.isTraceEnabled)(m => slf4jLogger.isTraceEnabled(m))
+      case LogLevel.Debug   => slf4jMarker.fold(slf4jLogger.isDebugEnabled)(m => slf4jLogger.isDebugEnabled(m))
+      case LogLevel.Info    => slf4jMarker.fold(slf4jLogger.isInfoEnabled)(m => slf4jLogger.isInfoEnabled(m))
+      case LogLevel.Warning => slf4jMarker.fold(slf4jLogger.isWarnEnabled)(m => slf4jLogger.isWarnEnabled(m))
+      case LogLevel.Error   => slf4jMarker.fold(slf4jLogger.isErrorEnabled)(m => slf4jLogger.isErrorEnabled(m))
+      case LogLevel.Fatal   => slf4jMarker.fold(slf4jLogger.isErrorEnabled)(m => slf4jLogger.isErrorEnabled(m))
       case _                => false
     }
 
-  private def logAppender(slf4jLogger: Logger, logLevel: LogLevel): LogAppender = new LogAppender { self =>
-    val message: StringBuilder                 = new StringBuilder()
-    val mdc: java.util.HashMap[String, String] = new util.HashMap[String, String]()
-    var throwable: Throwable                   = null
+  private def logAppender(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): LogAppender =
+    new LogAppender { self =>
+      val message: StringBuilder                 = new StringBuilder()
+      val mdc: java.util.HashMap[String, String] = new util.HashMap[String, String]()
+      var throwable: Throwable                   = null
 
-    /**
-     * cause as throwable
-     */
-    override def appendCause(cause: Cause[Any]): Unit = {
-      if (!cause.isEmpty) {
-        throwable = FiberFailure(cause)
+      /**
+       * cause as throwable
+       */
+      override def appendCause(cause: Cause[Any]): Unit = {
+        if (!cause.isEmpty) {
+          throwable = FiberFailure(cause)
+        }
+        ()
       }
-      ()
+
+      override def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
+
+      override def appendText(text: String): Unit = {
+        message.append(text)
+        ()
+      }
+
+      override def closeKeyOpenValue(): Unit = ()
+
+      /**
+       * all key-value into mdc
+       */
+      override def appendKeyValue(key: String, value: String): Unit = {
+        mdc.put(key, value)
+        ()
+      }
+
+      /**
+       * all key-value into mdc
+       */
+      override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
+        val builder = new StringBuilder()
+        appendValue(LogAppender.unstructured(builder.append(_)))
+        builder.toString()
+        mdc.put(key, builder.toString())
+        ()
+      }
+
+      override def closeLogEntry(): Unit = {
+        val previous =
+          if (!mdc.isEmpty) {
+            val previous =
+              Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
+            MDC.setContextMap(mdc)
+            previous
+          } else None
+
+        try logLevel match {
+          case LogLevel.All     =>
+            slf4jMarker.fold(slf4jLogger.trace(message.toString, throwable))(m =>
+              slf4jLogger.trace(m, message.toString, throwable)
+            )
+          case LogLevel.Trace   =>
+            slf4jMarker.fold(slf4jLogger.trace(message.toString, throwable))(m =>
+              slf4jLogger.trace(m, message.toString, throwable)
+            )
+          case LogLevel.Debug   =>
+            slf4jMarker.fold(slf4jLogger.debug(message.toString, throwable))(m =>
+              slf4jLogger.debug(m, message.toString, throwable)
+            )
+          case LogLevel.Info    =>
+            slf4jMarker.fold(slf4jLogger.info(message.toString, throwable))(m =>
+              slf4jLogger.info(m, message.toString, throwable)
+            )
+          case LogLevel.Warning =>
+            slf4jMarker.fold(slf4jLogger.warn(message.toString, throwable))(m =>
+              slf4jLogger.warn(m, message.toString, throwable)
+            )
+          case LogLevel.Error   =>
+            slf4jMarker.fold(slf4jLogger.error(message.toString, throwable))(m =>
+              slf4jLogger.error(m, message.toString, throwable)
+            )
+          case LogLevel.Fatal   =>
+            slf4jMarker.fold(slf4jLogger.error(message.toString, throwable))(m =>
+              slf4jLogger.error(m, message.toString, throwable)
+            )
+          case LogLevel.None    => ()
+          case _                => ()
+        } finally previous.foreach(MDC.setContextMap)
+
+        ()
+      }
+
+      override def closeValue(): Unit = ()
+
+      override def openKey(): Unit = ()
+
+      override def openLogEntry(): Unit = {
+        message.clear()
+        mdc.clear()
+        throwable = null
+        ()
+      }
     }
-
-    override def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
-
-    override def appendText(text: String): Unit = {
-      message.append(text)
-      ()
-    }
-
-    override def closeKeyOpenValue(): Unit = ()
-
-    /**
-     * all key-value into mdc
-     */
-    override def appendKeyValue(key: String, value: String): Unit = {
-      mdc.put(key, value)
-      ()
-    }
-
-    /**
-     * all key-value into mdc
-     */
-    override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
-      val builder = new StringBuilder()
-      appendValue(LogAppender.unstructured(builder.append(_)))
-      builder.toString()
-      mdc.put(key, builder.toString())
-      ()
-    }
-
-    override def closeLogEntry(): Unit = {
-      val previous =
-        if (!mdc.isEmpty) {
-          val previous =
-            Some(Option(MDC.getCopyOfContextMap).getOrElse(java.util.Collections.emptyMap[String, String]()))
-          MDC.setContextMap(mdc)
-          previous
-        } else None
-
-      try logLevel match {
-        case LogLevel.All     => slf4jLogger.trace(message.toString, throwable)
-        case LogLevel.Trace   => slf4jLogger.trace(message.toString, throwable)
-        case LogLevel.Debug   => slf4jLogger.debug(message.toString, throwable)
-        case LogLevel.Info    => slf4jLogger.info(message.toString, throwable)
-        case LogLevel.Warning => slf4jLogger.warn(message.toString, throwable)
-        case LogLevel.Error   => slf4jLogger.error(message.toString, throwable)
-        case LogLevel.Fatal   => slf4jLogger.error(message.toString, throwable)
-        case LogLevel.None    => ()
-        case _                => ()
-      } finally previous.foreach(MDC.setContextMap)
-
-      ()
-    }
-
-    override def closeValue(): Unit = ()
-
-    override def openKey(): Unit = ()
-
-    override def openLogEntry(): Unit = {
-      message.clear()
-      mdc.clear()
-      throwable = null
-      ()
-    }
-  }
 
   @deprecated("use layer without logLevel", "2.0.1")
   def slf4j(
@@ -189,10 +223,12 @@ object SLF4J {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val slf4jLoggerName = annotations.getOrElse(loggerNameKey, loggerName(trace))
+        val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
-        if (isLogLevelEnabled(slf4jLogger, logLevel)) {
-          val appender = logAppender(slf4jLogger, logLevel)
+        val slf4jMarkerName = annotations.get(logMarkerNameAnnotationKey)
+        val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
+        if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
+          val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
 
           format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
           appender.closeLogEntry()

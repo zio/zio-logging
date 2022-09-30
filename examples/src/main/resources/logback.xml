@@ -7,6 +7,12 @@
         </layout>
     </appender>
 
+    <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
+        <Name>CONFIDENTIAL_FILTER</Name>
+        <Marker>CONFIDENTIAL</Marker>
+        <OnMatch>DENY</OnMatch>
+    </turboFilter>
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
