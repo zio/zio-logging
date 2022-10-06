@@ -1,9 +1,10 @@
 package org.slf4j.impl
 
-import org.slf4j.helpers.{ MarkerIgnoringBase, MessageFormatter }
+import org.slf4j.helpers.{ MessageFormatter, ZioLoggerBase }
 import zio.{ Cause, ZIO }
 
-class ZioLogger(name: String, factory: ZioLoggerFactory) extends MarkerIgnoringBase {
+class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
+
   private def run(f: ZIO[Any, Nothing, Unit]): Unit =
     factory.run {
       ZIO.logSpan(name)(f)

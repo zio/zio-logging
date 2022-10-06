@@ -13,7 +13,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
     cause: Cause[Any]
   )
 
-  override def spec: Spec[TestEnvironment, TestSuccess] =
+  override def spec =
     suite("Slf4jBridge")(
       test("logs through slf4j") {
         val testFailure = new RuntimeException("test error")
@@ -83,6 +83,11 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             )
           )
         )
-      }.provide(Slf4jBridge.initialize)
-    )
+      },
+      test("Implements Logger#getName") {
+        for {
+          logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("zio.test.logger"))
+        } yield assertTrue(logger.getName == "zio.test.logger")
+      }
+    ).provide(Slf4jBridge.initialize) @@ TestAspect.sequential
 }
