@@ -115,7 +115,7 @@ object LogFilterSpec extends ZIOSpecDefault {
       testLoggerWithFilter(LogFilter.acceptAll, Chunk("debug", "info", "warning", "error"))
     },
     test("log nothing with accept all filter negated") {
-      testLoggerWithFilter(LogFilter.acceptAll.not, Chunk.empty)
+      testLoggerWithFilter(!LogFilter.acceptAll, Chunk.empty)
     },
     test("logs filtered by log level") {
       testLoggerWithFilter(LogFilter.logLevel(LogLevel.Warning), Chunk("warning", "error"))

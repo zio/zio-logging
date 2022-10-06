@@ -42,10 +42,15 @@ trait LogFilter { self =>
   final def ||(other: LogFilter): LogFilter = or(other)
 
   /**
-   * Returns a new log filter with negated result
+   * The alphanumeric version of the `!` operator.
    */
   final def not: LogFilter = (trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]) =>
     !self(trace, logLevel, context, annotations)
+
+  /**
+   * Returns a new log filter with negated result
+   */
+  final def unary_! : LogFilter = self.not
 }
 
 object LogFilter {
