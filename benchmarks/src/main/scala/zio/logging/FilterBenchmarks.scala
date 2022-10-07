@@ -1,8 +1,7 @@
 package zio.logging
 
 import org.openjdk.jmh.annotations._
-import zio.stm.TMap
-import zio.{ FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZIO, ZIOAspect, ZLayer }
+import zio.{ LogLevel, Runtime, Unsafe, ZIO, ZIOAspect, ZLayer }
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
@@ -11,9 +10,8 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class FilterBenchmarks {
-
-  val loggerName: (Trace, FiberRefs, Map[String, String]) => String = (_, _, annotations) =>
-    annotations.getOrElse("name", "")
+  val loggerNameAndLevel: LogGroup[(String, LogLevel)] =
+    (_, logLevel, _, annotations) => annotations.getOrElse("name", "") -> logLevel
 
   val runtime = Runtime.default
 
@@ -22,7 +20,7 @@ class FilterBenchmarks {
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
     val filter: LogFilter = (trace, level, context, annotations) => {
-      val loggerNames = loggerName(trace, context, annotations).split(".").toList
+      val loggerNames = loggerNameAndLevel(trace, level, context, annotations)._1.split(".").toList
       loggerNames match {
         case List("a", "b", "c") => level >= LogLevel.Info
         case List("a", "b", "d") => level >= LogLevel.Warning
@@ -36,41 +34,27 @@ class FilterBenchmarks {
   val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      LogFilter.logLevelAndName(
+      LogFilter.logLevelByGroup(
         LogLevel.Debug,
-        loggerName,
+        loggerNameAndLevel,
         "a.b.c" -> LogLevel.Info,
         "a.b.d" -> LogLevel.Warning,
         "e"     -> LogLevel.Info
       )
     )
 
-  val tmapCachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> ZLayer.fromZIO {
-      TMap.empty[(List[String], LogLevel), Boolean].commit.map { cache =>
-        LogFilter.cachedLogLevelAndName(
-          cache,
+  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> console(
+      LogFormat.default,
+      LogFilter
+        .logLevelByGroup(
           LogLevel.Debug,
-          loggerName,
+          loggerNameAndLevel,
           "a.b.c" -> LogLevel.Info,
           "a.b.d" -> LogLevel.Warning,
           "e"     -> LogLevel.Info
         )
-      }
-    }.flatMap { env =>
-      console(LogFormat.default, env.get[LogFilter])
-    }
-
-  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> console(
-      LogFormat.default,
-      LogFilter.cachedLogLevelAndName(
-        LogLevel.Debug,
-        loggerName,
-        "a.b.c" -> LogLevel.Info,
-        "a.b.d" -> LogLevel.Warning,
-        "e"     -> LogLevel.Info
-      )
+        .cacheWith(loggerNameAndLevel)
     )
 
   val names: List[String] = List(
@@ -104,12 +88,11 @@ class FilterBenchmarks {
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
-   * Benchmark                                               Mode  Cnt      Score      Error  Units
-   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog      thrpt    3  14830.705 ± 2042.084  ops/s
-   * FilterBenchmarks.filterByLogLevelAndNameLog            thrpt    3  14794.678 ± 1603.926  ops/s
-   * FilterBenchmarks.handWrittenFilterLog                  thrpt    3  13041.006 ± 1225.018  ops/s
-   * FilterBenchmarks.noFilteringLog                        thrpt    3  13074.786 ±  512.533  ops/s
-   * FilterBenchmarks.tmapCachedFilterByLogLevelAndNameLog  thrpt    3   9875.576 ± 5103.356  ops/s
+   * Benchmark                                           Mode  Cnt      Score       Error  Units
+   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  14073.892 ±  1905.997  ops/s
+   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  11243.144 ± 23282.211  ops/s
+   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  11782.559 ±  2342.516  ops/s
+   * FilterBenchmarks.noFilteringLog                    thrpt    3  11853.834 ± 12589.637  ops/s
    */
 
   @Benchmark
@@ -123,10 +106,6 @@ class FilterBenchmarks {
   @Benchmark
   def filterByLogLevelAndNameLog(): Unit =
     testLoggingWith(filterByLogLevelAndNameLogging)
-
-  @Benchmark
-  def tmapCachedFilterByLogLevelAndNameLog(): Unit =
-    testLoggingWith(tmapCachedFilterByLogLevelAndNameLogging)
 
   @Benchmark
   def cachedFilterByLogLevelAndNameLog(): Unit =

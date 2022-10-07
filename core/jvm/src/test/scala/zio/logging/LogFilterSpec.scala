@@ -51,9 +51,7 @@ object LogFilterSpec extends ZIOSpecDefault {
       }
     }
 
-    import LogFilter.ZLoggerLogFilterOps
-
-    Runtime.removeDefaultLoggers >>> Runtime.addLogger(logger.filter(logFilter))
+    Runtime.removeDefaultLoggers >>> Runtime.addLogger(logFilter.filter(logger))
   }
 
   private def testLoggerWithFilter(filter: LogFilter, expected: Chunk[String]) = {
@@ -72,7 +70,7 @@ object LogFilterSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("LogFilterSpec")(
     test("log filtering by log level and name") {
 
-      val filter: LogFilter = LogFilter.logLevelAndName(
+      val filter: LogFilter = LogFilter.logLevelByName(
         LogLevel.Debug,
         "a"     -> LogLevel.Info,
         "a.b.c" -> LogLevel.Warning,
@@ -90,12 +88,13 @@ object LogFilterSpec extends ZIOSpecDefault {
       testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
     },
     test("log filtering by log level and name with annotation") {
-      val loggerName: (Trace, FiberRefs, Map[String, String]) => String =
-        (_, _, annotations) => annotations.getOrElse("name", "")
 
-      val filter: LogFilter = LogFilter.logLevelAndName(
+      val loggerNameAndLevel: LogGroup[(String, LogLevel)] =
+        (_, logLevel, _, annotations) => annotations.getOrElse("name", "") -> logLevel
+
+      val filter: LogFilter = LogFilter.logLevelByGroup(
         LogLevel.Debug,
-        loggerName,
+        loggerNameAndLevel,
         "a"     -> LogLevel.Info,
         "a.b.c" -> LogLevel.Warning,
         "e.f"   -> LogLevel.Error
@@ -132,7 +131,7 @@ object LogFilterSpec extends ZIOSpecDefault {
     test("logs filtered by log level and name") {
       val logOutputRef = new java.util.concurrent.atomic.AtomicReference[Chunk[LogEntry]](Chunk.empty)
 
-      val filter: LogFilter = LogFilter.logLevelAndName(
+      val filter: LogFilter = LogFilter.logLevelByName(
         LogLevel.Debug,
         "zio.logging"      -> LogLevel.Info,
         "zio.logging.test" -> LogLevel.Warning
@@ -149,6 +148,49 @@ object LogFilterSpec extends ZIOSpecDefault {
       } yield {
         val logOutput = logOutputRef.get()
         assertTrue(logOutput.map(_.message()) == Chunk("info", "warning", "test warning", "test error"))
+      }).provideLayer(testLogger(logOutputRef, filter))
+    },
+    test("logs filtered by log level and name") {
+      val logOutputRef = new java.util.concurrent.atomic.AtomicReference[Chunk[LogEntry]](Chunk.empty)
+
+      val filter: LogFilter = LogFilter
+        .logLevelByGroup(
+          LogLevel.Debug,
+          LogGroup.loggerNameAndLevel,
+          "zio.logging"      -> LogLevel.Info,
+          "zio.logging.test" -> LogLevel.Warning
+        )
+        .cacheWith(LogGroup.loggerNameAndLevel)
+
+      (for {
+        _ <- ZIO.logDebug("debug")
+        _ <- ZIO.logInfo("info")
+        _ <- ZIO.logWarning("warning")
+        _ <- TestService.testDebug
+        _ <- TestService.testInfo
+        _ <- TestService.testWarning
+        _ <- TestService.testError
+        _ <- ZIO.logDebug("debug")
+        _ <- ZIO.logInfo("info")
+        _ <- ZIO.logWarning("warning")
+        _ <- TestService.testDebug
+        _ <- TestService.testInfo
+        _ <- TestService.testWarning
+        _ <- TestService.testError
+      } yield {
+        val logOutput = logOutputRef.get()
+        assertTrue(
+          logOutput.map(_.message()) == Chunk(
+            "info",
+            "warning",
+            "test warning",
+            "test error",
+            "info",
+            "warning",
+            "test warning",
+            "test error"
+          )
+        )
       }).provideLayer(testLogger(logOutputRef, filter))
     }
   )

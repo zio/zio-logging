@@ -12,7 +12,7 @@ _ZIO Logging_ is the official logging library for ZIO 2 applications, with integ
 
 ## Installation
 
-`ZIO-Logging` is available via maven repo. 
+`ZIO-Logging` is available via maven repo.
 In order to use this library, we need to add the following line in our build.sbt file:
 
 ```scala
@@ -49,7 +49,7 @@ myResponseHandler(request) @@ LogAnnotation.UserId(request.userId)
 This code would add the structured log annotation `LogAnnotation.UserId`
 to all log messages emitted by the `myResponseHandler(request)` effect.
 
-The user of the library is allowed to add a custom `LogAnnotation`: 
+The user of the library is allowed to add a custom `LogAnnotation`:
 
 ```scala
 import zio.logging.LogAnnotation
@@ -59,7 +59,7 @@ val customLogAnnotation = LogAnnotation[Int]("custom_annotation", _ + _, _.toStr
 
 ### Logger setup in ZIO application
 
-The recommended place for setting the logger is application boostrap. 
+The recommended place for setting the logger is application boostrap.
 In this case, custom logger will be set for whole application runtime (also application failures will be logged with specified logger).
 
 ```scala

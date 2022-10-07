@@ -241,14 +241,14 @@ package object logging {
     stream: PrintStream,
     logFilter: LogFilter
   ): ZLayer[Any, Nothing, Unit] = {
-    import LogFilter.ZLoggerLogFilterOps
-    val stringLogger = logger.map { line =>
+
+    val stringLogger = logFilter.filter(logger.map { line =>
       try stream.println(line)
       catch {
         case t: VirtualMachineError => throw t
         case _: Throwable           => ()
       }
-    }.filter(logFilter)
+    })
 
     Runtime.addLogger(stringLogger)
   }
@@ -261,17 +261,15 @@ package object logging {
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
   ): ZLogger[String, Any] = {
-    import LogFilter.ZLoggerLogFilterOps
     val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
 
-    val stringLogger: ZLogger[String, Any] =
-      logger.map { (line: String) =>
-        try logWriter.writeln(line)
-        catch {
-          case t: VirtualMachineError => throw t
-          case _: Throwable           => ()
-        }
-      }.filter(logFilter)
+    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
+      try logWriter.writeln(line)
+      catch {
+        case t: VirtualMachineError => throw t
+        case _: Throwable           => ()
+      }
+    })
 
     stringLogger
   }
@@ -303,21 +301,19 @@ package object logging {
     bufferedIOSize: Option[Int],
     queue: Queue[UIO[Any]]
   ): ZLogger[String, Any] = {
-    import LogFilter.ZLoggerLogFilterOps
     val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
 
-    val stringLogger: ZLogger[String, Any] =
-      logger.map { (line: String) =>
-        zio.Unsafe.unsafe { implicit u =>
-          Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
-            try logWriter.writeln(line)
-            catch {
-              case t: VirtualMachineError => throw t
-              case _: Throwable           => ()
-            }
-          }))
-        }
-      }.filter(logFilter)
+    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
+      zio.Unsafe.unsafe { implicit u =>
+        Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
+          try logWriter.writeln(line)
+          catch {
+            case t: VirtualMachineError => throw t
+            case _: Throwable           => ()
+          }
+        }))
+      }
+    })
     stringLogger
   }
 }

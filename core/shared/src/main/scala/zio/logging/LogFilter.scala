@@ -1,6 +1,5 @@
 package zio.logging
 
-import zio.stm.{ TMap, ZSTM }
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import scala.annotation.tailrec
@@ -51,14 +50,46 @@ trait LogFilter { self =>
    * Returns a new log filter with negated result
    */
   final def unary_! : LogFilter = self.not
+
+  final def cacheWith[A](group: LogGroup[A]): LogFilter =
+    new LogFilter {
+      private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
+
+      override def apply(
+        trace: Trace,
+        logLevel: LogLevel,
+        context: FiberRefs,
+        annotations: Map[String, String]
+      ): Boolean = {
+        val key = group(trace, logLevel, context, annotations)
+        cache.computeIfAbsent(
+          key,
+          _ => self(trace, logLevel, context, annotations)
+        )
+      }
+    }
+
+  def filter[M, O](logger: zio.ZLogger[M, O]): zio.ZLogger[M, Option[O]] =
+    new ZLogger[M, Option[O]] {
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => M,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Option[O] =
+        if (self(trace, logLevel, context, annotations)) {
+          Some(logger(trace, fiberId, logLevel, message, cause, context, spans, annotations))
+        } else None
+    }
 }
 
 object LogFilter {
 
-  final case class LogFilterNode(logLevel: LogLevel, children: Map[String, LogFilterNode])
-
-  private val loggerNameDefault: (Trace, FiberRefs, Map[String, String]) => String = (trace, _, _) =>
-    getLoggerName()(trace)
+  private final case class LevelNode(logLevel: LogLevel, children: Map[String, LevelNode])
 
   /**
    * Log filter which accept all logs (logs are not filtered)
@@ -100,8 +131,8 @@ object LogFilter {
    * @param mappings  List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelAndName(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter =
-    logLevelAndName(rootLevel, loggerNameDefault, mappings: _*)
+  def logLevelByName(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter =
+    logLevelByGroup(rootLevel, LogGroup.loggerNameAndLevel, mappings: _*)
 
   /**
    * Defines a filter from a list of log-levels specified per tree node
@@ -110,7 +141,7 @@ object LogFilter {
    *
    * {{{
    *   val filter =
-   *     logLevelAndName(
+   *     logLevelByGroup(
    *      LogLevel.Debug,
    *      "io.netty"                                       -> LogLevel.Info,
    *      "io.grpc.netty"                                  -> LogLevel.Info
@@ -120,118 +151,31 @@ object LogFilter {
    * will use the `Debug` log level for everything except for log events with the logger name
    * prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
    *
-   * @param rootLevel Minimum log level for the root node
-   * @param loggerName Logger name
-   * @param mappings  List of mappings, nesting defined by dot-separated strings
+   * @param rootLevel  Minimum log level for the root node
+   * @param group Log group
+   * @param mappings   List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelAndName(
+  def logLevelByGroup(
     rootLevel: LogLevel,
-    loggerName: (Trace, FiberRefs, Map[String, String]) => String,
+    group: LogGroup[(String, LogLevel)],
     mappings: (String, LogLevel)*
   ): LogFilter =
-    logLevelAndNameTree(buildLogFilterTree(rootLevel, mappings), loggerName)
+    logLevelByGroupTree(buildLogFilterTree(rootLevel, mappings), group)
 
-  private def logLevelAndNameTree(
-    root: LogFilterNode,
-    loggerName: (Trace, FiberRefs, Map[String, String]) => String
+  private def logLevelByGroupTree(
+    root: LevelNode,
+    group: LogGroup[(String, LogLevel)]
   ): LogFilter =
     (trace, level, context, annotations) => {
-      val loggerNames    = loggerName(trace, context, annotations).split('.').toList
+      val loggerGroup    = group(trace, level, context, annotations)
+      val loggerNames    = loggerGroup._1.split('.').toList
       val loggerLogLevel = findMostSpecificLogLevel(loggerNames, root)
-      level >= loggerLogLevel
+      loggerGroup._2 >= loggerLogLevel
     }
 
-  type LogFilterCache = TMap[(List[String], LogLevel), Boolean]
-
-  /**
-   * Filter by log level and name with cached results
-   */
-  def cachedLogLevelAndName(
-    cache: LogFilterCache,
-    rootLevel: LogLevel,
-    mappings: (String, LogLevel)*
-  ): LogFilter =
-    cachedLogLevelAndName(cache, rootLevel, loggerNameDefault, mappings: _*)
-
-  /**
-   * Filter by log level and name with cached results
-   */
-  def cachedLogLevelAndName(
-    cache: LogFilterCache,
-    rootLevel: LogLevel,
-    loggerName: (Trace, FiberRefs, Map[String, String]) => String,
-    mappings: (String, LogLevel)*
-  ): LogFilter =
-    cachedLogLevelAndNameTree(cache, buildLogFilterTree(rootLevel, mappings), loggerName)
-
-  private def cachedLogLevelAndNameTree(
-    cache: LogFilterCache,
-    root: LogFilterNode,
-    loggerName: (Trace, FiberRefs, Map[String, String]) => String
-  ): LogFilter =
-    (trace, level, context, annotations) => {
-      val loggerNames = loggerName(trace, context, annotations).split('.').toList
-      val key         = (loggerNames, level)
-      zio.Unsafe.unsafe { implicit u =>
-        zio.Runtime.default.unsafe.run {
-          val stm = for {
-            cached <- cache.get(key)
-            result <- cached match {
-                        case Some(value) =>
-                          ZSTM.succeed(value)
-                        case None        =>
-                          val mostSpecificLogLevel = findMostSpecificLogLevel(loggerNames, root)
-                          val answer               = level >= mostSpecificLogLevel
-                          cache.put(key, answer).as(answer)
-                      }
-          } yield result
-          stm.commit
-        }.getOrThrowFiberFailure()
-      }
-    }
-
-  /**
-   * Filter by log level and name with cached results
-   */
-  def cachedLogLevelAndName(
-    rootLevel: LogLevel,
-    mappings: (String, LogLevel)*
-  ): LogFilter =
-    cachedLogLevelAndName(rootLevel, loggerNameDefault, mappings: _*)
-
-  /**
-   * Filter by log level and name with cached results
-   */
-  def cachedLogLevelAndName(
-    rootLevel: LogLevel,
-    loggerName: (Trace, FiberRefs, Map[String, String]) => String,
-    mappings: (String, LogLevel)*
-  ): LogFilter =
-    cachedLogLevelAndNameTree(buildLogFilterTree(rootLevel, mappings), loggerName)
-
-  private def cachedLogLevelAndNameTree(
-    root: LogFilterNode,
-    loggerName: (Trace, FiberRefs, Map[String, String]) => String
-  ): LogFilter = {
-    val cache = new java.util.concurrent.ConcurrentHashMap[(List[String], LogLevel), Boolean]()
-    (trace, level, context, annotations) => {
-      val loggerNames                   = loggerName(trace, context, annotations).split('.').toList
-      val key: (List[String], LogLevel) = (loggerNames, level)
-
-      cache.computeIfAbsent(
-        key,
-        _ => {
-          val mostSpecificLogLevel = findMostSpecificLogLevel(loggerNames, root)
-          val answer               = level >= mostSpecificLogLevel
-          answer
-        }
-      )
-    }
-  }
-
-  private def buildLogFilterTree(rootLevel: LogLevel, mappings: Seq[(String, LogLevel)]): LogFilterNode = {
-    def add(tree: LogFilterNode, names: List[String], level: LogLevel): LogFilterNode =
+  private def buildLogFilterTree(rootLevel: LogLevel, mappings: Seq[(String, LogLevel)]): LevelNode = {
+    def add(tree: LevelNode, names: List[String], level: LogLevel): LevelNode =
       names match {
         case Nil               =>
           tree.copy(logLevel = level)
@@ -244,7 +188,7 @@ object LogFilter {
             case None          =>
               tree.copy(
                 children = tree.children + (name -> add(
-                  LogFilterNode(tree.logLevel, Map.empty),
+                  LevelNode(tree.logLevel, Map.empty),
                   remaining,
                   level
                 ))
@@ -253,7 +197,7 @@ object LogFilter {
       }
 
     mappings.foldLeft(
-      LogFilterNode(rootLevel, Map.empty)
+      LevelNode(rootLevel, Map.empty)
     ) { case (tree, (name, logLevel)) =>
       val nameList = name.split('.').toList
       add(tree, nameList, logLevel)
@@ -261,7 +205,7 @@ object LogFilter {
   }
 
   @tailrec
-  private def findMostSpecificLogLevel(names: List[String], currentNode: LogFilterNode): LogLevel =
+  private def findMostSpecificLogLevel(names: List[String], currentNode: LevelNode): LogLevel =
     names match {
       case next :: remaining =>
         currentNode.children.get(next) match {
@@ -279,22 +223,7 @@ object LogFilter {
     /**
      * Returns a version of logger that only logs messages when the `LogFilter` conditions are met
      */
-    def filter(filter: LogFilter): zio.ZLogger[M, Option[O]] =
-      new ZLogger[M, Option[O]] {
-        override def apply(
-          trace: Trace,
-          fiberId: FiberId,
-          logLevel: LogLevel,
-          message: () => M,
-          cause: Cause[Any],
-          context: FiberRefs,
-          spans: List[LogSpan],
-          annotations: Map[String, String]
-        ): Option[O] =
-          if (filter(trace, logLevel, context, annotations)) {
-            Some(logger(trace, fiberId, logLevel, message, cause, context, spans, annotations))
-          } else None
-      }
+    def filter(filter: LogFilter): zio.ZLogger[M, Option[O]] = filter.filter(logger)
   }
 
 }
