@@ -19,7 +19,7 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
-    val filter: LogFilter = (trace, level, context, annotations) => {
+    val filter: LogFilter = (trace, _, level, _, _, context, _, annotations) => {
       val loggerNames = loggerNameAndLevel(trace, level, context, annotations)._1.split(".").toList
       loggerNames match {
         case List("a", "b", "c") => level >= LogLevel.Info
