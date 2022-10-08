@@ -7,13 +7,13 @@ import scala.annotation.tailrec
 /**
  * A `LogFilter` represents function/conditions for log filtering
  */
-trait LogFilter { self =>
+trait LogFilter[M] { self =>
 
   def apply(
     trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
-    message: () => String,
+    message: () => M,
     cause: Cause[Any],
     context: FiberRefs,
     spans: List[LogSpan],
@@ -23,12 +23,12 @@ trait LogFilter { self =>
   /**
    * The alphanumeric version of the `&&` operator.
    */
-  final def and(other: LogFilter): LogFilter =
+  final def and(other: LogFilter[M]): LogFilter[M] =
     (
       trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
-      message: () => String,
+      message: () => M,
       cause: Cause[Any],
       context: FiberRefs,
       spans: List[LogSpan],
@@ -48,17 +48,17 @@ trait LogFilter { self =>
   /**
    * Returns a new log filter which satisfy result of this and given log filter
    */
-  final def &&(other: LogFilter): LogFilter = and(other)
+  final def &&(other: LogFilter[M]): LogFilter[M] = and(other)
 
   /**
    * The alphanumeric version of the `||` operator.
    */
-  final def or(other: LogFilter): LogFilter =
+  final def or(other: LogFilter[M]): LogFilter[M] =
     (
       trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
-      message: () => String,
+      message: () => M,
       cause: Cause[Any],
       context: FiberRefs,
       spans: List[LogSpan],
@@ -78,16 +78,16 @@ trait LogFilter { self =>
   /**
    * Returns a new log filter which satisfy result of this or given log filter
    */
-  final def ||(other: LogFilter): LogFilter = or(other)
+  final def ||(other: LogFilter[M]): LogFilter[M] = or(other)
 
   /**
    * The alphanumeric version of the `!` operator.
    */
-  final def not: LogFilter = (
+  final def not: LogFilter[M] = (
     trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
-    message: () => String,
+    message: () => M,
     cause: Cause[Any],
     context: FiberRefs,
     spans: List[LogSpan],
@@ -97,17 +97,17 @@ trait LogFilter { self =>
   /**
    * Returns a new log filter with negated result
    */
-  final def unary_! : LogFilter = self.not
+  final def unary_! : LogFilter[M] = self.not
 
-  final def cacheWith[A](group: LogGroup[A]): LogFilter =
-    new LogFilter {
+  final def cacheWith[A](group: LogGroup[A]): LogFilter[M] =
+    new LogFilter[M] {
       private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
 
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => String,
+        message: () => M,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
@@ -121,13 +121,13 @@ trait LogFilter { self =>
       }
     }
 
-  def filter[O](logger: zio.ZLogger[String, O]): zio.ZLogger[String, Option[O]] =
-    new ZLogger[String, Option[O]] {
+  def filter[O](logger: zio.ZLogger[M, O]): zio.ZLogger[M, Option[O]] =
+    new ZLogger[M, Option[O]] {
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => String,
+        message: () => M,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
@@ -146,12 +146,12 @@ object LogFilter {
   /**
    * Log filter which accept all logs (logs are not filtered)
    */
-  val acceptAll: LogFilter =
+  def acceptAll[M]: LogFilter[M] =
     (
       _: Trace,
       _: FiberId,
       _: LogLevel,
-      _: () => String,
+      _: () => M,
       _: Cause[Any],
       _: FiberRefs,
       _: List[LogSpan],
@@ -161,12 +161,12 @@ object LogFilter {
   /**
    * Returns a filter which accept logs when the log level satisfies the specified predicate
    */
-  def logLevel(predicate: LogLevel => Boolean): LogFilter =
+  def logLevel[M](predicate: LogLevel => Boolean): LogFilter[M] =
     (
       _: Trace,
       _: FiberId,
       logLevel: LogLevel,
-      _: () => String,
+      _: () => M,
       _: Cause[Any],
       _: FiberRefs,
       _: List[LogSpan],
@@ -176,7 +176,7 @@ object LogFilter {
   /**
    * Returns a filter which accept logs when the log level priority is higher then given one
    */
-  def logLevel(rootLevel: LogLevel): LogFilter =
+  def logLevel[M](rootLevel: LogLevel): LogFilter[M] =
     logLevel(_ >= rootLevel)
 
   /**
@@ -201,7 +201,7 @@ object LogFilter {
    * @param mappings  List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelByName(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter =
+  def logLevelByName[M](rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[M] =
     logLevelByGroup(rootLevel, LogGroup.loggerNameAndLevel, mappings: _*)
 
   /**
@@ -226,17 +226,17 @@ object LogFilter {
    * @param mappings   List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelByGroup(
+  def logLevelByGroup[M](
     rootLevel: LogLevel,
     group: LogGroup[(String, LogLevel)],
     mappings: (String, LogLevel)*
-  ): LogFilter =
+  ): LogFilter[M] =
     logLevelByGroupTree(buildLogFilterTree(rootLevel, mappings), group)
 
-  private def logLevelByGroupTree(
+  private def logLevelByGroupTree[M](
     root: LevelNode,
     group: LogGroup[(String, LogLevel)]
-  ): LogFilter =
+  ): LogFilter[M] =
     (trace, _, level, _, _, context, _, annotations) => {
       val loggerGroup    = group(trace, level, context, annotations)
       val loggerNames    = loggerGroup._1.split('.').toList
@@ -288,12 +288,12 @@ object LogFilter {
         currentNode.logLevel
     }
 
-  implicit class ZLoggerLogFilterOps[O](logger: zio.ZLogger[String, O]) {
+  implicit class ZLoggerLogFilterOps[M, O](logger: zio.ZLogger[M, O]) {
 
     /**
      * Returns a version of logger that only logs messages when the `LogFilter` conditions are met
      */
-    def filter(filter: LogFilter): zio.ZLogger[String, Option[O]] = filter.filter(logger)
+    def filter(filter: LogFilter[M]): zio.ZLogger[M, Option[O]] = filter.filter(logger)
   }
 
 }
