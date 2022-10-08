@@ -16,7 +16,7 @@ class FilterBenchmarks {
   val runtime = Runtime.default
 
   val unfilteredLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll[String])
+    Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
     val filter: LogFilter[String] = (trace, _, level, _, _, context, _, annotations) => {
@@ -34,7 +34,7 @@ class FilterBenchmarks {
   val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      LogFilter.logLevelByGroup[String](
+      LogFilter.logLevelByGroup(
         LogLevel.Debug,
         loggerNameAndLevel,
         "a.b.c" -> LogLevel.Info,
@@ -47,7 +47,7 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
       LogFilter
-        .logLevelByGroup[String](
+        .logLevelByGroup(
           LogLevel.Debug,
           loggerNameAndLevel,
           "a.b.c" -> LogLevel.Info,

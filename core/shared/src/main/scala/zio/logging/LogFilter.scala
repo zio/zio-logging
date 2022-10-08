@@ -7,7 +7,7 @@ import scala.annotation.tailrec
 /**
  * A `LogFilter` represents function/conditions for log filtering
  */
-trait LogFilter[M] { self =>
+trait LogFilter[-M] { self =>
 
   def apply(
     trace: Trace,
@@ -23,12 +23,12 @@ trait LogFilter[M] { self =>
   /**
    * The alphanumeric version of the `&&` operator.
    */
-  final def and(other: LogFilter[M]): LogFilter[M] =
+  final def and[M1 <: M](other: LogFilter[M1]): LogFilter[M1] =
     (
       trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
-      message: () => M,
+      message: () => M1,
       cause: Cause[Any],
       context: FiberRefs,
       spans: List[LogSpan],
@@ -48,17 +48,17 @@ trait LogFilter[M] { self =>
   /**
    * Returns a new log filter which satisfy result of this and given log filter
    */
-  final def &&(other: LogFilter[M]): LogFilter[M] = and(other)
+  final def &&[M1 <: M](other: LogFilter[M1]): LogFilter[M1] = and(other)
 
   /**
    * The alphanumeric version of the `||` operator.
    */
-  final def or(other: LogFilter[M]): LogFilter[M] =
+  final def or[M1 <: M](other: LogFilter[M1]): LogFilter[M1] =
     (
       trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
-      message: () => M,
+      message: () => M1,
       cause: Cause[Any],
       context: FiberRefs,
       spans: List[LogSpan],
@@ -78,7 +78,7 @@ trait LogFilter[M] { self =>
   /**
    * Returns a new log filter which satisfy result of this or given log filter
    */
-  final def ||(other: LogFilter[M]): LogFilter[M] = or(other)
+  final def ||[M1 <: M](other: LogFilter[M1]): LogFilter[M1] = or(other)
 
   /**
    * The alphanumeric version of the `!` operator.
@@ -121,13 +121,13 @@ trait LogFilter[M] { self =>
       }
     }
 
-  def filter[O](logger: zio.ZLogger[M, O]): zio.ZLogger[M, Option[O]] =
-    new ZLogger[M, Option[O]] {
+  def filter[M1 <: M, O](logger: zio.ZLogger[M1, O]): zio.ZLogger[M1, Option[O]] =
+    new ZLogger[M1, Option[O]] {
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => M,
+        message: () => M1,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
@@ -146,12 +146,12 @@ object LogFilter {
   /**
    * Log filter which accept all logs (logs are not filtered)
    */
-  def acceptAll[M]: LogFilter[M] =
+  val acceptAll: LogFilter[Any] =
     (
       _: Trace,
       _: FiberId,
       _: LogLevel,
-      _: () => M,
+      _: () => Any,
       _: Cause[Any],
       _: FiberRefs,
       _: List[LogSpan],
@@ -161,12 +161,12 @@ object LogFilter {
   /**
    * Returns a filter which accept logs when the log level satisfies the specified predicate
    */
-  def logLevel[M](predicate: LogLevel => Boolean): LogFilter[M] =
+  def logLevel(predicate: LogLevel => Boolean): LogFilter[Any] =
     (
       _: Trace,
       _: FiberId,
       logLevel: LogLevel,
-      _: () => M,
+      _: () => Any,
       _: Cause[Any],
       _: FiberRefs,
       _: List[LogSpan],
@@ -176,7 +176,7 @@ object LogFilter {
   /**
    * Returns a filter which accept logs when the log level priority is higher then given one
    */
-  def logLevel[M](rootLevel: LogLevel): LogFilter[M] =
+  def logLevel(rootLevel: LogLevel): LogFilter[Any] =
     logLevel(_ >= rootLevel)
 
   /**
@@ -201,7 +201,7 @@ object LogFilter {
    * @param mappings  List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelByName[M](rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[M] =
+  def logLevelByName(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[Any] =
     logLevelByGroup(rootLevel, LogGroup.loggerNameAndLevel, mappings: _*)
 
   /**
@@ -226,17 +226,17 @@ object LogFilter {
    * @param mappings   List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelByGroup[M](
+  def logLevelByGroup(
     rootLevel: LogLevel,
     group: LogGroup[(String, LogLevel)],
     mappings: (String, LogLevel)*
-  ): LogFilter[M] =
+  ): LogFilter[Any] =
     logLevelByGroupTree(buildLogFilterTree(rootLevel, mappings), group)
 
-  private def logLevelByGroupTree[M](
+  private def logLevelByGroupTree(
     root: LevelNode,
     group: LogGroup[(String, LogLevel)]
-  ): LogFilter[M] =
+  ): LogFilter[Any] =
     (trace, _, level, _, _, context, _, annotations) => {
       val loggerGroup    = group(trace, level, context, annotations)
       val loggerNames    = loggerGroup._1.split('.').toList

@@ -64,7 +64,7 @@ package object logging {
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    console(format, LogFilter.logLevel[String](logLevel))
+    console(format, LogFilter.logLevel(logLevel))
 
   def console(
     format: LogFormat,
@@ -76,7 +76,7 @@ package object logging {
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    consoleJson(format, LogFilter.logLevel[String](logLevel))
+    consoleJson(format, LogFilter.logLevel(logLevel))
 
   def consoleJson(
     format: LogFormat,
@@ -88,7 +88,7 @@ package object logging {
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    consoleErr(format, LogFilter.logLevel[String](logLevel))
+    consoleErr(format, LogFilter.logLevel(logLevel))
 
   def consoleErr(
     format: LogFormat,
@@ -100,7 +100,7 @@ package object logging {
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
-    consoleErrJson(format, LogFilter.logLevel[String](logLevel))
+    consoleErrJson(format, LogFilter.logLevel(logLevel))
 
   def consoleErrJson(
     format: LogFormat,
@@ -116,7 +116,7 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
-    file(destination, format, LogFilter.logLevel[String](logLevel), charset, autoFlushBatchSize, bufferedIOSize)
+    file(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
 
   def file(
     destination: Path,
@@ -145,7 +145,7 @@ package object logging {
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None
   ): ZLayer[Any, Nothing, Unit] =
-    fileJson(destination, format, LogFilter.logLevel[String](logLevel), charset, autoFlushBatchSize, bufferedIOSize)
+    fileJson(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
 
   def fileJson(
     destination: Path,
@@ -177,7 +177,7 @@ package object logging {
     fileAsync(
       destination,
       format,
-      LogFilter.logLevel[String](logLevel),
+      LogFilter.logLevel(logLevel),
       charset,
       autoFlushBatchSize,
       bufferedIOSize
@@ -211,7 +211,7 @@ package object logging {
     fileAsyncJson(
       destination,
       format,
-      LogFilter.logLevel[String](logLevel),
+      LogFilter.logLevel(logLevel),
       charset,
       autoFlushBatchSize,
       bufferedIOSize
