@@ -49,6 +49,14 @@ package object logging {
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
    * will have ''example.LivePingService'' as logger name
    */
+  val getLoggerName: Trace => String = getLoggerName()
+
+  /**
+   * get logger name from [[Trace]]
+   *
+   * trace with value ''example.LivePingService.ping(PingService.scala:22)''
+   * will have ''example.LivePingService'' as logger name
+   */
   def getLoggerName(default: String = "zio-logger"): Trace => String =
     _ match {
       case Trace(location, _, _) =>

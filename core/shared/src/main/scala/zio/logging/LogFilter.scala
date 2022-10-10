@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019-2022 John A. De Goes and the ZIO Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package zio.logging
 
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
@@ -7,9 +22,20 @@ import scala.annotation.tailrec
 /**
  * A `LogFilter` represents function/conditions for log filtering
  */
-trait LogFilter[-M] { self =>
+trait LogFilter[-Message] { self =>
 
   def apply(
+    trace: Trace,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => Message,
+    cause: Cause[Any],
+    context: FiberRefs,
+    spans: List[LogSpan],
+    annotations: Map[String, String]
+  ): Boolean
+
+  final def contramap[M](f: M => Message): LogFilter[M] = (
     trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
@@ -18,17 +44,17 @@ trait LogFilter[-M] { self =>
     context: FiberRefs,
     spans: List[LogSpan],
     annotations: Map[String, String]
-  ): Boolean
+  ) => self(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations)
 
   /**
    * The alphanumeric version of the `&&` operator.
    */
-  final def and[M1 <: M](other: LogFilter[M1]): LogFilter[M1] =
+  final def and[M <: Message](other: LogFilter[M]): LogFilter[M] =
     (
       trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
-      message: () => M1,
+      message: () => M,
       cause: Cause[Any],
       context: FiberRefs,
       spans: List[LogSpan],
@@ -48,17 +74,17 @@ trait LogFilter[-M] { self =>
   /**
    * Returns a new log filter which satisfy result of this and given log filter
    */
-  final def &&[M1 <: M](other: LogFilter[M1]): LogFilter[M1] = and(other)
+  final def &&[M <: Message](other: LogFilter[M]): LogFilter[M] = and(other)
 
   /**
    * The alphanumeric version of the `||` operator.
    */
-  final def or[M1 <: M](other: LogFilter[M1]): LogFilter[M1] =
+  final def or[M <: Message](other: LogFilter[M]): LogFilter[M] =
     (
       trace: Trace,
       fiberId: FiberId,
       logLevel: LogLevel,
-      message: () => M1,
+      message: () => M,
       cause: Cause[Any],
       context: FiberRefs,
       spans: List[LogSpan],
@@ -78,16 +104,16 @@ trait LogFilter[-M] { self =>
   /**
    * Returns a new log filter which satisfy result of this or given log filter
    */
-  final def ||[M1 <: M](other: LogFilter[M1]): LogFilter[M1] = or(other)
+  final def ||[M <: Message](other: LogFilter[M]): LogFilter[M] = or(other)
 
   /**
    * The alphanumeric version of the `!` operator.
    */
-  final def not: LogFilter[M] = (
+  final def not: LogFilter[Message] = (
     trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
-    message: () => M,
+    message: () => Message,
     cause: Cause[Any],
     context: FiberRefs,
     spans: List[LogSpan],
@@ -97,17 +123,20 @@ trait LogFilter[-M] { self =>
   /**
    * Returns a new log filter with negated result
    */
-  final def unary_! : LogFilter[M] = self.not
+  final def unary_! : LogFilter[Message] = self.not
 
-  final def cacheWith[A](group: LogGroup[A]): LogFilter[M] =
-    new LogFilter[M] {
+  /**
+   * Returns a new log filter with cached results based on given log group
+   */
+  final def cacheWith[A](group: LogGroup[A]): LogFilter[Message] =
+    new LogFilter[Message] {
       private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
 
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => M,
+        message: () => Message,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
@@ -121,13 +150,16 @@ trait LogFilter[-M] { self =>
       }
     }
 
-  def filter[M1 <: M, O](logger: zio.ZLogger[M1, O]): zio.ZLogger[M1, Option[O]] =
-    new ZLogger[M1, Option[O]] {
+  /**
+   * Returns a version of logger that only logs messages when this filter is satisfied
+   */
+  def filter[M <: Message, O](logger: zio.ZLogger[M, O]): zio.ZLogger[M, Option[O]] =
+    new ZLogger[M, Option[O]] {
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => M1,
+        message: () => M,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
