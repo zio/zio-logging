@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogFilter, LogFormat, console }
+import zio.logging.{ LogFilter, LogFormat, LogGroup, console }
 import zio.{Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
 
 object ConsoleColoredApp extends ZIOAppDefault {
@@ -23,10 +23,12 @@ object ConsoleColoredApp extends ZIOAppDefault {
   override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.colored,
-      LogFilter.logLevelByName(
-        LogLevel.Info,
-        "zio.logging.example.LivePingService" -> LogLevel.Debug
-      )
+      LogFilter
+        .logLevelByName(
+          LogLevel.Info,
+          "zio.logging.example.LivePingService" -> LogLevel.Debug
+        )
+        .cacheWith(LogGroup.loggerNameAndLevel)
     )
 
   private def ping(address: String): URIO[PingService, Unit] =

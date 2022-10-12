@@ -41,6 +41,32 @@ object LogGroupSpec extends ZIOSpecDefault {
           )
           assertTrue(result == (value -> level))
       }
+    },
+    test("zipWith") {
+      val group = LogGroup.loggerName.zipWith(LogGroup.level)(_ -> _)
+      check(Gen.string, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
+        (value, level) =>
+          val result = group(
+            Trace.apply(value, "", 0),
+            level,
+            FiberRefs.empty,
+            Map.empty
+          )
+          assertTrue(result == (value -> level))
+      }
+    },
+    test("++") {
+      val group = LogGroup.loggerName ++ LogGroup.level
+      check(Gen.string, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
+        (value, level) =>
+          val result = group(
+            Trace.apply(value, "", 0),
+            level,
+            FiberRefs.empty,
+            Map.empty
+          )
+          assertTrue(result == (value -> level))
+      }
     }
   )
 }

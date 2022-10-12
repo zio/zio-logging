@@ -17,8 +17,6 @@ package zio.logging
 
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
-import scala.annotation.tailrec
-
 /**
  * A `LogFilter` represents function/conditions for log filtering
  */
@@ -173,8 +171,6 @@ trait LogFilter[-Message] { self =>
 
 object LogFilter {
 
-  private final case class LevelNode(logLevel: LogLevel, children: Map[String, LevelNode])
-
   /**
    * Log filter which accept all logs (logs are not filtered)
    */
@@ -212,6 +208,33 @@ object LogFilter {
     logLevel(_ >= rootLevel)
 
   /**
+   * Defines a filter for log filtering based log level specified by given groups,
+   *
+   * filter will use log level from first matching grouping or root level, if specific log level is not found
+   *
+   * @param rootLevel Default log level
+   * @param group Log group
+   * @param matcher Mather for log group and groupings
+   * @param groupings Log levels definitions
+   * @return A filter for log filtering based on given groups
+   */
+  def logLevelByGroup[A](
+    rootLevel: LogLevel,
+    group: LogGroup[A],
+    matcher: (A, A) => Boolean,
+    groupings: (A, LogLevel)*
+  ): LogFilter[Any] =
+    (trace, _, level, _, _, context, _, annotations) => {
+      val loggerGroup = group(trace, level, context, annotations)
+
+      val groupingLogLevel = groupings.collectFirst {
+        case (groupingGroup, groupingLevel) if matcher(loggerGroup, groupingGroup) => groupingLevel
+      }.getOrElse(rootLevel)
+
+      level >= groupingLogLevel
+    }
+
+  /**
    * Defines a filter from a list of log-levels specified per tree node
    *
    * Example:
@@ -234,7 +257,7 @@ object LogFilter {
    * @return A filter for log filtering based on log level and name
    */
   def logLevelByName(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[Any] =
-    logLevelByGroup(rootLevel, LogGroup.loggerNameAndLevel, mappings: _*)
+    logLevelByGroup(rootLevel, LogGroup.loggerName, mappings: _*)
 
   /**
    * Defines a filter from a list of log-levels specified per tree node
@@ -260,65 +283,81 @@ object LogFilter {
    */
   def logLevelByGroup(
     rootLevel: LogLevel,
-    group: LogGroup[(String, LogLevel)],
+    group: LogGroup[String],
     mappings: (String, LogLevel)*
-  ): LogFilter[Any] =
-    logLevelByGroupTree(buildLogFilterTree(rootLevel, mappings), group)
+  ): LogFilter[Any] = {
+    val mappingsSorted = mappings.map(splitNameByDotAndLevel.tupled).sorted(nameLevelOrdering)
+    val nameGroup      = group.map(splitNameByDot)
+    val matcher        = (loggerName: List[String], groupName: List[String]) => loggerName.startsWith(groupName)
 
-  private def logLevelByGroupTree(
-    root: LevelNode,
-    group: LogGroup[(String, LogLevel)]
-  ): LogFilter[Any] =
-    (trace, _, level, _, _, context, _, annotations) => {
-      val loggerGroup    = group(trace, level, context, annotations)
-      val loggerNames    = loggerGroup._1.split('.').toList
-      val loggerLogLevel = findMostSpecificLogLevel(loggerNames, root)
-      loggerGroup._2 >= loggerLogLevel
-    }
-
-  private def buildLogFilterTree(rootLevel: LogLevel, mappings: Seq[(String, LogLevel)]): LevelNode = {
-    def add(tree: LevelNode, names: List[String], level: LogLevel): LevelNode =
-      names match {
-        case Nil               =>
-          tree.copy(logLevel = level)
-        case name :: remaining =>
-          tree.children.get(name) match {
-            case Some(subtree) =>
-              tree.copy(
-                children = tree.children.updated(name, add(subtree, remaining, level))
-              )
-            case None          =>
-              tree.copy(
-                children = tree.children + (name -> add(
-                  LevelNode(tree.logLevel, Map.empty),
-                  remaining,
-                  level
-                ))
-              )
-          }
-      }
-
-    mappings.foldLeft(
-      LevelNode(rootLevel, Map.empty)
-    ) { case (tree, (name, logLevel)) =>
-      val nameList = name.split('.').toList
-      add(tree, nameList, logLevel)
-    }
+    logLevelByGroup(
+      rootLevel,
+      nameGroup,
+      matcher,
+      mappingsSorted: _*
+    )
   }
 
-  @tailrec
-  private def findMostSpecificLogLevel(names: List[String], currentNode: LevelNode): LogLevel =
-    names match {
-      case next :: remaining =>
-        currentNode.children.get(next) match {
-          case Some(nextNode) =>
-            findMostSpecificLogLevel(remaining, nextNode)
-          case None           =>
-            currentNode.logLevel
-        }
-      case Nil               =>
-        currentNode.logLevel
+  private[logging] val splitNameByDotAndLevel: (String, LogLevel) => (List[String], LogLevel) = (name, level) =>
+    splitNameByDot(name) -> level
+
+  /**
+   * split name by '.'
+   *
+   * example: `io.grpc.netty` -> `List("io", "grpc", "netty")`
+   */
+  private[logging] val splitNameByDot: String => List[String] = _.split('.').toList
+
+  /**
+   * ordering by name and level, where most specific names are at first places
+   *
+   * for example, input:
+   * {{{
+   *  Seq(
+   *    "a"              -> LogLevel.Warning,
+   *    "a"              -> LogLevel.Info,
+   *    "a.b.c.Service1" -> LogLevel.Warning,
+   *    "a.b.c"          -> LogLevel.Error,
+   *    "a.b.d"          -> LogLevel.Debug,
+   *    "e.f"            -> LogLevel.Error
+   *  )
+   * }}}
+   *
+   * will be sorted as:
+   *
+   * {{{
+   *  Seq(
+   *    "a.b.c.Service1" -> LogLevel.Warning,
+   *    "a.b.d"          -> LogLevel.Debug,
+   *    "a.b.c"          -> LogLevel.Error,
+   *    "e.f"            -> LogLevel.Error,
+   *    "a"              -> LogLevel.Info,
+   *    "a"              -> LogLevel.Warning
+   *  )
+   * }}}
+   */
+  private[logging] val nameLevelOrdering: Ordering[(List[String], LogLevel)] = new Ordering[(List[String], LogLevel)] {
+
+    override def compare(x: (List[String], LogLevel), y: (List[String], LogLevel)): Int = {
+      val (xName, xLevel) = x
+      val (yName, yLevel) = y
+
+      if (xName.length > yName.length) {
+        -1
+      } else if (xName.length < yName.length) {
+        1
+      } else {
+        val xLast = xName.last
+        val yLast = yName.last
+
+        val nr = yLast.compareTo(xLast)
+
+        if (nr == 0) { // paths are same
+          xLevel.ordinal - yLevel.ordinal
+        } else nr
+      }
     }
+  }
 
   implicit class ZLoggerLogFilterOps[M, O](logger: zio.ZLogger[M, O]) {
 

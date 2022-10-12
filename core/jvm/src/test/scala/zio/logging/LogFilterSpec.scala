@@ -102,14 +102,38 @@ object LogFilterSpec extends ZIOSpecDefault {
     },
     test("log filtering by log level and name with annotation") {
 
-      val loggerNameAndLevel: LogGroup[(String, LogLevel)] =
-        (_, logLevel, _, annotations) => annotations.getOrElse("name", "") -> logLevel
+      val loggerName: LogGroup[String] =
+        (_, _, _, annotations) => annotations.getOrElse("name", "")
 
       val filter: LogFilter[String] = LogFilter.logLevelByGroup(
         LogLevel.Debug,
-        loggerNameAndLevel,
+        loggerName,
         "a"     -> LogLevel.Info,
         "a.b.c" -> LogLevel.Warning,
+        "e.f"   -> LogLevel.Error
+      )
+
+      testFilterAnnotation(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+      testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+      testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+      testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+      testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+    },
+    test("log filtering by log level and name matcher with annotation") {
+
+      val loggerName: LogGroup[String] =
+        (_, _, _, annotations) => annotations.getOrElse("name", "")
+
+      val filter: LogFilter[String] = LogFilter.logLevelByGroup[String](
+        LogLevel.Debug,
+        loggerName,
+        (loggerName, groupName) => loggerName.startsWith(groupName),
+        "a.b.c" -> LogLevel.Warning,
+        "a"     -> LogLevel.Info,
         "e.f"   -> LogLevel.Error
       )
 
@@ -169,7 +193,7 @@ object LogFilterSpec extends ZIOSpecDefault {
       val filter: LogFilter[String] = LogFilter
         .logLevelByGroup(
           LogLevel.Debug,
-          LogGroup.loggerNameAndLevel,
+          LogGroup.loggerName,
           "zio.logging"      -> LogLevel.Info,
           "zio.logging.test" -> LogLevel.Warning
         )
@@ -205,6 +229,36 @@ object LogFilterSpec extends ZIOSpecDefault {
           )
         )
       }).provideLayer(testLogger(logOutputRef, filter))
+    },
+    test("nameLevelOrdering") {
+      def check(input: Seq[(String, LogLevel)], expected: Seq[(String, LogLevel)]) = {
+        val in  = input.map(LogFilter.splitNameByDotAndLevel.tupled).sorted(LogFilter.nameLevelOrdering)
+        val exp = expected.map(LogFilter.splitNameByDotAndLevel.tupled)
+        assertTrue(in == exp)
+      }
+
+      check(
+        Seq("a"     -> LogLevel.Info, "a.b.c"  -> LogLevel.Warning, "e.f" -> LogLevel.Error),
+        Seq("a.b.c" -> LogLevel.Warning, "e.f" -> LogLevel.Error, "a"     -> LogLevel.Info)
+      ) &&
+      check(
+        Seq(
+          "a"              -> LogLevel.Warning,
+          "a"              -> LogLevel.Info,
+          "a.b.c.Service1" -> LogLevel.Warning,
+          "a.b.c"          -> LogLevel.Error,
+          "a.b.d"          -> LogLevel.Debug,
+          "e.f"            -> LogLevel.Error
+        ),
+        Seq(
+          "a.b.c.Service1" -> LogLevel.Warning,
+          "a.b.d"          -> LogLevel.Debug,
+          "a.b.c"          -> LogLevel.Error,
+          "e.f"            -> LogLevel.Error,
+          "a"              -> LogLevel.Info,
+          "a"              -> LogLevel.Warning
+        )
+      )
     }
   )
 }
