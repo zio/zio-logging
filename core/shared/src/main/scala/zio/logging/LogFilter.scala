@@ -17,6 +17,8 @@ package zio.logging
 
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
+import scala.annotation.tailrec
+
 /**
  * A `LogFilter` represents function/conditions for log filtering
  */
@@ -327,10 +329,10 @@ object LogFilter {
    *
    * {{{
    *  Seq(
-   *    "a.b.c.Service1" -> LogLevel.Warning,
-   *    "a.b.d"          -> LogLevel.Debug,
-   *    "a.b.c"          -> LogLevel.Error,
    *    "e.f"            -> LogLevel.Error,
+   *    "a.b.d"          -> LogLevel.Debug,
+   *    "a.b.c.Service1" -> LogLevel.Warning,
+   *    "a.b.c"          -> LogLevel.Error,
    *    "a"              -> LogLevel.Info,
    *    "a"              -> LogLevel.Warning
    *  )
@@ -338,24 +340,27 @@ object LogFilter {
    */
   private[logging] val nameLevelOrdering: Ordering[(List[String], LogLevel)] = new Ordering[(List[String], LogLevel)] {
 
+    @tailrec
+    def compareNames(x: List[String], y: List[String]): Int =
+      (x, y) match {
+        case (_ :: _, Nil)                      => -1
+        case (Nil, _ :: _)                      => 1
+        case (xFirst :: xTail, yFirst :: yTail) =>
+          val r = yFirst.compareTo(xFirst)
+          if (r != 0) {
+            r
+          } else compareNames(xTail, yTail)
+
+        case _ => 0
+      }
+
     override def compare(x: (List[String], LogLevel), y: (List[String], LogLevel)): Int = {
       val (xName, xLevel) = x
       val (yName, yLevel) = y
-
-      if (xName.length > yName.length) {
-        -1
-      } else if (xName.length < yName.length) {
-        1
-      } else {
-        val xLast = xName.last
-        val yLast = yName.last
-
-        val nr = yLast.compareTo(xLast)
-
-        if (nr == 0) { // paths are same
-          xLevel.ordinal - yLevel.ordinal
-        } else nr
-      }
+      val r               = compareNames(xName, yName)
+      if (r == 0) { // paths are same
+        xLevel.ordinal - yLevel.ordinal
+      } else r
     }
   }
 

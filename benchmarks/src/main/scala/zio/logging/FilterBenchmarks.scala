@@ -28,6 +28,8 @@ class FilterBenchmarks {
         case List("a", "b", "c") => level >= LogLevel.Info
         case List("a", "b", "d") => level >= LogLevel.Warning
         case List("e")           => level >= LogLevel.Info
+        case List("f", "g")      => level >= LogLevel.Error
+        case List("f")           => level >= LogLevel.Info
         case _                   => level >= LogLevel.Debug
       }
     }
@@ -42,7 +44,9 @@ class FilterBenchmarks {
         loggerName,
         "a.b.c" -> LogLevel.Info,
         "a.b.d" -> LogLevel.Warning,
-        "e"     -> LogLevel.Info
+        "e"     -> LogLevel.Info,
+        "f.g"   -> LogLevel.Error,
+        "f"     -> LogLevel.Info
       )
     )
 
@@ -55,7 +59,9 @@ class FilterBenchmarks {
           loggerName,
           "a.b.c" -> LogLevel.Info,
           "a.b.d" -> LogLevel.Warning,
-          "e"     -> LogLevel.Info
+          "e"     -> LogLevel.Info,
+          "f.g"   -> LogLevel.Error,
+          "f"     -> LogLevel.Info
         )
         .cacheWith(loggerNameAndLevel)
     )
@@ -68,10 +74,19 @@ class FilterBenchmarks {
     "a.b.e",
     "a.b.e.f.g",
     "a.z",
+    "b.c",
+    "b.d",
+    "b.e",
     "e",
     "e.f",
     "e.f",
-    "a.e.f"
+    "a.e.f",
+    "f.g",
+    "f.g.h",
+    "f.g.h.x",
+    "f.h",
+    "f.h.x",
+    "f"
   )
 
   val rnd = new Random(12345)
@@ -87,15 +102,15 @@ class FilterBenchmarks {
   }
 
   /**
-   * 2022/10/12 Initial results
+   * 2022/10/13 Initial results
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
    * Benchmark                                           Mode  Cnt      Score       Error  Units
-   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  14759.632 ±  2550.790  ops/s
-   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  15068.682 ±   743.259  ops/s
-   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  14047.130 ±  1358.382  ops/s
-   * FilterBenchmarks.noFilteringLog                    thrpt    3  10924.866 ± 18515.917  ops/s
+   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  15925.756 ±   916.972  ops/s
+   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  15874.486 ±  2184.211  ops/s
+   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  14386.670 ±   558.179  ops/s
+   * FilterBenchmarks.noFilteringLog                    thrpt    3  12691.589 ± 15205.006  ops/s
    */
 
   @Benchmark
