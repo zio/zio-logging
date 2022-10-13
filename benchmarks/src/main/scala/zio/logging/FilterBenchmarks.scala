@@ -63,7 +63,7 @@ class FilterBenchmarks {
           "f.g"   -> LogLevel.Error,
           "f"     -> LogLevel.Info
         )
-        .cacheWith(loggerNameAndLevel)
+        .cachedBy(loggerNameAndLevel)
     )
 
   val names: List[String] = List(

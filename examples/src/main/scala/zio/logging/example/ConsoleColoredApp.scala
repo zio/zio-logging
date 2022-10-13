@@ -28,7 +28,7 @@ object ConsoleColoredApp extends ZIOAppDefault {
           LogLevel.Info,
           "zio.logging.example.LivePingService" -> LogLevel.Debug
         )
-        .cacheWith(LogGroup.loggerNameAndLevel)
+        .cachedBy(LogGroup.loggerNameAndLevel)
     )
 
   private def ping(address: String): URIO[PingService, Unit] =

@@ -197,7 +197,7 @@ object LogFilterSpec extends ZIOSpecDefault {
           "zio.logging"      -> LogLevel.Info,
           "zio.logging.test" -> LogLevel.Warning
         )
-        .cacheWith(LogGroup.loggerNameAndLevel)
+        .cachedBy(LogGroup.loggerNameAndLevel)
 
       (for {
         _ <- ZIO.logDebug("debug")

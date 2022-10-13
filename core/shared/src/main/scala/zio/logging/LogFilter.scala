@@ -128,7 +128,7 @@ trait LogFilter[-Message] { self =>
   /**
    * Returns a new log filter with cached results based on given log group
    */
-  final def cacheWith[A](group: LogGroup[A]): LogFilter[Message] =
+  final def cachedBy[A](group: LogGroup[A]): LogFilter[Message] =
     new LogFilter[Message] {
       private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
 
@@ -243,7 +243,7 @@ object LogFilter {
    *
    * {{{
    *   val filter =
-   *     logLevelAndName(
+   *     logLevelByName(
    *      LogLevel.Debug,
    *      "io.netty"                                       -> LogLevel.Info,
    *      "io.grpc.netty"                                  -> LogLevel.Info
@@ -363,13 +363,4 @@ object LogFilter {
       } else r
     }
   }
-
-  implicit class ZLoggerLogFilterOps[M, O](logger: zio.ZLogger[M, O]) {
-
-    /**
-     * Returns a version of logger that only logs messages when the `LogFilter` conditions are met
-     */
-    def filter(filter: LogFilter[M]): zio.ZLogger[M, Option[O]] = filter.filter(logger)
-  }
-
 }
