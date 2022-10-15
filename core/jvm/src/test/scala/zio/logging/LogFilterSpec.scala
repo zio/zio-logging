@@ -102,8 +102,7 @@ object LogFilterSpec extends ZIOSpecDefault {
     },
     test("log filtering by log level and name with annotation") {
 
-      val loggerName: LogGroup[String] =
-        (_, _, _, annotations) => annotations.getOrElse("name", "")
+      val loggerName: LogGroup[String] = LogGroup.make(LoggerNameExtractor.annotation("name"))
 
       val filter: LogFilter[String] = LogFilter.logLevelByGroup(
         LogLevel.Debug,
@@ -125,13 +124,12 @@ object LogFilterSpec extends ZIOSpecDefault {
     },
     test("log filtering by log level and name matcher with annotation") {
 
-      val loggerName: LogGroup[String] =
-        (_, _, _, annotations) => annotations.getOrElse("name", "")
+      val loggerName: LogGroup[String] = LogGroup.make(LoggerNameExtractor.annotation("name"))
 
       val filter: LogFilter[String] = LogFilter.logLevelByGroup[String](
         LogLevel.Debug,
         loggerName,
-        (loggerName, groupName) => loggerName.startsWith(groupName),
+        LogGroupEquivalence.stringStartWith,
         "a.b.c" -> LogLevel.Warning,
         "a"     -> LogLevel.Info,
         "e.f"   -> LogLevel.Error

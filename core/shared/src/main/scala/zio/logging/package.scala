@@ -43,31 +43,6 @@ package object logging {
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
 
-  /**
-   * get logger name from [[Trace]]
-   *
-   * trace with value ''example.LivePingService.ping(PingService.scala:22)''
-   * will have ''example.LivePingService'' as logger name
-   */
-  val getLoggerName: Trace => String = getLoggerName()
-
-  /**
-   * get logger name from [[Trace]]
-   *
-   * trace with value ''example.LivePingService.ping(PingService.scala:22)''
-   * will have ''example.LivePingService'' as logger name
-   */
-  def getLoggerName(default: String = "zio-logger"): Trace => String =
-    _ match {
-      case Trace(location, _, _) =>
-        val last = location.lastIndexOf(".")
-        if (last > 0) {
-          location.substring(0, last)
-        } else location
-
-      case _ => default
-    }
-
   def console(
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info

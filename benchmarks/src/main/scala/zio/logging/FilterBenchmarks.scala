@@ -11,10 +11,10 @@ import scala.util.Random
 @OutputTimeUnit(TimeUnit.SECONDS)
 class FilterBenchmarks {
   val loggerName: LogGroup[String] =
-    (_, _, _, annotations) => annotations.getOrElse("name", "")
+    LogGroup.make(LoggerNameExtractor.annotation("name"))
 
   val loggerNameAndLevel: LogGroup[(String, LogLevel)] =
-    (_, logLevel, _, annotations) => annotations.getOrElse("name", "") -> logLevel
+    LogGroup.make(LoggerNameExtractor.annotation("name")) ++ LogGroup.level
 
   val runtime = Runtime.default
 

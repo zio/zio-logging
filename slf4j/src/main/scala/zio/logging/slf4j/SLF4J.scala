@@ -1,8 +1,8 @@
 package zio.logging.backend
 
 import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
-import zio.logging.LogFormat
 import zio.logging.internal.LogAppender
+import zio.logging.{ LogFormat, LoggerNameExtractor }
 import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
 
 import java.util
@@ -50,7 +50,7 @@ object SLF4J {
    * will have ''example.LivePingService'' as logger name
    */
   def getLoggerName(default: String = "zio-slf4j-logger"): Trace => String =
-    zio.logging.getLoggerName(default)
+    trace => LoggerNameExtractor.trace(default)(trace, FiberRefs.empty, Map.empty)
 
   private def isLogLevelEnabled(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): Boolean =
     logLevel match {
