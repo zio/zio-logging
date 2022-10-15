@@ -76,6 +76,22 @@ object LogFormatSpec extends ZIOSpecDefault {
         assertTrue(result == s"zio-fiber-$seq")
       }
     },
+    test("loggerName") {
+      val format = loggerName(LoggerNameExtractor.annotation("name"))
+      check(Gen.string) { annotationValue =>
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map("name" -> annotationValue)
+        )
+        assertTrue(result == s"$annotationValue")
+      }
+    },
     test("annotation") {
       val format = annotation("test")
       check(Gen.string) { annotationValue =>
@@ -297,7 +313,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       assertTrue(result == failure.prettyPrint)
     },
     test("not empty cause with label if not empty") {
-      val format = ifCauseNonEmpty(label("cause", cause))
+      val format = (label("cause", cause)).filter(LogFilter.causeNonEmpty)
       check(Gen.string) { msg =>
         val failure = Cause.fail(new Exception(msg))
         val result  = format.toLogger(
@@ -314,7 +330,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("empty cause with label if not empty") {
-      val format = ifCauseNonEmpty(label("cause", cause))
+      val format = label("cause", cause).filter(LogFilter.causeNonEmpty)
 
       val failure = Cause.empty
       val result  = format.toLogger(
@@ -333,7 +349,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       val format = label("level", level) |-|
         label("thread", fiberId) |-|
         label("message", quoted(line)) +
-        ifCauseNonEmpty(space + label("cause", cause))
+        (space + label("cause", cause)).filter(LogFilter.causeNonEmpty)
 
       check(Gen.int, Gen.string, Gen.string, Gen.boolean) { (fiberId, message, cause, hasCause) =>
         val failure                    = if (hasCause) Cause.fail(new Exception(cause)) else Cause.empty

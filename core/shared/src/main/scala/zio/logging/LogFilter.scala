@@ -188,6 +188,18 @@ object LogFilter {
       _: Map[String, String]
     ) => true
 
+  val causeNonEmpty: LogFilter[Any] =
+    (
+      _: Trace,
+      _: FiberId,
+      _: LogLevel,
+      _: () => Any,
+      cause: Cause[Any],
+      _: FiberRefs,
+      _: List[LogSpan],
+      _: Map[String, String]
+    ) => !cause.isEmpty
+
   /**
    * Returns a filter which accept logs when the log level satisfies the specified predicate
    */

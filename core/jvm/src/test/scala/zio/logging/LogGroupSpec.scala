@@ -19,7 +19,7 @@ object LogGroupSpec extends ZIOSpecDefault {
     },
     test("loggerName") {
       val group = LogGroup.loggerName
-      check(Gen.string) { value =>
+      check(Gen.alphaNumericString) { value =>
         val result = group(
           Trace.apply(value, "", 0),
           LogLevel.Info,
@@ -31,7 +31,7 @@ object LogGroupSpec extends ZIOSpecDefault {
     },
     test("loggerNameAndLevel") {
       val group = LogGroup.loggerNameAndLevel
-      check(Gen.string, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
+      check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
             Trace.apply(value, "", 0),
@@ -44,7 +44,7 @@ object LogGroupSpec extends ZIOSpecDefault {
     },
     test("zipWith") {
       val group = LogGroup.loggerName.zipWith(LogGroup.level)(_ -> _)
-      check(Gen.string, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
+      check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
             Trace.apply(value, "", 0),
@@ -57,7 +57,7 @@ object LogGroupSpec extends ZIOSpecDefault {
     },
     test("++") {
       val group = LogGroup.loggerName ++ LogGroup.level
-      check(Gen.string, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
+      check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
             Trace.apply(value, "", 0),

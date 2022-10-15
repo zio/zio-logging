@@ -10,11 +10,9 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class FilterBenchmarks {
-  val loggerName: LogGroup[String] =
-    LogGroup.make(LoggerNameExtractor.annotation("name"))
+  val loggerName: LogGroup[String] = LogGroup.make(LoggerNameExtractor.annotation("name"))
 
-  val loggerNameAndLevel: LogGroup[(String, LogLevel)] =
-    LogGroup.make(LoggerNameExtractor.annotation("name")) ++ LogGroup.level
+  val loggerNameAndLevel: LogGroup[(String, LogLevel)] = loggerName ++ LogGroup.level
 
   val runtime = Runtime.default
 
@@ -102,15 +100,15 @@ class FilterBenchmarks {
   }
 
   /**
-   * 2022/10/13 Initial results
+   * 2022/10/15 Initial results
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
-   * Benchmark                                           Mode  Cnt      Score       Error  Units
-   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  15925.756 ±   916.972  ops/s
-   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  15874.486 ±  2184.211  ops/s
-   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  14386.670 ±   558.179  ops/s
-   * FilterBenchmarks.noFilteringLog                    thrpt    3  12691.589 ± 15205.006  ops/s
+   * Benchmark                                           Mode  Cnt      Score      Error  Units
+   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  14985.571 ± 1870.091  ops/s
+   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  14755.549 ± 1688.892  ops/s
+   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  13936.368 ± 3769.272  ops/s
+   * FilterBenchmarks.noFilteringLog                    thrpt    3  12904.582 ± 1139.360  ops/s
    */
 
   @Benchmark
