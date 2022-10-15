@@ -2,24 +2,11 @@ package zio.logging.backend
 
 import zio.logging.LogFormat
 import zio.logging.internal.LogAppender
-import zio.{
-  Cause,
-  FiberFailure,
-  FiberId,
-  FiberRefs,
-  LogLevel,
-  LogSpan,
-  Runtime,
-  Trace,
-  ZIO,
-  ZIOAspect,
-  ZLayer,
-  ZLogger
-}
+import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
 
 object JPL {
 
-  private val logLevelMapping: Map[LogLevel, System.Logger.Level] = Map(
+  private[backend] val logLevelMapping: Map[LogLevel, System.Logger.Level] = Map(
     LogLevel.All     -> System.Logger.Level.ALL,
     LogLevel.Trace   -> System.Logger.Level.TRACE,
     LogLevel.Debug   -> System.Logger.Level.DEBUG,
@@ -30,15 +17,24 @@ object JPL {
     LogLevel.None    -> System.Logger.Level.OFF
   )
 
-  private val loggerNameKey = "jpl_logger_name"
+  /**
+   * log aspect annotation key for JPL logger name
+   */
+  val loggerNameAnnotationKey = "jpl_logger_name"
 
-  val logFormatDefault: LogFormat = LogFormat.allAnnotations + LogFormat.line + LogFormat.cause
+  /**
+   * default log format for JPL logger
+   */
+  val logFormatDefault: LogFormat =
+    LogFormat.allAnnotations(excludeKeys = Set(loggerNameAnnotationKey)) + LogFormat.line + LogFormat.cause
 
+  /**
+   * JPL logger name aspect, by this aspect is possible to change default logger name (default logger name is extracted from [[Trace]])
+   *
+   * annotation key: [[JPL.loggerNameAnnotationKey]]
+   */
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        ZIO.logAnnotate(loggerNameKey, value)(zio)
-    }
+    ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
     _ match {
@@ -134,7 +130,7 @@ object JPL {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val jpLoggerName = annotations.getOrElse(loggerNameKey, loggerName(trace))
+        val jpLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
         val jpLogger     = getJPLogger(jpLoggerName)
         if (isLogLevelEnabled(jpLogger, logLevel)) {
           val appender = logAppender(jpLogger, logLevel)

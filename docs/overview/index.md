@@ -82,13 +82,19 @@ Default `slf4j` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `SLF4J.loggerName` aspect
-* all annotations are placed into MDC context
+* all annotations (logger name and log marker name annotations are excluded) are placed into MDC context
 * cause is logged as throwable
 
 Custom logger name set by aspect:
 
 ```scala
 ZIO.logInfo("Starting user operation") @@ SLF4J.loggerName("zio.logging.example.UserOperation")
+```
+
+Log marker name set by aspect:
+
+```scala
+ZIO.logInfo("Confidential user operation") @@ SLF4J.logMarkerName("CONFIDENTIAL")
 ```
 
 ### Java Platform/System logger
@@ -105,7 +111,7 @@ Default `jpl` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `JPL.loggerName` aspect
-* all annotations are placed at the beginning of log message
+* all annotations (logger name annotation is excluded) are placed at the beginning of log message
 * cause is logged as throwable
 
 Custom logger name set by aspect:
@@ -217,6 +223,7 @@ object Slf4jSimpleApp extends ZIOAppDefault {
       _       <- ZIO.foreachPar(users) { uId =>
         {
           ZIO.logInfo("Starting user operation") *>
+            ZIO.logInfo("Confidential user operation") @@ SLF4J.logMarkerName("CONFIDENTIAL") *>
             ZIO.sleep(500.millis) *>
             ZIO.logInfo("Stopping user operation")
         } @@ ZIOAspect.annotated("user", uId.toString)
@@ -238,6 +245,11 @@ Logback configuration:
             <Pattern>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n</Pattern>
         </layout>
     </appender>
+    <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
+        <Name>CONFIDENTIAL_FILTER</Name>
+        <Marker>CONFIDENTIAL</Marker>
+        <OnMatch>DENY</OnMatch>
+    </turboFilter>
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
@@ -294,13 +306,13 @@ Expected Console Output:
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$$anon$2 $anonfun$closeLogEntry$1
 INFO: Start
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$$anon$2 $anonfun$closeLogEntry$1
-INFO: jpl_logger_name=zio.logging.example.UserOperation user=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting user operation
+INFO:  user=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting user operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$$anon$2 $anonfun$closeLogEntry$1
-INFO: jpl_logger_name=zio.logging.example.UserOperation user=f4327982-c838-4c03-8839-49ebc95f2b6b trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting user operation
+INFO:  user=f4327982-c838-4c03-8839-49ebc95f2b6b trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Starting user operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$$anon$2 $anonfun$closeLogEntry$1
-INFO: jpl_logger_name=zio.logging.example.UserOperation user=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping user operation
+INFO:  user=d0c3b1ac-d0f5-4879-b398-3dab5efdc9d4 trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping user operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$$anon$2 $anonfun$closeLogEntry$1
-INFO: jpl_logger_name=zio.logging.example.UserOperation user=f4327982-c838-4c03-8839-49ebc95f2b6b trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping user operation
+INFO:  user=f4327982-c838-4c03-8839-49ebc95f2b6b trace_id=92e5e9fd-71b6-4491-a97d-101d367bc64e Stopping user operation
 Aug 18, 2022 6:51:10 PM zio.logging.backend.JPL$$anon$2 $anonfun$closeLogEntry$1
 INFO: Done
 ```
@@ -323,3 +335,72 @@ program.provideCustom(Slf4jBridge.initialize)
 
 **NOTE** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to 
 ZIO logging. Enabling both causes circular logging and makes no sense.
+
+
+### Testing
+
+ZIO 2 test library has test logger implementation for testing:
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-test" % ZioVersion % Test
+```
+
+Test logger layer:
+
+```scala
+zio.test.ZTestLogger.default
+```
+
+You can find the source code of examples [here](https://github.com/zio/zio-logging/tree/master/examples/src/test/scala/zio/logging/example)
+
+Test example:
+
+```scala
+package zio.logging.example
+
+import zio.logging.{ LogAnnotation, logContext }
+import zio.test.Assertion._
+import zio.test._
+import zio.{ Chunk, LogLevel, Runtime, ZIO, ZIOAspect, _ }
+
+import java.util.UUID
+
+object LoggingSpec extends ZIOSpecDefault {
+
+  override def spec: Spec[TestEnvironment, Any] = suite("LoggingSpec")(
+    test("start stop log output") {
+      val users = Chunk.fill(2)(UUID.randomUUID())
+      for {
+        traceId      <- ZIO.succeed(UUID.randomUUID())
+        _            <- ZIO.foreach(users) { uId =>
+                          {
+                            ZIO.logInfo("Starting operation") *> ZIO.sleep(500.millis) *> ZIO.logInfo("Stopping operation")
+                          } @@ ZIOAspect.annotated("user", uId.toString)
+                        } @@ LogAnnotation.TraceId(traceId)
+        _            <- ZIO.logInfo("Done")
+        loggerOutput <- ZTestLogger.logOutput
+      } yield assertTrue(loggerOutput.size == 5) && assertTrue(
+        loggerOutput.forall(_.logLevel == LogLevel.Info)
+      ) && assert(loggerOutput.map(_.message()))(
+        equalTo(
+          Chunk(
+            "Starting operation",
+            "Stopping operation",
+            "Starting operation",
+            "Stopping operation",
+            "Done"
+          )
+        )
+      ) && assert(loggerOutput.map(_.context.get(logContext).flatMap(_.asMap.get(LogAnnotation.TraceId.name))))(
+        equalTo(
+          Chunk.fill(4)(Some(traceId.toString)) :+ None
+        )
+      ) && assert(loggerOutput.map(_.annotations.get("user")))(
+        equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
+      )
+    }
+  ).provideLayer(
+    Runtime.removeDefaultLoggers >>> ZTestLogger.default
+  ) @@ TestAspect.withLiveClock
+}
+```

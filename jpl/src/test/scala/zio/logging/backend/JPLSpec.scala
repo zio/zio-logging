@@ -105,11 +105,11 @@ object JPLSpec extends ZIOSpecDefault {
         ) && assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
           equalTo(
             Chunk(
-              s"jpl_logger_name=$loggerName user=${users(0)} trace_id=$traceId Starting operation",
-              s"jpl_logger_name=$loggerName user=${users(0)} trace_id=$traceId Stopping operation",
-              s"jpl_logger_name=$loggerName user=${users(1)} trace_id=$traceId Starting operation",
-              s"jpl_logger_name=$loggerName user=${users(1)} trace_id=$traceId Stopping operation",
-              s"jpl_logger_name=$loggerName Done"
+              s"user=${users(0)} trace_id=$traceId Starting operation",
+              s"user=${users(0)} trace_id=$traceId Stopping operation",
+              s"user=${users(1)} trace_id=$traceId Starting operation",
+              s"user=${users(1)} trace_id=$traceId Stopping operation",
+              s"Done"
             )
           )
         )
