@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio.test._
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
 
 import java.util.UUID
 
@@ -368,6 +368,36 @@ object LogFormatSpec extends ZIOSpecDefault {
         val expectedResult             =
           if (hasCause) s"$expectedResultWithoutCause cause=${failure.prettyPrint}" else expectedResultWithoutCause
         assertTrue(result == expectedResult)
+      }
+    },
+    test("line with filter") {
+      val filter: LogFilter[String] =
+        (
+          _: Trace,
+          _: FiberId,
+          _: LogLevel,
+          line: () => String,
+          _: Cause[Any],
+          _: FiberRefs,
+          _: List[LogSpan],
+          _: Map[String, String]
+        ) => line().startsWith("EXCLUDE#")
+
+      val format = line.filter(filter)
+      check(Gen.alphaNumericString, Gen.boolean) { (msg, hasExclude) =>
+        val message  = if (hasExclude) "EXCLUDE#" + msg else msg
+        val expected = if (hasExclude) message else ""
+        val result   = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => message,
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == expected)
       }
     }
   )

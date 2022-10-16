@@ -17,7 +17,7 @@ package zio.logging
 
 import zio.{ FiberRefs, Trace }
 
-trait LoggerNameExtractor {
+trait LoggerNameExtractor { self =>
 
   def apply(
     trace: Trace,
@@ -25,6 +25,15 @@ trait LoggerNameExtractor {
     annotations: Map[String, String]
   ): String
 
+  /**
+   * Converts this extractor into a log group
+   */
+  final def toLogGroup: LogGroup[String] = LogGroup.make(self)
+
+  /**
+   * Converts this extractor into a log format
+   */
+  final def toLogFormat: LogFormat = LogFormat.loggerName(self)
 }
 
 object LoggerNameExtractor {
