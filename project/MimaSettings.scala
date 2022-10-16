@@ -11,7 +11,10 @@ object MimaSettings {
     Seq(
       mimaPreviousArtifacts := Set(organization.value %% name.value % bincompatVersionToCompare),
       mimaBinaryIssueFilters ++= Seq(
-        exclude[Problem]("zio.logging.internal.*")
+        exclude[Problem]("zio.logging.internal.*"),
+        exclude[ReversedMissingMethodProblem](
+          "zio.logging.LogFormat.filter"
+        ) // scala 2.11 issue (added LogFormat.filter) - TODO: remove in next version
       ),
       mimaFailOnProblem     := failOnProblem
     )
