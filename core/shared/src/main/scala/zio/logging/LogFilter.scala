@@ -35,16 +35,15 @@ trait LogFilter[-Message] { self =>
     annotations: Map[String, String]
   ): Boolean
 
-  final def contramap[M](f: M => Message): LogFilter[M] = (
-    trace: Trace,
-    fiberId: FiberId,
-    logLevel: LogLevel,
-    message: () => M,
-    cause: Cause[Any],
-    context: FiberRefs,
-    spans: List[LogSpan],
-    annotations: Map[String, String]
-  ) => self(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations)
+  /**
+   * Returns a new log filter which satisfy result of this and given log filter
+   */
+  final def &&[M <: Message](other: LogFilter[M]): LogFilter[M] = and(other)
+
+  /**
+   * Returns a new log filter which satisfy result of this or given log filter
+   */
+  final def ||[M <: Message](other: LogFilter[M]): LogFilter[M] = or(other)
 
   /**
    * The alphanumeric version of the `&&` operator.
@@ -72,9 +71,53 @@ trait LogFilter[-Message] { self =>
       )
 
   /**
-   * Returns a new log filter which satisfy result of this and given log filter
+   * Returns a new log filter with cached results based on given log group
    */
-  final def &&[M <: Message](other: LogFilter[M]): LogFilter[M] = and(other)
+  final def cachedBy[A](group: LogGroup[A]): LogFilter[Message] =
+    new LogFilter[Message] {
+      private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
+
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => Message,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Boolean = {
+        val key = group(trace, logLevel, context, annotations)
+        cache.computeIfAbsent(
+          key,
+          _ => self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        )
+      }
+    }
+  final def contramap[M](f: M => Message): LogFilter[M]         = (
+    trace: Trace,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => M,
+    cause: Cause[Any],
+    context: FiberRefs,
+    spans: List[LogSpan],
+    annotations: Map[String, String]
+  ) => self(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations)
+
+  /**
+   * The alphanumeric version of the `!` operator.
+   */
+  final def not: LogFilter[Message] = (
+    trace: Trace,
+    fiberId: FiberId,
+    logLevel: LogLevel,
+    message: () => Message,
+    cause: Cause[Any],
+    context: FiberRefs,
+    spans: List[LogSpan],
+    annotations: Map[String, String]
+  ) => !self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
 
   /**
    * The alphanumeric version of the `||` operator.
@@ -102,53 +145,9 @@ trait LogFilter[-Message] { self =>
       )
 
   /**
-   * Returns a new log filter which satisfy result of this or given log filter
-   */
-  final def ||[M <: Message](other: LogFilter[M]): LogFilter[M] = or(other)
-
-  /**
-   * The alphanumeric version of the `!` operator.
-   */
-  final def not: LogFilter[Message] = (
-    trace: Trace,
-    fiberId: FiberId,
-    logLevel: LogLevel,
-    message: () => Message,
-    cause: Cause[Any],
-    context: FiberRefs,
-    spans: List[LogSpan],
-    annotations: Map[String, String]
-  ) => !self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-
-  /**
    * Returns a new log filter with negated result
    */
   final def unary_! : LogFilter[Message] = self.not
-
-  /**
-   * Returns a new log filter with cached results based on given log group
-   */
-  final def cachedBy[A](group: LogGroup[A]): LogFilter[Message] =
-    new LogFilter[Message] {
-      private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
-
-      override def apply(
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => Message,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ): Boolean = {
-        val key = group(trace, logLevel, context, annotations)
-        cache.computeIfAbsent(
-          key,
-          _ => self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-        )
-      }
-    }
 
   /**
    * Returns a version of logger that only logs messages when this filter is satisfied

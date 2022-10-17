@@ -71,6 +71,16 @@ trait LogFormat { self =>
     this + other
 
   /**
+   * Returns a new log format that produces the same as this one, if filter is satisfied
+   */
+  final def filter[M >: String](filter: LogFilter[M]): LogFormat =
+    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+      if (filter(trace, fiberId, level, line, cause, context, spans, annotations)) {
+        self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+      }
+    }
+
+  /**
    * Returns a new log format that produces the same as this one, but with a
    * space-padded, fixed-width output. Be careful using this operator, as it
    * destroys all structure, resulting in purely textual log output.
@@ -115,16 +125,6 @@ trait LogFormat { self =>
    */
   final def spaced(other: LogFormat): LogFormat =
     this |-| other
-
-  /**
-   * Returns a new log format that produces the same as this one, if filter is satisfied
-   */
-  final def filter[M >: String](filter: LogFilter[M]): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
-      if (filter(trace, fiberId, level, line, cause, context, spans, annotations)) {
-        self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
-      }
-    }
 
   /**
    * Converts this log format into a json logger, which accepts text input, and

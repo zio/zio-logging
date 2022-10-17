@@ -27,6 +27,21 @@ trait LogGroup[A] { self =>
   ): A
 
   /**
+   * Combine this log group with specified log group
+   */
+  final def ++[B](
+    other: LogGroup[B]
+  )(implicit zippable: Zippable[A, B]): LogGroup[zippable.Out] = new LogGroup[zippable.Out] {
+    override def apply(
+      trace: Trace,
+      logLevel: LogLevel,
+      context: FiberRefs,
+      annotations: Map[String, String]
+    ): zippable.Out =
+      zippable.zip(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
+  }
+
+  /**
    * Returns new log group whose result is mapped by the specified f function.
    */
   final def map[B](f: A => B): LogGroup[B] = new LogGroup[B] {
@@ -47,21 +62,6 @@ trait LogGroup[A] { self =>
       annotations: Map[String, String]
     ): C =
       f(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
-  }
-
-  /**
-   * Combine this log group with specified log group
-   */
-  final def ++[B](
-    other: LogGroup[B]
-  )(implicit zippable: Zippable[A, B]): LogGroup[zippable.Out] = new LogGroup[zippable.Out] {
-    override def apply(
-      trace: Trace,
-      logLevel: LogLevel,
-      context: FiberRefs,
-      annotations: Map[String, String]
-    ): zippable.Out =
-      zippable.zip(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
   }
 
 }

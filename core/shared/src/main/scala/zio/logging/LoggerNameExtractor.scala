@@ -26,20 +26,39 @@ trait LoggerNameExtractor { self =>
   ): String
 
   /**
+   * Converts this extractor into a log format
+   */
+  final def toLogFormat: LogFormat = LogFormat.loggerName(self)
+
+  /**
    * Converts this extractor into a log group
    */
   final def toLogGroup: LogGroup[String] = LogGroup.make(self)
 
-  /**
-   * Converts this extractor into a log format
-   */
-  final def toLogFormat: LogFormat = LogFormat.loggerName(self)
 }
 
 object LoggerNameExtractor {
 
   /**
-   * get logger name from [[Trace]]
+   * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
+   *
+   * @param name name of annotation
+   * @param default default logger name, if annotation is not present
+   */
+  def annotation(name: String, default: String = "zio-logger"): LoggerNameExtractor = (_, _, annotations) =>
+    annotations.getOrElse(name, default)
+
+  /**
+   * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
+   *
+   * @param name    name of annotation
+   * @param default default logger name, if annotation and trace are not present
+   */
+  def annotationOrTrace(name: String, default: String = "zio-logger"): LoggerNameExtractor =
+    (t, context, annotations) => annotations.getOrElse(name, trace(default)(t, context, annotations))
+
+  /**
+   * Extractor which take logger name from [[Trace]]
    *
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
    * will have ''example.LivePingService'' as logger name
@@ -47,7 +66,7 @@ object LoggerNameExtractor {
   val trace: LoggerNameExtractor = trace("zio-logger")
 
   /**
-   * get logger name from [[Trace]]
+   * Extractor witch take logger name from [[Trace]]
    *
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
    * will have ''example.LivePingService'' as logger name
@@ -61,11 +80,5 @@ object LoggerNameExtractor {
         } else location
       case _                     => default
     }
-
-  def annotation(name: String, default: String = "zio-logger"): LoggerNameExtractor = (_, _, annotations) =>
-    annotations.getOrElse(name, default)
-
-  def annotationOrTrace(name: String, default: String = "zio-logger"): LoggerNameExtractor =
-    (t, context, annotations) => annotations.getOrElse(name, trace(default)(t, context, annotations))
 
 }
