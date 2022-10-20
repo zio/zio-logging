@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.{ FiberRefs, LogLevel, Trace, Zippable }
+import zio.{ FiberRefs, LogLevel, Trace, Unzippable, Zippable }
 
 trait LogGroup[A] { self =>
 
@@ -26,20 +26,22 @@ trait LogGroup[A] { self =>
     annotations: Map[String, String]
   ): A
 
+  def relation: LogGroupEquivalence[A] = LogGroupEquivalence.default
+
+  def equivalent(
+    trace: Trace,
+    logLevel: LogLevel,
+    context: FiberRefs,
+    annotations: Map[String, String]
+  )(value: A): Boolean =
+    relation.equivalent(self(trace, logLevel, context, annotations), value)
+
   /**
    * Combine this log group with specified log group
    */
-  final def ++[B](
+  final def ++[B, O](
     other: LogGroup[B]
-  )(implicit zippable: Zippable[A, B]): LogGroup[zippable.Out] = new LogGroup[zippable.Out] {
-    override def apply(
-      trace: Trace,
-      logLevel: LogLevel,
-      context: FiberRefs,
-      annotations: Map[String, String]
-    ): zippable.Out =
-      zippable.zip(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
-  }
+  )(implicit zippable: Zippable.Out[A, B, O], unzippable: Unzippable.In[A, B, O]): LogGroup[O] = zip(other)
 
   /**
    * Returns new log group whose result is mapped by the specified f function.
@@ -47,6 +49,35 @@ trait LogGroup[A] { self =>
   final def map[B](f: A => B): LogGroup[B] = new LogGroup[B] {
     override def apply(trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]): B =
       f(self(trace, logLevel, context, annotations))
+  }
+
+  final def map[B](f: A => B, r: LogGroupEquivalence[B]): LogGroup[B] = new LogGroup[B] {
+    override def relation: LogGroupEquivalence[B]                                                                 = r
+    override def apply(trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]): B = f(
+      self(trace, logLevel, context, annotations)
+    )
+  }
+
+  /**
+   * Combine this log group with specified log group
+   */
+  final def zip[B, O](
+    other: LogGroup[B]
+  )(implicit zippable: Zippable.Out[A, B, O], unzippable: Unzippable.In[A, B, O]): LogGroup[O] = new LogGroup[O] {
+    override def relation: LogGroupEquivalence[O] =
+      LogGroupEquivalence { (l, r) =>
+        val (sl, ol) = unzippable.unzip(l)
+        val (sr, or) = unzippable.unzip(r)
+        self.relation.equivalent(sl, sr) && other.relation.equivalent(ol, or)
+      }
+
+    override def apply(
+      trace: Trace,
+      logLevel: LogLevel,
+      context: FiberRefs,
+      annotations: Map[String, String]
+    ): O =
+      zippable.zip(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
   }
 
   /**
@@ -68,11 +99,23 @@ trait LogGroup[A] { self =>
 
 object LogGroup {
 
+  def apply[A](
+    group: (Trace, LogLevel, FiberRefs, Map[String, String]) => A,
+    equivalence: LogGroupEquivalence[A]
+  ): LogGroup[A] = new LogGroup[A] {
+    override def relation: LogGroupEquivalence[A]                                                                 = equivalence
+    override def apply(trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]): A =
+      group(trace, logLevel, context, annotations)
+  }
+
   def fromLoggerNameExtractor(
     loggerNameExtractor: LoggerNameExtractor,
     loggerNameDefault: String = "zio-logger"
   ): LogGroup[String] =
-    (trace, _, context, annotations) => loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
+    apply(
+      (trace, _, context, annotations) => loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault),
+      LogGroupEquivalence.stringStartWith
+    )
 
   /**
    * Log group by level

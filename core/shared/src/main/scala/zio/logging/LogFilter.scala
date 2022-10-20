@@ -263,6 +263,21 @@ object LogFilter {
       level >= groupingLogLevel
     }
 
+  def logLevelByGroupEq[A](
+    rootLevel: LogLevel,
+    group: LogGroup[A],
+    groupings: (A, LogLevel)*
+  ): LogFilter[Any] =
+    (trace, _, level, _, _, context, _, annotations) => {
+      val loggerGroupEq = group.equivalent(trace, level, context, annotations) _
+
+      val groupingLogLevel = groupings.collectFirst {
+        case (groupingGroup, groupingLevel) if loggerGroupEq(groupingGroup) => groupingLevel
+      }.getOrElse(rootLevel)
+
+      level >= groupingLogLevel
+    }
+
   /**
    * Defines a filter from a list of log-levels specified per tree node
    *
@@ -316,12 +331,11 @@ object LogFilter {
     mappings: (String, LogLevel)*
   ): LogFilter[Any] = {
     val mappingsSorted = mappings.map(splitNameByDotAndLevel.tupled).sorted(nameLevelOrdering)
-    val nameGroup      = group.map(splitNameByDot)
+    val nameGroup      = group.map(splitNameByDot, LogGroupEquivalence.listStartWith[String])
 
-    logLevelByGroup(
+    logLevelByGroupEq(
       rootLevel,
       nameGroup,
-      LogGroupEquivalence.listStartWith[String],
       mappingsSorted: _*
     )
   }

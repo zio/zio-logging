@@ -67,6 +67,19 @@ object LogGroupSpec extends ZIOSpecDefault {
           )
           assertTrue(result == (value -> level))
       }
+    },
+    test("equivalent") {
+      val group = LogGroup.loggerName ++ LogGroup.logLevel
+      check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
+        (value, level) =>
+          val result = group.equivalent(
+            Trace.apply(value, "", 0),
+            level,
+            FiberRefs.empty,
+            Map.empty
+          )((value -> level))
+          assertTrue(result)
+      }
     }
   )
 }
