@@ -45,7 +45,7 @@ trait LoggerNameExtractor { self =>
   /**
    * Converts this extractor into a log group
    */
-  final def toLogGroup(default: String = "zio-logger"): LogGroup[String] =
+  final def toLogGroup(default: String = "zio-logger"): LogGroup[Any, String] =
     LogGroup.fromLoggerNameExtractor(self, default)
 
 }

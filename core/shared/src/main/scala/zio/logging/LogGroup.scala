@@ -15,124 +15,177 @@
  */
 package zio.logging
 
-import zio.{ FiberRefs, LogLevel, Trace, Unzippable, Zippable }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, Unzippable, Zippable }
 
-trait LogGroup[A] { self =>
+trait LogGroup[-Message, Out] { self =>
 
   def apply(
     trace: Trace,
+    fiberId: FiberId,
     logLevel: LogLevel,
+    message: () => Message,
+    cause: Cause[Any],
     context: FiberRefs,
+    spans: List[LogSpan],
     annotations: Map[String, String]
-  ): A
+  ): Out
 
-  def relation: LogGroupEquivalence[A] = LogGroupEquivalence.default
+  def relation: LogGroupEquivalence[Out] = LogGroupEquivalence.default
 
   def equivalent(
     trace: Trace,
+    fiberId: FiberId,
     logLevel: LogLevel,
+    message: () => Message,
+    cause: Cause[Any],
     context: FiberRefs,
+    spans: List[LogSpan],
     annotations: Map[String, String]
-  )(value: A): Boolean =
-    relation.equivalent(self(trace, logLevel, context, annotations), value)
+  )(value: Out): Boolean =
+    relation.equivalent(self(trace, fiberId, logLevel, message, cause, context, spans, annotations), value)
 
   /**
    * Combine this log group with specified log group
    */
-  final def ++[B, O](
-    other: LogGroup[B]
-  )(implicit zippable: Zippable.Out[A, B, O], unzippable: Unzippable.In[A, B, O]): LogGroup[O] = zip(other)
+  final def ++[M <: Message, O, Out2](
+    other: LogGroup[M, O]
+  )(implicit zippable: Zippable.Out[Out, O, Out2], unzippable: Unzippable.In[Out, O, Out2]): LogGroup[M, Out2] = zip(
+    other
+  )
 
   /**
    * Returns new log group whose result is mapped by the specified f function.
    */
-  final def map[B](f: A => B): LogGroup[B] = new LogGroup[B] {
-    override def apply(trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]): B =
-      f(self(trace, logLevel, context, annotations))
+  final def map[O](f: Out => O): LogGroup[Message, O] = new LogGroup[Message, O] {
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => Message,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): O =
+      f(self(trace, fiberId, logLevel, message, cause, context, spans, annotations))
   }
 
-  final def map[B](f: A => B, r: LogGroupEquivalence[B]): LogGroup[B] = new LogGroup[B] {
-    override def relation: LogGroupEquivalence[B]                                                                 = r
-    override def apply(trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]): B = f(
-      self(trace, logLevel, context, annotations)
+  final def map[O](f: Out => O, r: LogGroupEquivalence[O]): LogGroup[Message, O] = new LogGroup[Message, O] {
+    override def relation: LogGroupEquivalence[O] = r
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => Message,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): O = f(
+      self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
     )
   }
 
   /**
    * Combine this log group with specified log group
    */
-  final def zip[B, O](
-    other: LogGroup[B]
-  )(implicit zippable: Zippable.Out[A, B, O], unzippable: Unzippable.In[A, B, O]): LogGroup[O] = new LogGroup[O] {
-    override def relation: LogGroupEquivalence[O] =
-      LogGroupEquivalence { (l, r) =>
-        val (sl, ol) = unzippable.unzip(l)
-        val (sr, or) = unzippable.unzip(r)
-        self.relation.equivalent(sl, sr) && other.relation.equivalent(ol, or)
-      }
+  final def zip[M <: Message, O, Out2](
+    other: LogGroup[M, O]
+  )(implicit zippable: Zippable.Out[Out, O, Out2], unzippable: Unzippable.In[Out, O, Out2]): LogGroup[M, Out2] =
+    new LogGroup[M, Out2] {
+      override def relation: LogGroupEquivalence[Out2] =
+        LogGroupEquivalence { (l, r) =>
+          val (sl, ol) = unzippable.unzip(l)
+          val (sr, or) = unzippable.unzip(r)
+          self.relation.equivalent(sl, sr) && other.relation.equivalent(ol, or)
+        }
 
-    override def apply(
-      trace: Trace,
-      logLevel: LogLevel,
-      context: FiberRefs,
-      annotations: Map[String, String]
-    ): O =
-      zippable.zip(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
-  }
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => M,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Out2 =
+        zippable.zip(
+          self(trace, fiberId, logLevel, message, cause, context, spans, annotations),
+          other(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        )
+    }
 
   /**
    * Zips this log group together with the specified log group using the combination functions.
    */
-  final def zipWith[B, C](
-    other: LogGroup[B]
-  )(f: (A, B) => C): LogGroup[C] = new LogGroup[C] {
+  final def zipWith[M <: Message, O, Out2](
+    other: LogGroup[M, O]
+  )(f: (Out, O) => Out2): LogGroup[M, Out2] = new LogGroup[M, Out2] {
     override def apply(
       trace: Trace,
+      fiberId: FiberId,
       logLevel: LogLevel,
+      message: () => M,
+      cause: Cause[Any],
       context: FiberRefs,
+      spans: List[LogSpan],
       annotations: Map[String, String]
-    ): C =
-      f(self(trace, logLevel, context, annotations), other(trace, logLevel, context, annotations))
+    ): Out2 =
+      f(
+        self(trace, fiberId, logLevel, message, cause, context, spans, annotations),
+        other(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+      )
   }
 
 }
 
 object LogGroup {
 
-  def apply[A](
-    group: (Trace, LogLevel, FiberRefs, Map[String, String]) => A,
-    equivalence: LogGroupEquivalence[A]
-  ): LogGroup[A] = new LogGroup[A] {
-    override def relation: LogGroupEquivalence[A]                                                                 = equivalence
-    override def apply(trace: Trace, logLevel: LogLevel, context: FiberRefs, annotations: Map[String, String]): A =
-      group(trace, logLevel, context, annotations)
+  def apply[M, O](
+    group: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => O,
+    equivalence: LogGroupEquivalence[O]
+  ): LogGroup[M, O] = new LogGroup[M, O] {
+    override def relation: LogGroupEquivalence[O] = equivalence
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => M,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): O =
+      group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
   }
 
   def fromLoggerNameExtractor(
     loggerNameExtractor: LoggerNameExtractor,
     loggerNameDefault: String = "zio-logger"
-  ): LogGroup[String] =
+  ): LogGroup[Any, String] =
     apply(
-      (trace, _, context, annotations) => loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault),
+      (trace, _, _, _, _, context, _, annotations) =>
+        loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault),
       LogGroupEquivalence.stringStartWith
     )
 
   /**
    * Log group by level
    */
-  val logLevel: LogGroup[LogLevel] = (_, logLevel, _, _) => logLevel
+  val logLevel: LogGroup[Any, LogLevel] = (_, _, logLevel, _, _, _, _, _) => logLevel
 
   /**
    * Log group by logger name
    *
    * Logger name is extracted from [[Trace]]
    */
-  val loggerName: LogGroup[String] = fromLoggerNameExtractor(LoggerNameExtractor.trace)
+  val loggerName: LogGroup[Any, String] = fromLoggerNameExtractor(LoggerNameExtractor.trace)
 
   /**
    * Log group by logger name and log level
    *
    * Logger name is extracted from [[Trace]]
    */
-  val loggerNameAndLevel: LogGroup[(String, LogLevel)] = loggerName ++ logLevel
+  val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ logLevel
 }

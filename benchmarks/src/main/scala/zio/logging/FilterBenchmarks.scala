@@ -10,9 +10,9 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class FilterBenchmarks {
-  val loggerName: LogGroup[String] = LoggerNameExtractor.annotation("name").toLogGroup()
+  val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
 
-  val loggerNameAndLevel: LogGroup[(String, LogLevel)] = loggerName ++ LogGroup.logLevel
+  val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ LogGroup.logLevel
 
   val runtime = Runtime.default
 
@@ -20,8 +20,9 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
-    val filter: LogFilter[String] = (trace, _, level, _, _, context, _, annotations) => {
-      val loggerNames = LogFilter.splitNameByDot(loggerName(trace, level, context, annotations))
+    val filter: LogFilter[String] = (trace, fiberId, level, message, cause, context, spans, annotations) => {
+      val loggerNames =
+        LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
       loggerNames match {
         case List("a", "b", "c") => level >= LogLevel.Info
         case List("a", "b", "d") => level >= LogLevel.Warning

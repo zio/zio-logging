@@ -73,28 +73,29 @@ trait LogFilter[-Message] { self =>
   /**
    * Returns a new log filter with cached results based on given log group
    */
-  final def cachedBy[A](group: LogGroup[A]): LogFilter[Message] =
-    new LogFilter[Message] {
+  final def cachedBy[M <: Message, A](group: LogGroup[M, A]): LogFilter[M] =
+    new LogFilter[M] {
       private val cache = new java.util.concurrent.ConcurrentHashMap[A, Boolean]()
 
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => Message,
+        message: () => M,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Boolean = {
-        val key = group(trace, logLevel, context, annotations)
+        val key = group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
         cache.computeIfAbsent(
           key,
           _ => self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
         )
       }
     }
-  final def contramap[M](f: M => Message): LogFilter[M]         = (
+
+  final def contramap[M](f: M => Message): LogFilter[M] = (
     trace: Trace,
     fiberId: FiberId,
     logLevel: LogLevel,
@@ -231,14 +232,14 @@ object LogFilter {
    * @param groupings Log levels definitions
    * @return A filter for log filtering based on given groups
    */
-  def logLevelByGroup[A](
+  def logLevelByGroup[M, A](
     rootLevel: LogLevel,
-    group: LogGroup[A],
+    group: LogGroup[M, A],
     matcher: (A, A) => Boolean,
     groupings: (A, LogLevel)*
-  ): LogFilter[Any] =
-    (trace, _, level, _, _, context, _, annotations) => {
-      val loggerGroup = group(trace, level, context, annotations)
+  ): LogFilter[M] =
+    (trace, fiberId, level, message, cause, context, spans, annotations) => {
+      val loggerGroup = group(trace, fiberId, level, message, cause, context, spans, annotations)
 
       val groupingLogLevel = groupings.collectFirst {
         case (groupingGroup, groupingLevel) if matcher(loggerGroup, groupingGroup) => groupingLevel
@@ -247,14 +248,14 @@ object LogFilter {
       level >= groupingLogLevel
     }
 
-  def logLevelByGroup[A](
+  def logLevelByGroup[M, A](
     rootLevel: LogLevel,
-    group: LogGroup[A],
+    group: LogGroup[M, A],
     equivalence: LogGroupEquivalence[A],
     groupings: (A, LogLevel)*
-  ): LogFilter[Any] =
-    (trace, _, level, _, _, context, _, annotations) => {
-      val loggerGroup = group(trace, level, context, annotations)
+  ): LogFilter[M] =
+    (trace, fiberId, level, message, cause, context, spans, annotations) => {
+      val loggerGroup = group(trace, fiberId, level, message, cause, context, spans, annotations)
 
       val groupingLogLevel = groupings.collectFirst {
         case (groupingGroup, groupingLevel) if equivalence.equivalent(loggerGroup, groupingGroup) => groupingLevel
@@ -263,13 +264,13 @@ object LogFilter {
       level >= groupingLogLevel
     }
 
-  def logLevelByGroupEq[A](
+  def logLevelByGroupEq[M, A](
     rootLevel: LogLevel,
-    group: LogGroup[A],
+    group: LogGroup[M, A],
     groupings: (A, LogLevel)*
-  ): LogFilter[Any] =
-    (trace, _, level, _, _, context, _, annotations) => {
-      val loggerGroupEq = group.equivalent(trace, level, context, annotations) _
+  ): LogFilter[M] =
+    (trace, fiberId, level, message, cause, context, spans, annotations) => {
+      val loggerGroupEq = group.equivalent(trace, fiberId, level, message, cause, context, spans, annotations) _
 
       val groupingLogLevel = groupings.collectFirst {
         case (groupingGroup, groupingLevel) if loggerGroupEq(groupingGroup) => groupingLevel
@@ -300,8 +301,8 @@ object LogFilter {
    * @param mappings  List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelByName(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[Any] =
-    logLevelByGroup(rootLevel, LogGroup.loggerName, mappings: _*)
+  def logLevelByName[M](rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[M] =
+    logLevelByGroup[M](rootLevel, LogGroup.loggerName, mappings: _*)
 
   /**
    * Defines a filter from a list of log-levels specified per tree node
@@ -325,11 +326,11 @@ object LogFilter {
    * @param mappings   List of mappings, nesting defined by dot-separated strings
    * @return A filter for log filtering based on log level and name
    */
-  def logLevelByGroup(
+  def logLevelByGroup[M](
     rootLevel: LogLevel,
-    group: LogGroup[String],
+    group: LogGroup[M, String],
     mappings: (String, LogLevel)*
-  ): LogFilter[Any] = {
+  ): LogFilter[M] = {
     val mappingsSorted = mappings.map(splitNameByDotAndLevel.tupled).sorted(nameLevelOrdering)
     val nameGroup      = group.map(splitNameByDot, LogGroupEquivalence.listStartWith[String])
 
