@@ -68,25 +68,28 @@ trait LogGroup[A] { self =>
 
 object LogGroup {
 
-  def make(loggerNameExtractor: LoggerNameExtractor): LogGroup[String] =
-    (trace, _, context, annotations) => loggerNameExtractor(trace, context, annotations)
+  def fromLoggerNameExtractor(
+    loggerNameExtractor: LoggerNameExtractor,
+    loggerNameDefault: String = "zio-logger"
+  ): LogGroup[String] =
+    (trace, _, context, annotations) => loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
 
   /**
    * Log group by level
    */
-  val level: LogGroup[LogLevel] = (_, logLevel, _, _) => logLevel
+  val logLevel: LogGroup[LogLevel] = (_, logLevel, _, _) => logLevel
 
   /**
    * Log group by logger name
    *
    * Logger name is extracted from [[Trace]]
    */
-  val loggerName: LogGroup[String] = make(LoggerNameExtractor.trace)
+  val loggerName: LogGroup[String] = fromLoggerNameExtractor(LoggerNameExtractor.trace)
 
   /**
    * Log group by logger name and log level
    *
    * Logger name is extracted from [[Trace]]
    */
-  val loggerNameAndLevel: LogGroup[(String, LogLevel)] = loggerName ++ level
+  val loggerNameAndLevel: LogGroup[(String, LogLevel)] = loggerName ++ logLevel
 }

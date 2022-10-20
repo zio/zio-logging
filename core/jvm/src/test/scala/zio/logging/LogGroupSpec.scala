@@ -6,7 +6,7 @@ import zio.{ FiberRefs, LogLevel, Trace }
 object LogGroupSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("LogGroupSpec")(
     test("level") {
-      val group = LogGroup.level
+      val group = LogGroup.logLevel
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result = group(
           Trace.empty,
@@ -43,7 +43,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       }
     },
     test("zipWith") {
-      val group = LogGroup.loggerName.zipWith(LogGroup.level)(_ -> _)
+      val group = LogGroup.loggerName.zipWith(LogGroup.logLevel)(_ -> _)
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
@@ -56,7 +56,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       }
     },
     test("++") {
-      val group = LogGroup.loggerName ++ LogGroup.level
+      val group = LogGroup.loggerName ++ LogGroup.logLevel
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(

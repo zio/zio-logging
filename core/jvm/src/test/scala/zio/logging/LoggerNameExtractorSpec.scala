@@ -13,7 +13,7 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
           FiberRefs.empty,
           Map("name" -> value)
         )
-        assertTrue(result == value)
+        assertTrue(result == Some(value))
       }
     },
     test("annotationOrTrace") {
@@ -33,7 +33,7 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
           FiberRefs.empty,
           annotations
         )
-        assertTrue(result == value)
+        assertTrue(result == Some(value))
       }
     },
     test("trace") {
@@ -48,7 +48,7 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
           FiberRefs.empty,
           Map.empty
         )
-        assertTrue(result == value)
+        assertTrue(result == Some(value))
       }
     }
   )

@@ -23,39 +23,49 @@ trait LoggerNameExtractor { self =>
     trace: Trace,
     context: FiberRefs,
     annotations: Map[String, String]
-  ): String
+  ): Option[String]
+
+  /**
+   * Returns a new extractor which return logger name from this one or other if this is empty
+   */
+  final def ||(other: LoggerNameExtractor): LoggerNameExtractor =
+    self.or(other)
+
+  /**
+   * The alphanumeric version of the `||` operator.
+   */
+  final def or(other: LoggerNameExtractor): LoggerNameExtractor =
+    (trace, context, annotations) => self(trace, context, annotations).orElse(other(trace, context, annotations))
 
   /**
    * Converts this extractor into a log format
    */
-  final def toLogFormat: LogFormat = LogFormat.loggerName(self)
+  final def toLogFormat(default: String = "zio-logger"): LogFormat = LogFormat.loggerName(self, default)
 
   /**
    * Converts this extractor into a log group
    */
-  final def toLogGroup: LogGroup[String] = LogGroup.make(self)
+  final def toLogGroup(default: String = "zio-logger"): LogGroup[String] =
+    LogGroup.fromLoggerNameExtractor(self, default)
 
 }
 
 object LoggerNameExtractor {
 
   /**
-   * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
+   * Extractor which take logger name from annotation
    *
    * @param name name of annotation
-   * @param default default logger name, if annotation is not present
    */
-  def annotation(name: String, default: String = "zio-logger"): LoggerNameExtractor = (_, _, annotations) =>
-    annotations.getOrElse(name, default)
+  def annotation(name: String): LoggerNameExtractor = (_, _, annotations) => annotations.get(name)
 
   /**
    * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
    *
-   * @param name    name of annotation
-   * @param default default logger name, if annotation and trace are not present
+   * @param name name of annotation
    */
-  def annotationOrTrace(name: String, default: String = "zio-logger"): LoggerNameExtractor =
-    (t, context, annotations) => annotations.getOrElse(name, trace(default)(t, context, annotations))
+  def annotationOrTrace(name: String): LoggerNameExtractor =
+    annotation(name) || trace
 
   /**
    * Extractor which take logger name from [[Trace]]
@@ -63,22 +73,15 @@ object LoggerNameExtractor {
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
    * will have ''example.LivePingService'' as logger name
    */
-  val trace: LoggerNameExtractor = trace("zio-logger")
-
-  /**
-   * Extractor witch take logger name from [[Trace]]
-   *
-   * trace with value ''example.LivePingService.ping(PingService.scala:22)''
-   * will have ''example.LivePingService'' as logger name
-   */
-  def trace(default: String): LoggerNameExtractor = (trace, _, _) =>
+  val trace: LoggerNameExtractor = (trace, _, _) =>
     trace match {
       case Trace(location, _, _) =>
         val last = location.lastIndexOf(".")
-        if (last > 0) {
+        val name = if (last > 0) {
           location.substring(0, last)
         } else location
-      case _                     => default
+        Some(name)
+      case _                     => None
     }
 
 }

@@ -1,10 +1,10 @@
 package zio.logging
 
-final case class LogGroupEquivalence[A](equivalent: (A, A) => Boolean)
+final case class LogGroupEquivalence[-A](equivalent: (A, A) => Boolean)
 
 object LogGroupEquivalence {
 
-  def default[A]: LogGroupEquivalence[A] = LogGroupEquivalence[A](_ == _)
+  val default: LogGroupEquivalence[Any] = LogGroupEquivalence[Any](_ == _)
 
   def listStartWith[A]: LogGroupEquivalence[List[A]] = LogGroupEquivalence(_.startsWith(_))
 

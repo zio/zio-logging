@@ -37,7 +37,7 @@ object JPL {
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
-    trace => LoggerNameExtractor.trace(default)(trace, FiberRefs.empty, Map.empty)
+    trace => LoggerNameExtractor.trace(trace, FiberRefs.empty, Map.empty).getOrElse(default)
 
   private def logAppender(systemLogger: System.Logger, logLevel: LogLevel): LogAppender = new LogAppender {
     self =>

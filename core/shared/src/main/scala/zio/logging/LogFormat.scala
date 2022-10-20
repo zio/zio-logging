@@ -233,9 +233,9 @@ object LogFormat {
     }
   }
 
-  def loggerName(loggerNameExtractor: LoggerNameExtractor): LogFormat =
+  def loggerName(loggerNameExtractor: LoggerNameExtractor, loggerNameDefault: String = "zio-logger"): LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, context, _, annotations) =>
-      val loggerName = loggerNameExtractor(trace, context, annotations)
+      val loggerName = loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
       builder.appendText(loggerName)
     }
 
