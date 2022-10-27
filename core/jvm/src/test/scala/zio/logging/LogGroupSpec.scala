@@ -54,23 +54,6 @@ object LogGroupSpec extends ZIOSpecDefault {
           assertTrue(result == (value -> level))
       }
     },
-    test("zipWith") {
-      val group = LogGroup.loggerName.zipWith(LogGroup.logLevel)(_ -> _)
-      check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
-        (value, level) =>
-          val result = group(
-            Trace.apply(value, "", 0),
-            FiberId.None,
-            level,
-            () => "",
-            Cause.empty,
-            FiberRefs.empty,
-            Nil,
-            Map.empty
-          )
-          assertTrue(result == (value -> level))
-      }
-    },
     test("++") {
       val group = LogGroup.loggerName ++ LogGroup.logLevel
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
@@ -88,11 +71,11 @@ object LogGroupSpec extends ZIOSpecDefault {
           assertTrue(result == (value -> level))
       }
     },
-    test("equivalent") {
+    test("related") {
       val group = LogGroup.loggerName ++ LogGroup.logLevel
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
-          val result = group.equivalent(
+          val result = group.related(
             Trace.apply(value, "", 0),
             FiberId.None,
             level,

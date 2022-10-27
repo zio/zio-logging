@@ -129,7 +129,7 @@ object LogFilterSpec extends ZIOSpecDefault {
       val filter: LogFilter[String] = LogFilter.logLevelByGroup(
         LogLevel.Debug,
         loggerName,
-        LogGroupEquivalence.stringStartWith,
+        LogGroupRelation.stringStartWith,
         "a.b.c" -> LogLevel.Warning,
         "a"     -> LogLevel.Info,
         "e.f"   -> LogLevel.Error

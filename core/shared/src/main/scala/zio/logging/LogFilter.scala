@@ -251,14 +251,14 @@ object LogFilter {
   def logLevelByGroup[M, A](
     rootLevel: LogLevel,
     group: LogGroup[M, A],
-    equivalence: LogGroupEquivalence[A],
+    equivalence: LogGroupRelation[A],
     groupings: (A, LogLevel)*
   ): LogFilter[M] =
     (trace, fiberId, level, message, cause, context, spans, annotations) => {
       val loggerGroup = group(trace, fiberId, level, message, cause, context, spans, annotations)
 
       val groupingLogLevel = groupings.collectFirst {
-        case (groupingGroup, groupingLevel) if equivalence.equivalent(loggerGroup, groupingGroup) => groupingLevel
+        case (groupingGroup, groupingLevel) if equivalence.related(loggerGroup, groupingGroup) => groupingLevel
       }.getOrElse(rootLevel)
 
       level >= groupingLogLevel
@@ -270,7 +270,7 @@ object LogFilter {
     groupings: (A, LogLevel)*
   ): LogFilter[M] =
     (trace, fiberId, level, message, cause, context, spans, annotations) => {
-      val loggerGroupEq = group.equivalent(trace, fiberId, level, message, cause, context, spans, annotations) _
+      val loggerGroupEq = group.related(trace, fiberId, level, message, cause, context, spans, annotations) _
 
       val groupingLogLevel = groupings.collectFirst {
         case (groupingGroup, groupingLevel) if loggerGroupEq(groupingGroup) => groupingLevel
@@ -331,8 +331,23 @@ object LogFilter {
     group: LogGroup[M, String],
     mappings: (String, LogLevel)*
   ): LogFilter[M] = {
+
+    /**
+     * mappings:
+     * a.b.PingPong -> Debug,
+     * a.b.Ping -> Info,
+     * a.b -> Error,
+     *
+     *  List(a, b, Ping) -> a.b.Ping
+     *
+     * loggers with names
+     * a.b.Ping -> Info
+     * a.b.PingPong -> Debug
+     * a.b.c.Pong -> Error
+     * a.c.Foo -> rootLevel
+     */
     val mappingsSorted = mappings.map(splitNameByDotAndLevel.tupled).sorted(nameLevelOrdering)
-    val nameGroup      = group.map(splitNameByDot, LogGroupEquivalence.listStartWith[String])
+    val nameGroup      = group.transform(splitNameByDot)(_.mkString(".")).withRelation(LogGroupRelation.listStartWith)
 
     logLevelByGroupEq(
       rootLevel,
