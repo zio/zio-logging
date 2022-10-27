@@ -371,7 +371,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("line with filter") {
-      val filter: LogFilter[String] =
+      val filter: LogFilter[String] = LogFilter[String, String](
         (
           _: Trace,
           _: FiberId,
@@ -381,7 +381,9 @@ object LogFormatSpec extends ZIOSpecDefault {
           _: FiberRefs,
           _: List[LogSpan],
           _: Map[String, String]
-        ) => line().startsWith("EXCLUDE#")
+        ) => line(),
+        _.startsWith("EXCLUDE#")
+      )
 
       val format = line.filter(filter)
       check(Gen.alphaNumericString, Gen.boolean) { (msg, hasExclude) =>

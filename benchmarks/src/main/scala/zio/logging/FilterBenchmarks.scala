@@ -20,18 +20,25 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
-    val filter: LogFilter[String] = (trace, fiberId, level, message, cause, context, spans, annotations) => {
-      val loggerNames =
-        LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
-      loggerNames match {
-        case List("a", "b", "c") => level >= LogLevel.Info
-        case List("a", "b", "d") => level >= LogLevel.Warning
-        case List("e")           => level >= LogLevel.Info
-        case List("f", "g")      => level >= LogLevel.Error
-        case List("f")           => level >= LogLevel.Info
-        case _                   => level >= LogLevel.Debug
+    val filter: LogFilter[String] = LogFilter[String, (List[String], LogLevel)](
+      (trace, fiberId, level, message, cause, context, spans, annotations) => {
+        val loggerNames =
+          LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
+
+        loggerNames -> level
+      },
+      g => {
+        val (loggerNames, level) = g
+        loggerNames match {
+          case List("a", "b", "c") => level >= LogLevel.Info
+          case List("a", "b", "d") => level >= LogLevel.Warning
+          case List("e")           => level >= LogLevel.Info
+          case List("f", "g")      => level >= LogLevel.Error
+          case List("f")           => level >= LogLevel.Info
+          case _                   => level >= LogLevel.Debug
+        }
       }
-    }
+    )
     Runtime.removeDefaultLoggers >>> console(LogFormat.default, filter)
   }
 
@@ -62,7 +69,7 @@ class FilterBenchmarks {
           "f.g"   -> LogLevel.Error,
           "f"     -> LogLevel.Info
         )
-        .cachedBy(loggerNameAndLevel)
+        .cached
     )
 
   val names: List[String] = List(

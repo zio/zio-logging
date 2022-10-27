@@ -129,7 +129,6 @@ object LogFilterSpec extends ZIOSpecDefault {
       val filter: LogFilter[String] = LogFilter.logLevelByGroup(
         LogLevel.Debug,
         loggerName,
-        LogGroupRelation.stringStartWith,
         "a.b.c" -> LogLevel.Warning,
         "a"     -> LogLevel.Info,
         "e.f"   -> LogLevel.Error
@@ -195,7 +194,7 @@ object LogFilterSpec extends ZIOSpecDefault {
           "zio.logging"      -> LogLevel.Info,
           "zio.logging.test" -> LogLevel.Warning
         )
-        .cachedBy(LogGroup.loggerNameAndLevel)
+        .cached
 
       (for {
         _ <- ZIO.logDebug("debug")
