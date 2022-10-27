@@ -15,8 +15,8 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogFilter, LogFormat, LogGroup, console }
-import zio.{Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
+import zio.logging.{ LogFilter, LogFormat, console }
+import zio.{ Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 

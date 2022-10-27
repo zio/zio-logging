@@ -200,10 +200,14 @@ object LogFilter {
     override protected def predicate(value: Group): Boolean = predicate0(value)
   }
 
+  def apply[M](
+    group0: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => Boolean
+  ): LogFilter[M] = apply[M, Boolean](group0, identity)
+
   /**
    * Log filter which accept all logs (logs are not filtered)
    */
-  val acceptAll: LogFilter[Any] = apply[Any, Boolean](
+  val acceptAll: LogFilter[Any] = apply[Any](
     (
       _: Trace,
       _: FiberId,
@@ -213,8 +217,7 @@ object LogFilter {
       _: FiberRefs,
       _: List[LogSpan],
       _: Map[String, String]
-    ) => true,
-    identity
+    ) => true
   )
 
   val causeNonEmpty: LogFilter[Any] = apply[Any, Cause[_]](
