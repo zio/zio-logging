@@ -9,7 +9,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
 
   private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
 
-  private val logger =
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
       LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
         userLogAnnotation
@@ -29,6 +29,6 @@ object ConsoleJsonApp extends ZIOAppDefault {
                    } @@ userLogAnnotation(uId)
                  } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
-    } yield ExitCode.success).provide(logger)
+    } yield ExitCode.success)
 
 }

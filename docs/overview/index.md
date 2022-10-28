@@ -12,7 +12,8 @@ _ZIO Logging_ is the official logging library for ZIO 2 applications, with integ
 
 ## Installation
 
-`ZIO-Logging` is available via maven repo so importing in `build.sbt` is sufficient:
+`ZIO-Logging` is available via maven repo. 
+In order to use this library, we need to add the following line in our build.sbt file:
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging" % version
@@ -67,15 +68,15 @@ You can find the source code [here](https://github.com/zio/zio-logging/tree/mast
 package zio.logging.example
 
 import zio.logging.{ LogFormat, console }
-import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault }
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object ConsoleSimpleApp extends ZIOAppDefault {
 
-  private val logger =
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
     Runtime.removeDefaultLoggers >>> console(LogFormat.default)
 
   override def run: ZIO[Scope, Any, ExitCode] =
-    ZIO.logInfo("Hello from ZIO logger").provide(logger).as(ExitCode.success)
+    ZIO.logInfo("Hello from ZIO logger").as(ExitCode.success)
 
 }
 ```
@@ -83,7 +84,7 @@ object ConsoleSimpleApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-timestamp=2022-07-15T20:48:37.106927+02:00 level=INFO thread=zio-fiber-6 message="Hello from ZIO logger"
+timestamp=2022-10-28T13:47:28.013553+02:00 level=INFO thread=zio-fiber-6 message="Hello from ZIO logger"
 ```
 
 ### JSON console log
@@ -100,7 +101,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
 
   private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
 
-  private val logger =
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
       LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
         userLogAnnotation
@@ -120,7 +121,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
         } @@ userLogAnnotation(uId)
       } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
-    } yield ExitCode.success).provide(logger)
+    } yield ExitCode.success)
 
 }
 ```
@@ -128,9 +129,9 @@ object ConsoleJsonApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-{"timestamp":"2022-07-15T20:19:03.009677+02:00","level":"INFO","thread":"zio-fiber-8","message":"Starting operation","trace_id":"19e74a1f-c910-42e5-b060-8a0024baf3b8","user":"06f6eb07-b828-4f40-8cce-1853971e3ec3"}
-{"timestamp":"2022-07-15T20:19:03.009638+02:00","level":"INFO","thread":"zio-fiber-7","message":"Starting operation","trace_id":"19e74a1f-c910-42e5-b060-8a0024baf3b8","user":"2e1930a4-4efb-4f36-a021-b55248b4f20e"}
-{"timestamp":"2022-07-15T20:19:03.557638+02:00","level":"INFO","thread":"zio-fiber-7","message":"Stopping operation","trace_id":"19e74a1f-c910-42e5-b060-8a0024baf3b8","user":"2e1930a4-4efb-4f36-a021-b55248b4f20e"}
-{"timestamp":"2022-07-15T20:19:03.557595+02:00","level":"INFO","thread":"zio-fiber-8","message":"Stopping operation","trace_id":"19e74a1f-c910-42e5-b060-8a0024baf3b8","user":"06f6eb07-b828-4f40-8cce-1853971e3ec3"}
-{"timestamp":"2022-07-15T20:19:03.566659+02:00","level":"INFO","thread":"zio-fiber-6","message":"Done"}
+{"timestamp":"2022-10-28T13:48:20.350244+02:00","level":"INFO","thread":"zio-fiber-8","message":"Starting operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"b4cf9c71-5b1d-4fe1-bfb4-35a6e51483b2"}
+{"timestamp":"2022-10-28T13:48:20.350238+02:00","level":"INFO","thread":"zio-fiber-7","message":"Starting operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"372071a6-a643-452b-a07c-d0966e556bfa"}
+{"timestamp":"2022-10-28T13:48:20.899453+02:00","level":"INFO","thread":"zio-fiber-7","message":"Stopping operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"372071a6-a643-452b-a07c-d0966e556bfa"}
+{"timestamp":"2022-10-28T13:48:20.899453+02:00","level":"INFO","thread":"zio-fiber-8","message":"Stopping operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"b4cf9c71-5b1d-4fe1-bfb4-35a6e51483b2"}
+{"timestamp":"2022-10-28T13:48:20.908254+02:00","level":"INFO","thread":"zio-fiber-6","message":"Done"}
 ```

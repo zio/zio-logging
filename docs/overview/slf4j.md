@@ -5,13 +5,15 @@ title: "Slf4j"
 
 ## Slf4j
 
-If you need [`slf4j`](https://www.slf4j.org/) integration use `zio-logging-slf4j`:
+The Simple Logging Facade for Java ([`slf4j`](https://www.slf4j.org/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
+
+In order to use this logging backend, we need to add the following line in our build.sbt file:
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
 ```
 
-`slf4j` logger layer:
+Logger layer:
 
 ```scala
 import zio.logging.backend.SLF4J
@@ -57,12 +59,12 @@ import java.util.UUID
 
 object Slf4jSimpleApp extends ZIOAppDefault {
 
-  private val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private val users = List.fill(2)(UUID.randomUUID())
 
   override def run: ZIO[Scope, Any, ExitCode] =
-    (for {
+    for {
       _       <- ZIO.logInfo("Start")
       traceId <- ZIO.succeed(UUID.randomUUID())
       _       <- ZIO.foreachPar(users) { uId =>
@@ -74,10 +76,9 @@ object Slf4jSimpleApp extends ZIOAppDefault {
         } @@ ZIOAspect.annotated("user", uId.toString)
       } @@ LogAnnotation.TraceId(traceId) @@ SLF4J.loggerName("zio.logging.example.UserOperation")
       _       <- ZIO.logInfo("Done")
-    } yield ExitCode.success).provide(logger)
+    } yield ExitCode.success
 
 }
-
 ```
 
 Logback configuration:
@@ -103,10 +104,10 @@ Logback configuration:
 
 Expected Console Output:
 ```
-20:52:39.271 [ZScheduler-Worker-10] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Start
-20:52:39.307 [ZScheduler-Worker-9] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=c9b688b6-5fa1-4ea8-a8f0-e0b20a1cf07f INFO  zio.logging.example.UserOperation Starting user operation
-20:52:39.307 [ZScheduler-Worker-8] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=74d16bcd-6f62-45fd-95d6-0319d1524fe8 INFO  zio.logging.example.UserOperation Starting user operation
-20:52:39.840 [ZScheduler-Worker-13] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=74d16bcd-6f62-45fd-95d6-0319d1524fe8 INFO  zio.logging.example.UserOperation Stopping user operation
-20:52:39.840 [ZScheduler-Worker-2] trace_id=170754d9-51a6-4916-beff-0a26c97e01dd user_id=c9b688b6-5fa1-4ea8-a8f0-e0b20a1cf07f INFO  zio.logging.example.UserOperation Stopping user operation
-20:52:39.846 [ZScheduler-Worker-3] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Done
+13:49:14.060 [ZScheduler-Worker-2] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Start
+13:49:14.090 [ZScheduler-Worker-12] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=3b6163f5-0677-4909-b17f-c181b53312b6 INFO  zio.logging.example.UserOperation Starting user operation
+13:49:14.091 [ZScheduler-Worker-8] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Starting user operation
+13:49:14.616 [ZScheduler-Worker-0] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=3b6163f5-0677-4909-b17f-c181b53312b6 INFO  zio.logging.example.UserOperation Stopping user operation
+13:49:14.616 [ZScheduler-Worker-10] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Stopping user operation
+13:49:14.626 [ZScheduler-Worker-0] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Done
 ```
