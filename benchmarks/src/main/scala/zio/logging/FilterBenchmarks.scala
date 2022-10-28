@@ -108,15 +108,15 @@ class FilterBenchmarks {
   }
 
   /**
-   * 2022/10/16 Initial results
+   * 2022/10/28 Initial results
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
-   * Benchmark                                           Mode  Cnt      Score      Error  Units
-   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  15281.411 ± 2505.438  ops/s
-   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  14997.525 ± 2905.031  ops/s
-   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  12653.665 ± 9558.955  ops/s
-   * FilterBenchmarks.noFilteringLog                    thrpt    3  11856.215 ± 3469.573  ops/s
+   * Benchmark                                           Mode  Cnt      Score       Error  Units
+   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  16623.054 ± 15855.331  ops/s
+   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  18048.598 ±  3868.976  ops/s
+   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  16352.488 ±  2316.372  ops/s
+   * FilterBenchmarks.noFilteringLog                    thrpt    3  15104.002 ±  3857.108  ops/s
    */
 
   @Benchmark

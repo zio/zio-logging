@@ -1,7 +1,7 @@
 package zio.logging
 
 import zio.test._
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
 
 import java.util.UUID
 
@@ -372,18 +372,7 @@ object LogFormatSpec extends ZIOSpecDefault {
     },
     test("line with filter") {
       val filter: LogFilter[String] = LogFilter[String, String](
-        LogGroup(
-          (
-            _: Trace,
-            _: FiberId,
-            _: LogLevel,
-            line: () => String,
-            _: Cause[Any],
-            _: FiberRefs,
-            _: List[LogSpan],
-            _: Map[String, String]
-          ) => line()
-        ),
+        LogGroup[String, String]((_, _, _, line, _, _, _, _) => line()),
         _.startsWith("EXCLUDE#")
       )
 

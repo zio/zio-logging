@@ -51,7 +51,6 @@ trait LogGroup[-Message, Out] { self =>
       annotations: Map[String, String]
     ): Out =
       self(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations)
-
   }
 
   /**
@@ -136,8 +135,14 @@ object LogGroup {
       f(trace, fiberId, logLevel, message, cause, context, spans, annotations)
   }
 
+  /**
+   * Log group by cause
+   */
   val cause: LogGroup[Any, Cause[Any]] = apply((_, _, _, _, cause, _, _, _) => cause)
 
+  /**
+   * Log group with given constant value
+   */
   def constant[O](value: O): LogGroup[Any, O] = apply((_, _, _, _, _, _, _, _) => value)
 
   def fromLoggerNameExtractor(
