@@ -21,15 +21,12 @@ class FilterBenchmarks {
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
     val filter: LogFilter[String] = LogFilter[String, (List[String], LogLevel)](
-      LogGroup(
-        (trace, fiberId, level, message, cause, context, spans, annotations) => {
-          val loggerNames =
-            LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
+      LogGroup { (trace, fiberId, level, message, cause, context, spans, annotations) =>
+        val loggerNames =
+          LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
 
-          loggerNames -> level
-        },
-        LogGroupRelation.default
-      ),
+        loggerNames -> level
+      },
       v => {
         val (loggerNames, level) = v
         loggerNames match {

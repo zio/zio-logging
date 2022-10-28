@@ -5,7 +5,7 @@ import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
 
 object LogGroupSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("LogGroupSpec")(
-    test("level") {
+    test("logLevel") {
       val group = LogGroup.logLevel
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result = group(
@@ -69,23 +69,6 @@ object LogGroupSpec extends ZIOSpecDefault {
             Map.empty
           )
           assertTrue(result == (value -> level))
-      }
-    },
-    test("related") {
-      val group = LogGroup.loggerName ++ LogGroup.logLevel
-      check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
-        (value, level) =>
-          val result = group.related(
-            Trace.apply(value, "", 0),
-            FiberId.None,
-            level,
-            () => "",
-            Cause.empty,
-            FiberRefs.empty,
-            Nil,
-            Map.empty
-          )((value -> level))
-          assertTrue(result)
       }
     }
   )

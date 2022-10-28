@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, Unzippable, Zippable }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, Zippable }
 
 trait LogGroup[-Message, Out] { self =>
 
@@ -30,35 +30,34 @@ trait LogGroup[-Message, Out] { self =>
     annotations: Map[String, String]
   ): Out
 
-  def relation: LogGroupRelation[Out]
-
-  private[logging] def related(
-    trace: Trace,
-    fiberId: FiberId,
-    logLevel: LogLevel,
-    message: () => Message,
-    cause: Cause[Any],
-    context: FiberRefs,
-    spans: List[LogSpan],
-    annotations: Map[String, String]
-  )(value: Out): Boolean =
-    relation.related(self(trace, fiberId, logLevel, message, cause, context, spans, annotations), value)
-
   /**
    * Combine this log group with specified log group
    */
   final def ++[M <: Message, O, Out2](
     other: LogGroup[M, O]
-  )(implicit zippable: Zippable.Out[Out, O, Out2], unzippable: Unzippable.In[Out, O, Out2]): LogGroup[M, Out2] = zip(
+  )(implicit zippable: Zippable.Out[Out, O, Out2]): LogGroup[M, Out2] = zip(
     other
   )
+
+  final def contramap[M](f: M => Message): LogGroup[M, Out] = new LogGroup[M, Out] {
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => M,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Out =
+      self(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations)
+
+  }
 
   /**
    * Returns new log group whose result is mapped by the specified f function.
    */
-
-  final def transform[Out2](f: Out => Out2)(g: Out2 => Out): LogGroup[Message, Out2] = new LogGroup[Message, Out2] {
-    override def relation: LogGroupRelation[Out2] = self.relation.contramap(g)
+  final def map[O](f: Out => O): LogGroup[Message, O] = new LogGroup[Message, O] {
     override def apply(
       trace: Trace,
       fiberId: FiberId,
@@ -68,27 +67,17 @@ trait LogGroup[-Message, Out] { self =>
       context: FiberRefs,
       spans: List[LogSpan],
       annotations: Map[String, String]
-    ): Out2 = f(
-      self(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-    )
+    ): O =
+      f(self(trace, fiberId, logLevel, message, cause, context, spans, annotations))
   }
-
-  def withRelation[Out1 >: Out](r: LogGroupRelation[Out1]): LogGroup[Message, Out1] = LogGroup(self.apply, r)
 
   /**
    * Combine this log group with specified log group
    */
   final def zip[M <: Message, O, Out2](
     other: LogGroup[M, O]
-  )(implicit zippable: Zippable.Out[Out, O, Out2], unzippable: Unzippable.In[Out, O, Out2]): LogGroup[M, Out2] =
+  )(implicit zippable: Zippable.Out[Out, O, Out2]): LogGroup[M, Out2] =
     new LogGroup[M, Out2] {
-      override def relation: LogGroupRelation[Out2] =
-        LogGroupRelation { (l, r) =>
-          val (sl, ol) = unzippable.unzip(l)
-          val (sr, or) = unzippable.unzip(r)
-          self.relation.related(sl, sr) && other.relation.related(ol, or)
-        }
-
       override def apply(
         trace: Trace,
         fiberId: FiberId,
@@ -105,15 +94,35 @@ trait LogGroup[-Message, Out] { self =>
         )
     }
 
+  /**
+   * Zips this log group together with the specified log group using the combination functions.
+   */
+  final def zipWith[M <: Message, O, Out2](
+    other: LogGroup[M, O]
+  )(f: (Out, O) => Out2): LogGroup[M, Out2] = new LogGroup[M, Out2] {
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => M,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Out2 =
+      f(
+        self(trace, fiberId, logLevel, message, cause, context, spans, annotations),
+        other(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+      )
+  }
+
 }
 
 object LogGroup {
 
   def apply[M, O](
-    group: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => O,
-    relation0: LogGroupRelation[O]
+    f: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => O
   ): LogGroup[M, O] = new LogGroup[M, O] {
-    override def relation: LogGroupRelation[O] = relation0
     override def apply(
       trace: Trace,
       fiberId: FiberId,
@@ -124,27 +133,25 @@ object LogGroup {
       spans: List[LogSpan],
       annotations: Map[String, String]
     ): O =
-      group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+      f(trace, fiberId, logLevel, message, cause, context, spans, annotations)
   }
 
-  val cause: LogGroup[Any, Cause[Any]] = apply((_, _, _, _, cause, _, _, _) => cause, LogGroupRelation.default)
+  val cause: LogGroup[Any, Cause[Any]] = apply((_, _, _, _, cause, _, _, _) => cause)
 
-  def constant[O](value: O): LogGroup[Any, O] = apply((_, _, _, _, _, _, _, _) => value, LogGroupRelation.default)
+  def constant[O](value: O): LogGroup[Any, O] = apply((_, _, _, _, _, _, _, _) => value)
 
   def fromLoggerNameExtractor(
     loggerNameExtractor: LoggerNameExtractor,
     loggerNameDefault: String = "zio-logger"
   ): LogGroup[Any, String] =
-    apply(
-      (trace, _, _, _, _, context, _, annotations) =>
-        loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault),
-      LogGroupRelation.default
+    apply((trace, _, _, _, _, context, _, annotations) =>
+      loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
     )
 
   /**
    * Log group by level
    */
-  val logLevel: LogGroup[Any, LogLevel] = apply((_, _, logLevel, _, _, _, _, _) => logLevel, LogGroupRelation.default)
+  val logLevel: LogGroup[Any, LogLevel] = apply((_, _, logLevel, _, _, _, _, _) => logLevel)
 
   /**
    * Log group by logger name

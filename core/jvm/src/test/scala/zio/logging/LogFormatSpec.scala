@@ -382,8 +382,7 @@ object LogFormatSpec extends ZIOSpecDefault {
             _: FiberRefs,
             _: List[LogSpan],
             _: Map[String, String]
-          ) => line(),
-          LogGroupRelation.default
+          ) => line()
         ),
         _.startsWith("EXCLUDE#")
       )
