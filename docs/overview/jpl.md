@@ -1,6 +1,6 @@
 ---
 id: overview_jpl
-title: "Java Platform/System Logger`"
+title: "Java Platform/System Logger"
 ---
 
 ## Java Platform/System Logger
@@ -21,9 +21,9 @@ import zio.logging.backend.JPL
 val logger = Runtime.removeDefaultLoggers >>> JPL.jpl
 ```
 
-Default `jpl` logger setup:
+Default `JPL` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
-    * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
+    * for example, trace `zio.logging.example.JplSimpleApp.run(JplSimpleApp.scala:17)` will have `zio.logging.example.JplSimpleApp` as logger name
     * NOTE: custom logger name may be set by `JPL.loggerName` aspect
 * all annotations (logger name annotation is excluded) are placed at the beginning of log message
 * cause is logged as throwable

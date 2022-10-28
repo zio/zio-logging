@@ -1,11 +1,11 @@
 ---
 id: overview_slf4j
-title: "Slf4j"
+title: "SLF4J"
 ---
 
-## Slf4j
+## SLF4J
 
-The Simple Logging Facade for Java ([`slf4j`](https://www.slf4j.org/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
+The Simple Logging Facade for Java ([`SLF4J`](https://www.slf4j.org/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
 
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
@@ -21,9 +21,9 @@ import zio.logging.backend.SLF4J
 val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 ```
 
-Default `slf4j` logger setup:
+Default `SLF4J` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
-    * for example, trace `zio.logging.example.Slf4jAnnotationApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
+    * for example, trace `zio.logging.example.Slf4jSimpleApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `SLF4J.loggerName` aspect
 * all annotations (logger name and log marker name annotations are excluded) are placed into MDC context
 * cause is logged as throwable
@@ -46,7 +46,7 @@ ZIO.logInfo("Confidential user operation") @@ SLF4J.logMarkerName("CONFIDENTIAL"
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
 
 
-### Slf4j logger name and annotations
+### SLF4J logger name and annotations
 
 ```scala
 package zio.logging.example
