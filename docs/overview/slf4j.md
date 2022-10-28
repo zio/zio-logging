@@ -111,3 +111,68 @@ Expected Console Output:
 13:49:14.616 [ZScheduler-Worker-10] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Stopping user operation
 13:49:14.626 [ZScheduler-Worker-0] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Done
 ```
+
+### Custom tracing annotation
+
+Following application has custom aspect `currentTracingSpanAspect` implementation which taking current span from `Tracing` service 
+which then is added to logs by log annotation.
+
+```scala
+package zio.logging.example
+
+import zio.logging.backend.SLF4J
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
+
+import java.util.UUID
+
+trait Tracing {
+  def getCurrentSpan(): UIO[String]
+}
+
+final class LiveTracing extends Tracing {
+  override def getCurrentSpan(): UIO[String] = ZIO.succeed(UUID.randomUUID().toString)
+}
+
+object LiveTracing {
+  val layer: ULayer[Tracing] = ZLayer.succeed(new LiveTracing)
+}
+
+object CustomTracingAnnotationApp extends ZIOAppDefault {
+
+  private def currentTracingSpanAspect(key: String): ZIOAspect[Nothing, Tracing, Nothing, Any, Nothing, Any] =
+    new ZIOAspect[Nothing, Tracing, Nothing, Any, Nothing, Any] {
+      def apply[R <: Tracing, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
+        ZIO.serviceWithZIO[Tracing] { tracing =>
+          tracing.getCurrentSpan().flatMap { span =>
+            ZIO.logAnnotate(key, span)(zio)
+          }
+        }
+    }
+
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+
+  private val users = List.fill(2)(UUID.randomUUID())
+
+  override def run: ZIO[Scope, Any, ExitCode] =
+    (for {
+      _ <- ZIO.foreachPar(users) { uId =>
+        {
+          ZIO.logInfo("Starting operation") *>
+            ZIO.sleep(500.millis) *>
+            ZIO.logInfo("Stopping operation")
+        } @@ ZIOAspect.annotated("user", uId.toString)
+      } @@ currentTracingSpanAspect("trace_id")
+      _ <- ZIO.logInfo("Done")
+    } yield ExitCode.success).provide(LiveTracing.layer)
+
+}
+```
+
+Expected Console Output:
+```
+19:09:57.695 [ZScheduler-Worker-9] trace_id= user_id= INFO  z.l.e.CustomTracingAnnotationApp Starting operation
+19:09:57.695 [ZScheduler-Worker-9] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=35d36d10-4b64-48fc-bf9d-6b6b37d2f4cc INFO  z.l.e.CustomTracingAnnotationApp Starting operation
+19:09:58.056 [ZScheduler-Worker-8] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=068a35f2-2633-4404-9522-ffbfabe63730 INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
+19:09:58.197 [ZScheduler-Worker-10] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=35d36d10-4b64-48fc-bf9d-6b6b37d2f4cc INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
+19:09:58.202 [ZScheduler-Worker-13] trace_id= user_id= INFO  z.l.e.CustomTracingAnnotationApp Done
+```

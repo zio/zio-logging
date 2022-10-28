@@ -19,7 +19,7 @@ object LiveTracing {
 
 object CustomTracingAnnotationApp extends ZIOAppDefault {
 
-  def currentTracingSpanAspect(key: String): ZIOAspect[Nothing, Tracing, Nothing, Any, Nothing, Any] =
+  private def currentTracingSpanAspect(key: String): ZIOAspect[Nothing, Tracing, Nothing, Any, Nothing, Any] =
     new ZIOAspect[Nothing, Tracing, Nothing, Any, Nothing, Any] {
       def apply[R <: Tracing, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
         ZIO.serviceWithZIO[Tracing] { tracing =>
