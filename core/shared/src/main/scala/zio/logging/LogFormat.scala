@@ -45,9 +45,9 @@ trait LogFormat { self =>
    * separator between them.
    */
   final def +(other: LogFormat): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, spans, location, annotations) =>
-      self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
-      other.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, spans, location, annotations)
+    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+      self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+      other.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
     }
 
   /**
@@ -71,18 +71,28 @@ trait LogFormat { self =>
     this + other
 
   /**
+   * Returns a new log format that produces the same as this one, if filter is satisfied
+   */
+  final def filter[M >: String](filter: LogFilter[M]): LogFormat =
+    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+      if (filter(trace, fiberId, level, line, cause, context, spans, annotations)) {
+        self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+      }
+    }
+
+  /**
    * Returns a new log format that produces the same as this one, but with a
    * space-padded, fixed-width output. Be careful using this operator, as it
    * destroys all structure, resulting in purely textual log output.
    */
   final def fixed(size: Int): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
+    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
       val tempBuilder = new StringBuilder
       val append      = LogAppender.unstructured { (line: String) =>
         tempBuilder.append(line)
         ()
       }
-      self.unsafeFormat(append)(trace, fiberId, level, line, fiberRefs, cause, spans, annotations)
+      self.unsafeFormat(append)(trace, fiberId, level, line, cause, context, spans, annotations)
 
       val messageSize = tempBuilder.size
       if (messageSize < size) {
@@ -97,9 +107,9 @@ trait LogFormat { self =>
    * log levels are colored according to the specified mapping.
    */
   final def highlight(fn: LogLevel => LogColor): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
+    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
       builder.appendText(fn(level).ansi)
-      try self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, cause, spans, annotations)
+      try self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
       finally builder.appendText(LogColor.RESET.ansi)
     }
 
@@ -131,9 +141,9 @@ trait LogFormat { self =>
     annotations: Map[String, String]
   ) => {
     val logEntryFormat =
-      LogFormat.make { (builder, trace, fiberId, level, line, fiberRefs, cause, spans, annotations) =>
+      LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
         builder.openLogEntry()
-        try self.unsafeFormat(builder)(trace, fiberId, level, line, fiberRefs, cause, spans, annotations)
+        try self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
         finally builder.closeLogEntry()
       }
 
@@ -222,6 +232,12 @@ object LogFormat {
       }
     }
   }
+
+  def loggerName(loggerNameExtractor: LoggerNameExtractor, loggerNameDefault: String = "zio-logger"): LogFormat =
+    LogFormat.make { (builder, trace, _, _, _, _, context, _, annotations) =>
+      val loggerName = loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
+      builder.appendText(loggerName)
+    }
 
   def annotation(name: String): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
@@ -326,20 +342,17 @@ object LogFormat {
       }
     }
 
+  @deprecated("use LogFormat.filter", "2.1.2")
   def ifCauseNonEmpty(format: LogFormat): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, logLevel, message, cause, spans, location, annotations) =>
-      if (!cause.isEmpty) {
-        format.unsafeFormat(builder)(trace, fiberId, logLevel, message, cause, spans, location, annotations)
-      }
-    }
+    format.filter(LogFilter.causeNonEmpty)
 
   def label(label: => String, value: LogFormat): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, logLevel, message, context, spans, location, annotations) =>
+    LogFormat.make { (builder, trace, fiberId, logLevel, message, cause, context, spans, annotations) =>
       builder.openKey()
       try builder.appendText(label)
       finally builder.closeKeyOpenValue()
 
-      try value.unsafeFormat(builder)(trace, fiberId, logLevel, message, context, spans, location, annotations)
+      try value.unsafeFormat(builder)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
       finally builder.closeValue()
     }
 
@@ -391,13 +404,13 @@ object LogFormat {
       label("level", level) |-|
       label("thread", fiberId) |-|
       label("message", quoted(line)) +
-      ifCauseNonEmpty(space + label("cause", cause))
+      (space + label("cause", cause)).filter(LogFilter.causeNonEmpty)
 
   val colored: LogFormat =
     label("timestamp", timestamp.fixed(32)).color(LogColor.BLUE) |-|
       label("level", level).highlight |-|
       label("thread", fiberId).color(LogColor.WHITE) |-|
       label("message", quoted(line)).highlight +
-      ifCauseNonEmpty(space + label("cause", cause).highlight)
+      (space + label("cause", cause).highlight).filter(LogFilter.causeNonEmpty)
 
 }

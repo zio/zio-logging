@@ -1,7 +1,7 @@
 package zio.logging.backend
 
-import zio.logging.LogFormat
 import zio.logging.internal.LogAppender
+import zio.logging.{ LogFormat, LoggerNameExtractor }
 import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
 
 object JPL {
@@ -37,15 +37,7 @@ object JPL {
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
-    _ match {
-      case Trace(location, _, _) =>
-        val last = location.lastIndexOf(".")
-        if (last > 0) {
-          location.substring(0, last)
-        } else location
-
-      case _ => default
-    }
+    trace => LoggerNameExtractor.trace(trace, FiberRefs.empty, Map.empty).getOrElse(default)
 
   private def logAppender(systemLogger: System.Logger, logLevel: LogLevel): LogAppender = new LogAppender {
     self =>

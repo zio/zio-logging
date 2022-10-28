@@ -1,141 +1,138 @@
-// package zio.logging
+package zio.logging
 
-// import org.openjdk.jmh.annotations._
-// import zio.{ZIO, ZLayer}
-// import zio.logging.LogFiltering.{ cachedFilterBy, filterBy }
-// import zio.stm.TMap
+import org.openjdk.jmh.annotations._
+import zio.{ LogLevel, Runtime, Unsafe, ZIO, ZIOAspect, ZLayer }
 
-// import java.util.concurrent.TimeUnit
-// import scala.util.Random
+import java.util.concurrent.TimeUnit
+import scala.util.Random
 
-// @State(Scope.Thread)
-// @BenchmarkMode(Array(Mode.Throughput))
-// @OutputTimeUnit(TimeUnit.SECONDS)
-// class FilterBenchmarks {
+@State(Scope.Thread)
+@BenchmarkMode(Array(Mode.Throughput))
+@OutputTimeUnit(TimeUnit.SECONDS)
+class FilterBenchmarks {
+  val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
 
-//   val runtime: zio.Runtime[zio.ZEnv] = zio.Runtime.default
+  val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ LogGroup.logLevel
 
-//   val unfilteredLogging: Logging = runtime.unsafeRun {
-//     (LogAppender.ignore[String] >>> Logging.make).build.useNow
-//   }
+  val runtime = Runtime.default
 
-//   val handWrittenFilterFunction: (LogContext, => String) => Boolean       = { (ctx, _) =>
-//     val level = ctx.get(LogAnnotation.Level)
-//     ctx.get(LogAnnotation.Name) match {
-//       case List("a", "b", "c") => level >= LogLevel.Info
-//       case List("a", "b", "d") => level >= LogLevel.Warn
-//       case List("e")           => level >= LogLevel.Info
-//       case _                   => level >= LogLevel.Debug
-//     }
-//   }
-//   val handWrittenFilteredAppender: ZLayer[Any, Nothing, Appender[String]] =
-//     LogAppender
-//       .ignore[String]
-//       .withFilter(handWrittenFilterFunction)
+  val unfilteredLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
-//   val handWrittenFilteredLogging: Logging =
-//     runtime.unsafeRun {
-//       (handWrittenFilteredAppender >>> Logging.make).build.useNow
-//     }
+  val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
+    val filter: LogFilter[String] = LogFilter[String, (List[String], LogLevel)](
+      LogGroup { (trace, fiberId, level, message, cause, context, spans, annotations) =>
+        val loggerNames =
+          LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
 
-//   val filterTreeFunction: (LogContext, => Any) => Boolean        =
-//     filterBy(LogLevel.Debug, "a.b.c" -> LogLevel.Info, "a.b.d" -> LogLevel.Warn, "e" -> LogLevel.Info)
-//   val filterTreeAppender: ZLayer[Any, Nothing, Appender[String]] =
-//     LogAppender
-//       .ignore[String]
-//       .withFilter(filterTreeFunction)
+        loggerNames -> level
+      },
+      v => {
+        val (loggerNames, level) = v
+        loggerNames match {
+          case List("a", "b", "c") => level >= LogLevel.Info
+          case List("a", "b", "d") => level >= LogLevel.Warning
+          case List("e")           => level >= LogLevel.Info
+          case List("f", "g")      => level >= LogLevel.Error
+          case List("f")           => level >= LogLevel.Info
+          case _                   => level >= LogLevel.Debug
+        }
+      }
+    )
+    Runtime.removeDefaultLoggers >>> console(LogFormat.default, filter)
+  }
 
-//   val filterTreeLogging: Logging =
-//     runtime.unsafeRun {
-//       (filterTreeAppender >>> Logging.make).build.useNow
-//     }
+  val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> console(
+      LogFormat.default,
+      LogFilter.logLevelByGroup(
+        LogLevel.Debug,
+        loggerName,
+        "a.b.c" -> LogLevel.Info,
+        "a.b.d" -> LogLevel.Warning,
+        "e"     -> LogLevel.Info,
+        "f.g"   -> LogLevel.Error,
+        "f"     -> LogLevel.Info
+      )
+    )
 
-//   val cachedFilterTreeLogging: Logging =
-//     runtime.unsafeRun {
-//       for {
-//         cache   <- TMap.empty[(List[String], LogLevel), Boolean].commit
-//         appender = LogAppender
-//                      .ignore[String]
-//                      .withFilterM(
-//                        cachedFilterBy(
-//                          cache,
-//                          LogLevel.Debug,
-//                          "a.b.c" -> LogLevel.Info,
-//                          "a.b.d" -> LogLevel.Warn,
-//                          "e"     -> LogLevel.Info
-//                        )
-//                      )
-//         logging <- (appender >>> Logging.make).build.useNow
-//       } yield logging
-//     }
+  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> console(
+      LogFormat.default,
+      LogFilter
+        .logLevelByGroup(
+          LogLevel.Debug,
+          loggerName,
+          "a.b.c" -> LogLevel.Info,
+          "a.b.d" -> LogLevel.Warning,
+          "e"     -> LogLevel.Info,
+          "f.g"   -> LogLevel.Error,
+          "f"     -> LogLevel.Info
+        )
+        .cached
+    )
 
-//   val names: List[List[String]] = List(
-//     List("a"),
-//     List("a", "b"),
-//     List("a", "b", "c"),
-//     List("a", "b", "d"),
-//     List("a", "b", "e"),
-//     List("a", "b", "e", "f", "g"),
-//     List("a", "z"),
-//     List("e"),
-//     List("e", "f"),
-//     List("e", "f"),
-//     List("a", "e", "f")
-//   )
+  val names: List[String] = List(
+    "a",
+    "a.b",
+    "a.b.c",
+    "a.b.d",
+    "a.b.e",
+    "a.b.e.f.g",
+    "a.z",
+    "b.c",
+    "b.d",
+    "b.e",
+    "e",
+    "e.f",
+    "e.f",
+    "a.e.f",
+    "f.g",
+    "f.g.h",
+    "f.g.h.x",
+    "f.h",
+    "f.h.x",
+    "f"
+  )
 
-//   val rnd = new Random(12345)
+  val rnd = new Random(12345)
 
-//   def testLoggingWith(logging: Logging): Unit = {
-//     val name = names(rnd.nextInt(names.length))
-//     runtime.unsafeRun {
-//       log
-//         .locally(_.annotate(LogAnnotation.Name, name)) {
-//           ZIO.logDebug("test")
-//         }
-//         .provide(logging)
-//     }
-//   }
+  def testLoggingWith(logging: ZLayer[Any, Nothing, Unit]): Unit = {
+    val name = names(rnd.nextInt(names.length))
+    Unsafe.unsafe { implicit u =>
+      runtime.unsafe.run {
+        (ZIO.logDebug("test") @@ ZIOAspect.annotated("name", name)).provide(logging)
+      }
+    }
+    ()
+  }
 
-//   def testEvalWith(f: (LogContext, => String) => Boolean): Boolean = {
-//     val name = names(rnd.nextInt(names.length))
-//     val ctx  = LogContext.empty
-//       .annotate(LogAnnotation.Name, name)
-//       .annotate(LogAnnotation.Level, LogLevel.Debug)
-//     f(ctx, "test")
-//   }
+  /**
+   * 2022/10/28 Initial results
+   *
+   * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
+   *
+   * Benchmark                                           Mode  Cnt      Score       Error  Units
+   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  16623.054 ± 15855.331  ops/s
+   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  18048.598 ±  3868.976  ops/s
+   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  16352.488 ±  2316.372  ops/s
+   * FilterBenchmarks.noFilteringLog                    thrpt    3  15104.002 ±  3857.108  ops/s
+   */
 
-//   /**
-//    * 3/1/2021 Initial results
-//    * FilterBenchmarks.handWrittenFilterEval     thrpt    5  9177150.646 ± 125715.644  ops/s
-//    * FilterBenchmarks.filterTreeEval            thrpt    5  7298406.870 ±  87773.959  ops/s
-//    *
-//    * FilterBenchmarks.noFilteringLogging        thrpt    5   267066.692 ±   2170.1439  ops/s
-//    * FilterBenchmarks.handWrittenFilterLogging  thrpt    5   262466.006 ±   3641.051  ops/s
-//    * FilterBenchmarks.filterTreeLog             thrpt    5   252841.756 ±   2912.062  ops/s
-//    * FilterBenchmarks.cachedFilterTreeLog       thrpt    5   260752.769 ±   2625.707  ops/s
-//    */
+  @Benchmark
+  def noFilteringLog(): Unit =
+    testLoggingWith(unfilteredLogging)
 
-//   @Benchmark
-//   def noFilteringLogging(): Unit =
-//     testLoggingWith(unfilteredLogging)
+  @Benchmark
+  def handWrittenFilterLog(): Unit =
+    testLoggingWith(handWrittenFilteredLogging)
 
-//   @Benchmark
-//   def handWrittenFilterLogging(): Unit =
-//     testLoggingWith(handWrittenFilteredLogging)
+  @Benchmark
+  def filterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(filterByLogLevelAndNameLogging)
 
-//   @Benchmark
-//   def filterTreeLog(): Unit =
-//     testLoggingWith(filterTreeLogging)
+  @Benchmark
+  def cachedFilterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(cachedFilterByLogLevelAndNameLogging)
 
-//   @Benchmark
-//   def cachedFilterTreeLog(): Unit =
-//     testLoggingWith(filterTreeLogging)
-
-//   @Benchmark
-//   def handWrittenFilterEval(): Boolean =
-//     testEvalWith(handWrittenFilterFunction)
-
-//   @Benchmark
-//   def filterTreeEval(): Boolean =
-//     testEvalWith(filterTreeFunction)
-// }
+}
