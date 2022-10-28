@@ -57,12 +57,45 @@ import zio.logging.LogAnnotation
 val customLogAnnotation = LogAnnotation[Int]("custom_annotation", _ + _, _.toString)
 ```
 
+### Logger setup in ZIO application
+
+The recommended place for setting the logger is application boostrap. 
+In this case, custom logger will be set for whole application runtime (also application failures will be logged with specified logger).
+
+```scala
+package zio.logging.example
+
+import zio.logging.{ LogFormat, console }
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
+
+object SimpleApp extends ZIOAppDefault {
+
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
+    Runtime.removeDefaultLoggers >>> console(LogFormat.default)
+
+  override def run: ZIO[Scope, Any, ExitCode] =
+    for {
+      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.fail("FAILURE")
+      _ <- ZIO.logInfo("Done")
+    } yield ExitCode.success
+
+}
+```
+
+Expected console output:
+
+```
+timestamp=2022-10-28T18:40:25.517623+02:00 level=INFO thread=zio-fiber-6 message="Start"
+timestamp=2022-10-28T18:40:25.54676+02:00  level=ERROR thread=zio-fiber-0 message="" cause=Exception in thread "zio-fiber-6" java.lang.String: FAILURE
+	at zio.logging.example.SimpleApp.run(SimpleApp.scala:14)
+```
 
 ## Examples
 
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
 
-### Simple console log
+### Simple console logger
 
 ```scala
 package zio.logging.example
@@ -87,7 +120,7 @@ Expected console output:
 timestamp=2022-10-28T13:47:28.013553+02:00 level=INFO thread=zio-fiber-6 message="Hello from ZIO logger"
 ```
 
-### JSON console log
+### JSON console logger
 
 ```scala
 package zio.logging.example
