@@ -24,20 +24,11 @@ import scala.annotation.tailrec
  */
 trait LogFilter[-Message] { self =>
 
-  type Group
+  type Value
 
-  protected def group(
-    trace: Trace,
-    fiberId: FiberId,
-    logLevel: LogLevel,
-    message: () => Message,
-    cause: Cause[Any],
-    context: FiberRefs,
-    spans: List[LogSpan],
-    annotations: Map[String, String]
-  ): Group
+  protected def group: LogGroup[Message, Value]
 
-  protected def predicate(group: Group): Boolean
+  protected def predicate(value: Value): Boolean
 
   final def apply(
     trace: Trace,
@@ -49,9 +40,9 @@ trait LogFilter[-Message] { self =>
     spans: List[LogSpan],
     annotations: Map[String, String]
   ): Boolean = {
-    val g = group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+    val v = group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
 
-    predicate(g)
+    predicate(v)
   }
 
   /**
@@ -68,25 +59,12 @@ trait LogFilter[-Message] { self =>
    * The alphanumeric version of the `&&` operator.
    */
   final def and[M <: Message](other: LogFilter[M]): LogFilter[M] =
-    LogFilter[M, (self.Group, other.Group)](
-      (
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => M,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ) =>
-        (
-          self.group(trace, fiberId, logLevel, message, cause, context, spans, annotations),
-          other.group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-        ),
-      g => {
-        val (g1, g2) = g
+    LogFilter[M, (self.Value, other.Value)](
+      self.group ++ other.group,
+      v => {
+        val (v1, v2) = v
 
-        self.predicate(g1) && other.predicate(g2)
+        self.predicate(v1) && other.predicate(v2)
       }
     )
 
@@ -94,60 +72,47 @@ trait LogFilter[-Message] { self =>
    * Returns a new log filter with cached results based on given log group
    */
   final def cached: LogFilter[Message] = {
-    val cache = new java.util.concurrent.ConcurrentHashMap[Group, Boolean]()
-    LogFilter[Message, self.Group](
+    val cache = new java.util.concurrent.ConcurrentHashMap[Value, Boolean]()
+    LogFilter[Message, self.Value](
       self.group,
-      g =>
+      v =>
         cache.computeIfAbsent(
-          g,
-          _ => self.predicate(g)
+          v,
+          _ => self.predicate(v)
         )
     )
   }
 
-  final def contramap[M](f: M => Message): LogFilter[M] = LogFilter[M, self.Group](
-    (
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => M,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ) => self.group(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations),
-    self.predicate
-  )
+//  final def contramap[M](f: M => Message): LogFilter[M] = LogFilter[M, self.Value](
+//    (
+//      trace: Trace,
+//      fiberId: FiberId,
+//      logLevel: LogLevel,
+//      message: () => M,
+//      cause: Cause[Any],
+//      context: FiberRefs,
+//      spans: List[LogSpan],
+//      annotations: Map[String, String]
+//    ) => self.group(trace, fiberId, logLevel, () => f(message()), cause, context, spans, annotations),
+//    self.predicate
+//  )
 
   /**
    * The alphanumeric version of the `!` operator.
    */
   final def not: LogFilter[Message] =
-    LogFilter[Message, self.Group](self.group, g => !self.predicate(g))
+    LogFilter[Message, self.Value](self.group, v => !self.predicate(v))
 
   /**
    * The alphanumeric version of the `||` operator.
    */
   final def or[M <: Message](other: LogFilter[M]): LogFilter[M] =
-    LogFilter[M, (self.Group, other.Group)](
-      (
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => M,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ) =>
-        (
-          self.group(trace, fiberId, logLevel, message, cause, context, spans, annotations),
-          other.group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-        ),
-      g => {
-        val (g1, g2) = g
+    LogFilter[M, (self.Value, other.Value)](
+      self.group ++ other.group,
+      v => {
+        val (v1, v2) = v
 
-        self.predicate(g1) || other.predicate(g2)
+        self.predicate(v1) || other.predicate(v2)
       }
     )
 
@@ -180,74 +145,30 @@ trait LogFilter[-Message] { self =>
 object LogFilter {
 
   def apply[M, G](
-    group0: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => G,
+    group0: LogGroup[M, G],
     predicate0: G => Boolean
   ): LogFilter[M] = new LogFilter[M] {
-    override type Group = G
-
-    override protected def group(
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => M,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ): Group =
-      group0(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-
-    override protected def predicate(value: Group): Boolean = predicate0(value)
+    override type Value = G
+    override protected def group: LogGroup[M, G]            = group0
+    override protected def predicate(value: Value): Boolean = predicate0(value)
   }
 
   def apply[M](
-    group0: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => Boolean
+    group0: LogGroup[M, Boolean]
   ): LogFilter[M] = apply[M, Boolean](group0, identity)
 
   /**
    * Log filter which accept all logs (logs are not filtered)
    */
-  val acceptAll: LogFilter[Any] = apply[Any](
-    (
-      _: Trace,
-      _: FiberId,
-      _: LogLevel,
-      _: () => Any,
-      _: Cause[Any],
-      _: FiberRefs,
-      _: List[LogSpan],
-      _: Map[String, String]
-    ) => true
-  )
+  val acceptAll: LogFilter[Any] = apply[Any](LogGroup.constant(true))
 
-  val causeNonEmpty: LogFilter[Any] = apply[Any, Cause[_]](
-    (
-      _: Trace,
-      _: FiberId,
-      _: LogLevel,
-      _: () => Any,
-      cause: Cause[Any],
-      _: FiberRefs,
-      _: List[LogSpan],
-      _: Map[String, String]
-    ) => cause,
-    !_.isEmpty
-  )
+  val causeNonEmpty: LogFilter[Any] = apply[Any, Cause[Any]](LogGroup.cause, !_.isEmpty)
 
   /**
    * Returns a filter which accept logs when the log level satisfies the specified predicate
    */
   def logLevel(predicate: LogLevel => Boolean): LogFilter[Any] = apply[Any, LogLevel](
-    (
-      _: Trace,
-      _: FiberId,
-      logLevel: LogLevel,
-      _: () => Any,
-      _: Cause[Any],
-      _: FiberRefs,
-      _: List[LogSpan],
-      _: Map[String, String]
-    ) => logLevel,
+    LogGroup.logLevel,
     predicate
   )
 
@@ -275,10 +196,7 @@ object LogFilter {
     groupings: (A, LogLevel)*
   ): LogFilter[M] =
     apply[M, (A, LogLevel)](
-      (trace, fiberId, level, message, cause, context, spans, annotations) => {
-        val loggerGroup = group(trace, fiberId, level, message, cause, context, spans, annotations)
-        loggerGroup -> level
-      },
+      group ++ LogGroup.logLevel,
       g => {
         val (loggerGroup, level) = g
         val groupingLogLevel     = groupings.collectFirst {

@@ -127,6 +127,10 @@ object LogGroup {
       group(trace, fiberId, logLevel, message, cause, context, spans, annotations)
   }
 
+  val cause: LogGroup[Any, Cause[Any]] = apply((_, _, _, _, cause, _, _, _) => cause, LogGroupRelation.default)
+
+  def constant[O](value: O): LogGroup[Any, O] = apply((_, _, _, _, _, _, _, _) => value, LogGroupRelation.default)
+
   def fromLoggerNameExtractor(
     loggerNameExtractor: LoggerNameExtractor,
     loggerNameDefault: String = "zio-logger"
@@ -155,4 +159,5 @@ object LogGroup {
    * Logger name is extracted from [[Trace]]
    */
   val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ logLevel
+
 }

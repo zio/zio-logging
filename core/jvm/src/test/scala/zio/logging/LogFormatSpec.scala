@@ -372,16 +372,19 @@ object LogFormatSpec extends ZIOSpecDefault {
     },
     test("line with filter") {
       val filter: LogFilter[String] = LogFilter[String, String](
-        (
-          _: Trace,
-          _: FiberId,
-          _: LogLevel,
-          line: () => String,
-          _: Cause[Any],
-          _: FiberRefs,
-          _: List[LogSpan],
-          _: Map[String, String]
-        ) => line(),
+        LogGroup(
+          (
+            _: Trace,
+            _: FiberId,
+            _: LogLevel,
+            line: () => String,
+            _: Cause[Any],
+            _: FiberRefs,
+            _: List[LogSpan],
+            _: Map[String, String]
+          ) => line(),
+          LogGroupRelation.default
+        ),
         _.startsWith("EXCLUDE#")
       )
 
