@@ -1,11 +1,11 @@
 package zio.logging.example
 
 import zio.logging.{ LogFormat, console }
-import zio.{ Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
+import zio.{ Cause, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  private val logger =
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
     Runtime.removeDefaultLoggers >>> console(LogFormat.colored)
 
   private def ping(address: String): URIO[PingService, Unit] =
@@ -20,6 +20,6 @@ object ConsoleColoredApp extends ZIOAppDefault {
     (for {
       _ <- ping("127.0.0.1")
       _ <- ping("x8.8.8.8")
-    } yield ExitCode.success).provide(LivePingService.layer ++ logger)
+    } yield ExitCode.success).provide(LivePingService.layer)
 
 }

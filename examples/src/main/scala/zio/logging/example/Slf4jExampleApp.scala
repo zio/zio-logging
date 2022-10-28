@@ -1,11 +1,11 @@
 package zio.logging.example
 
 import zio.logging.backend.SLF4J
-import zio.{ ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
+import zio.{ ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jExampleApp extends ZIOAppDefault {
 
-  private val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
@@ -19,6 +19,6 @@ object Slf4jExampleApp extends ZIOAppDefault {
     (for {
       _ <- ping("127.0.0.1")
       _ <- ping("x8.8.8.8")
-    } yield ExitCode.success).provide(LivePingService.layer ++ logger)
+    } yield ExitCode.success).provide(LivePingService.layer)
 
 }

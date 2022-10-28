@@ -1,7 +1,11 @@
 {
   "overview-sidebar": {
     "Overview": [
-      "overview/overview_index"
+      "overview/overview_index",
+      "overview/overview_slf4j",
+      "overview/overview_slf4j_bridge",
+      "overview/overview_jpl",
+      "overview/overview_testing"
     ]
   }
 }
