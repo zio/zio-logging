@@ -7,7 +7,7 @@ env:
 on:
   pull_request:
   push:
-    branches: ['master']
+    branches: [ 'master' ]
   release:
     types:
       - published
@@ -30,7 +30,7 @@ jobs:
       - name: Lint code
         run: sbt check
 
-  mdoc:
+  website:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
@@ -43,7 +43,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
-        run: sbt docs/docusaurusCreateSite
+        run: sbt compileDocs
 
   test:
     runs-on: ubuntu-20.04
@@ -51,9 +51,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.11.12', '2.12.17', '2.13.10', '3.2.0']
-        platform: ['JVM', 'JS']
+        java: [ 'adopt@1.8', 'adopt@1.11' ]
+        scala: [ '2.11.12', '2.12.17', '2.13.10', '3.2.0' ]
+        platform: [ 'JVM', 'JS' ]
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.1.0
@@ -80,7 +80,7 @@ jobs:
 
   ci:
     runs-on: ubuntu-20.04
-    needs: [lint, mdoc, test]
+    needs: [ lint, mdoc, test ]
     steps:
       - name: Report successful build
         run: echo "ci passed"
@@ -88,7 +88,7 @@ jobs:
   publish:
     runs-on: ubuntu-20.04
     timeout-minutes: 30
-    needs: [ci]
+    needs: [ ci ]
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout current branch
@@ -108,20 +108,3 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          
-  website:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-    steps:
-      - name: Checkout current branch
-        uses: actions/checkout@v3.1.0
-        with:
-          fetch-depth: 0
-      - name: Setup Java
-        uses: actions/setup-java@v3.6.0
-        with:
-          distribution: temurin
-          java-version: 17
-          check-latest: true
-      - name: Check Docs Compilation
-        run: ./sbt compileDocs
