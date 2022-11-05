@@ -80,7 +80,7 @@ jobs:
 
   ci:
     runs-on: ubuntu-20.04
-    needs: [ lint, mdoc, test ]
+    needs: [ lint, website, test ]
     steps:
       - name: Report successful build
         run: echo "ci passed"
