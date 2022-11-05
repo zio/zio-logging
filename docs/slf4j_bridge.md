@@ -1,5 +1,5 @@
 ---
-id: overview_slf4j_bridge
+id: slf4j_bridge
 title: "SLF4J bridge"
 ---
 

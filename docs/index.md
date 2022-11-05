@@ -1,6 +1,7 @@
 ---
-id: overview_index
-title: "Summary"
+id: index
+title: "Introduction to ZIO Logging"
+sidebar_label: "Introduction"
 ---
 
 _ZIO Logging_ is the official logging library for ZIO 2 applications, with integrations for common logging backends.

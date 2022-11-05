@@ -1,5 +1,5 @@
 ---
-id: overview_jpl
+id: jpl
 title: "Java Platform/System Logger"
 ---
 
