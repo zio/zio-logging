@@ -54,7 +54,8 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, docs, examples)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, examples)
+  .enablePlugins(WebsitePlugin)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -134,23 +135,6 @@ lazy val benchmarks = project
   )
   .dependsOn(coreJVM)
   .enablePlugins(JmhPlugin)
-
-lazy val docs = project
-  .in(file("zio-logging-docs"))
-  .settings(
-    publish / skip                             := true,
-    moduleName                                 := "zio-logging-docs",
-    scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings",
-    crossScalaVersions --= List(Scala211, Scala3),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j),
-    ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
-    cleanFiles += (ScalaUnidoc / unidoc / target).value,
-    docusaurusCreateSite                       := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-    docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
-  )
-  .dependsOn(coreJVM, slf4j, jpl)
-  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project
   .in(file("examples"))
