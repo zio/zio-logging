@@ -13,7 +13,7 @@ _ZIO Logging_ is the official logging library for ZIO 2 applications, with integ
 
 To learn more about _ZIO Logging_, check out the following references:
 
-- [Homepage](https://zio.github.io/zio-logging/)
+- [Homepage](https://zio.dev/zio-logging/)
 - [Contributor's guide](./.github/CONTRIBUTING.md)
 - [License](LICENSE)
 - [Issues](https://github.com/zio/zio-logging/issues)

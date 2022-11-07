@@ -1,5 +1,5 @@
 ---
-id: overview_jpl
+id: jpl
 title: "Java Platform/System Logger"
 ---
 
@@ -10,7 +10,7 @@ title: "Java Platform/System Logger"
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jpl" % version
+libraryDependencies += "dev.zio" %% "zio-logging-jpl" % @VERSION@
 ```
 
 Logger layer:

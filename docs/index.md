@@ -1,6 +1,7 @@
 ---
-id: overview_index
-title: "Summary"
+id: index
+title: "Introduction to ZIO Logging"
+sidebar_label: "Introduction"
 ---
 
 _ZIO Logging_ is the official logging library for ZIO 2 applications, with integrations for common logging backends.
@@ -16,7 +17,7 @@ _ZIO Logging_ is the official logging library for ZIO 2 applications, with integ
 In order to use this library, we need to add the following line in our build.sbt file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging" % version
+libraryDependencies += "dev.zio" %% "zio-logging" % @VERSION@
 ```
 
 ### Log Format

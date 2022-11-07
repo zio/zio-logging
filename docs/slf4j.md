@@ -1,5 +1,5 @@
 ---
-id: overview_slf4j
+id: slf4j
 title: "SLF4J"
 ---
 
@@ -10,7 +10,7 @@ The Simple Logging Facade for Java ([`SLF4J`](https://www.slf4j.org/)) serves as
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % version
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % @VERSION@
 ```
 
 Logger layer:
