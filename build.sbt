@@ -2,7 +2,8 @@ import BuildHelper._
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 
-name := "zio-logging"
+name          := "zio-logging"
+defaultBranch := "master"
 
 inThisBuild(
   List(
