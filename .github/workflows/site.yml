@@ -1,4 +1,4 @@
-name: websited
+name: website
 
 on:
   push: 
