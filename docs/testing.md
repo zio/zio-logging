@@ -3,8 +3,6 @@ id: testing
 title: "Testing"
 ---
 
-## Testing
-
 ZIO 2 test library has test logger implementation for testing:
 
 ```scala

@@ -3,8 +3,6 @@ id: slf4j_bridge
 title: "SLF4J bridge"
 ---
 
-## SLF4J bridge
-
 It is possible to use `zio-logging` for SLF4j loggers, usually third-party non-ZIO libraries. To do so, import
 the `zio-logging-slf4j-bridge` module:
 
