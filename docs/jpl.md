@@ -3,8 +3,6 @@ id: jpl
 title: "Java Platform/System Logger"
 ---
 
-## Java Platform/System Logger
-
 [`Java Platform/System Logger`](https://openjdk.org/jeps/264) is logging API which was introduced in Java 9.
 
 In order to use this logging backend, we need to add the following line in our build.sbt file:
