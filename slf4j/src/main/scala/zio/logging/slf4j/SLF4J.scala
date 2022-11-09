@@ -87,7 +87,8 @@ object SLF4J {
         ()
       }
 
-      override def closeKeyOpenValue(): Unit = ()
+      override def closeKeyOpenValue(): Unit =
+        appendText("=")
 
       /**
        * all key-value into mdc
