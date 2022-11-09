@@ -30,6 +30,9 @@ object SLF4JSpec extends ZIOSpecDefault {
   val loggerLine: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> SLF4J.slf4j(LogFormat.line)
 
+  val loggerLabels: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> SLF4J.slf4j(LogFormat.label("fiber", LogFormat.fiberId) |-| LogFormat.line)
+
   def startStop(): ZIO[Any, Nothing, (UUID, Chunk[UUID])] = {
     val users = Chunk.fill(2)(UUID.randomUUID())
     for {
@@ -187,6 +190,18 @@ object SLF4JSpec extends ZIOSpecDefault {
         someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.isEmpty)
       }
     }.provide(loggerLine),
+    test("log with fiber label") {
+      for {
+        _ <- ZIO.succeed(TestAppender.reset())
+        _ <- ZIO.logInfo("info")
+        _ <- ZIO.logWarning("warn")
+      } yield {
+        val loggerOutput = TestAppender.logOutput
+        assert(loggerOutput.map(_.message))(forall(startsWithString("fiber=zio-fiber-"))) && assert(
+          loggerOutput.map(_.logLevel)
+        )(equalTo(Chunk(LogLevel.Info, LogLevel.Warning)))
+      }
+    }.provide(loggerLabels),
     test("log only enabled levels in configuration") {
       for {
         _ <- ZIO.succeed(TestAppender.reset())
