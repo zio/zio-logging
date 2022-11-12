@@ -5,11 +5,14 @@ import org.slf4j.helpers.BasicMarkerFactory
 import org.slf4j.spi.MarkerFactoryBinder
 
 class StaticMarkerBinder extends MarkerFactoryBinder {
-  override def getMarkerFactory: IMarkerFactory = StaticMarkerBinder.singleton
-  override def getMarkerFactoryClassStr: String = StaticMarkerBinder.className
+  private val markerFactory = new BasicMarkerFactory
+
+  override def getMarkerFactory: IMarkerFactory = markerFactory
+  override def getMarkerFactoryClassStr: String = classOf[BasicMarkerFactory].getName
 }
 
 object StaticMarkerBinder {
-  private val singleton = new BasicMarkerFactory
-  private val className = classOf[BasicMarkerFactory].getName
+  private val singleton = new StaticMarkerBinder
+
+  def getSingleton: StaticMarkerBinder = singleton
 }
