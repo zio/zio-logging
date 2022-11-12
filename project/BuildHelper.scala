@@ -30,12 +30,15 @@ object BuildHelper {
 
   val SilencerVersion = "1.7.12"
 
-  private val stdOptions = Seq(
+  private def stdOptions(javaPlatform: String) = Seq(
     "-deprecation",
     "-encoding",
     "UTF-8",
     "-feature",
-    "-unchecked"
+    "-unchecked",
+    "-release",
+    javaPlatform,
+    s"-target:$javaPlatform"
   ) ++ {
     if (sys.env.contains("CI")) {
       Seq("-Xfatal-warnings")
@@ -203,12 +206,12 @@ object BuildHelper {
     }
   )
 
-  def stdSettings(prjName: String) =
+  def stdSettings(prjName: String, javaPlatform: String = "8") =
     Seq(
       name                                   := s"$prjName",
       crossScalaVersions                     := Seq(Scala211, Scala212, Scala213, Scala3),
       ThisBuild / scalaVersion               := Scala213,
-      scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
+      scalacOptions                          := stdOptions(javaPlatform) ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
       libraryDependencies ++= {
         if (scalaVersion.value == Scala3)
           Seq(

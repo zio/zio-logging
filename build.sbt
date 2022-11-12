@@ -115,7 +115,7 @@ lazy val slf4jBridge = project
 lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-jpl"))
+  .settings(stdSettings("zio-logging-jpl", "9"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
