@@ -112,17 +112,22 @@ object BuildHelper {
       Compile / console / initialCommands := initialCommandsStr
     )
 
-  def extraOptions(scalaVersion: String, optimize: Boolean) =
+  def extraOptions(scalaVersion: String, javaPlatform: String, optimize: Boolean) =
     CrossVersion.partialVersion(scalaVersion) match {
       case Some((3, _))  =>
         Seq(
           "-language:implicitConversions",
           "-Xignore-scala2-macros",
-          "-noindent"
+          "-noindent",
+          "-release",
+          javaPlatform
         )
       case Some((2, 13)) =>
         Seq(
-          "-Ywarn-unused:params,-implicits"
+          "-Ywarn-unused:params,-implicits",
+          "-release",
+          javaPlatform,
+          s"-target:$javaPlatform"
         ) ++ std2xOptions ++ optimizerOptions(optimize)
       case Some((2, 12)) =>
         Seq(
@@ -203,12 +208,12 @@ object BuildHelper {
     }
   )
 
-  def stdSettings(prjName: String) =
+  def stdSettings(prjName: String, javaPlatform: String = "8") =
     Seq(
       name                                   := s"$prjName",
       crossScalaVersions                     := Seq(Scala211, Scala212, Scala213, Scala3),
       ThisBuild / scalaVersion               := Scala213,
-      scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
+      scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, javaPlatform, optimize = !isSnapshot.value),
       libraryDependencies ++= {
         if (scalaVersion.value == Scala3)
           Seq(
