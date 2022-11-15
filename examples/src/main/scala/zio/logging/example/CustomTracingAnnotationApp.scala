@@ -44,7 +44,7 @@ object CustomTracingAnnotationApp extends ZIOAppDefault {
         }
     }
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private val users = List.fill(2)(UUID.randomUUID())
 
