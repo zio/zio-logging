@@ -21,7 +21,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion           = "2.0.3"
+val ZioVersion           = "2.0.2"
 val scalaJavaTimeVersion = "2.3.0"
 val slf4jVersion         = "1.7.36"
 val logbackVersion       = "1.2.11"
@@ -105,9 +105,10 @@ lazy val slf4jBridge = project
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api"    % slf4jVersion,
-      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
-      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
+      "org.slf4j"               % "slf4j-api"               % slf4jVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1",
+      "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
