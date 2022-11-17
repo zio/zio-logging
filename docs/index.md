@@ -71,7 +71,7 @@ import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object SimpleApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> console(LogFormat.default)
 
   override def run: ZIO[Scope, Any, ExitCode] =
@@ -110,7 +110,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
 
   private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
       LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
         userLogAnnotation
@@ -155,7 +155,7 @@ import zio.{ Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, Z
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.colored,
       LogFilter

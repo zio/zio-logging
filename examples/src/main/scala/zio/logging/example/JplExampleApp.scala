@@ -20,7 +20,7 @@ import zio.{ ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLa
 
 object JplExampleApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> JPL.jpl
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> JPL.jpl
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService

@@ -23,7 +23,7 @@ import java.util.UUID
 
 object JplSimpleApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> JPL.jpl
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> JPL.jpl
 
   private val users = List.fill(2)(UUID.randomUUID())
 

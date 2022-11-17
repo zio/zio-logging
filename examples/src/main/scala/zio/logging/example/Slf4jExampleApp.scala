@@ -20,7 +20,7 @@ import zio.{ ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLa
 
 object Slf4jExampleApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
