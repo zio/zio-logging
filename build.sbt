@@ -105,9 +105,10 @@ lazy val slf4jBridge = project
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-api"    % slf4jVersion,
-      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
-      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
+      "org.slf4j"               % "slf4j-api"               % slf4jVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1",
+      "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )

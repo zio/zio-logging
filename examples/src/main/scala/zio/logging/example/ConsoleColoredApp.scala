@@ -20,7 +20,7 @@ import zio.{ Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, Z
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs with Scope, Any, Any] =
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.colored,
       LogFilter

@@ -5,7 +5,7 @@ import org.slf4j.{ ILoggerFactory, Logger }
 import zio.ZIO
 
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class ZioLoggerFactory extends ILoggerFactory {
   private var runtime: zio.Runtime[Any] = null
