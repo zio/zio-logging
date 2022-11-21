@@ -68,10 +68,6 @@ object BuildHelper {
       buildInfoPackage := packageName
     )
 
-  val scalaReflectSettings = Seq(
-    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "2.1.3")
-  )
-
   // Keep this consistent with the version in .core-tests/shared/src/test/scala/REPLSpec.scala
   val replSettings = makeReplSettings {
     """|import zio._
@@ -214,6 +210,7 @@ object BuildHelper {
       crossScalaVersions                     := Seq(Scala211, Scala212, Scala213, Scala3),
       ThisBuild / scalaVersion               := Scala213,
       scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, javaPlatform, optimize = !isSnapshot.value),
+      javacOptions                           := Seq("-source", javaPlatform, "-target", javaPlatform),
       libraryDependencies ++= {
         if (scalaVersion.value == Scala3)
           Seq(
