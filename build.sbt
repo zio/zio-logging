@@ -25,6 +25,7 @@ inThisBuild(
 val ZioVersion           = "2.0.6"
 val scalaJavaTimeVersion = "2.3.0"
 val slf4jVersion         = "1.7.36"
+val slf4j2Version        = "2.0.4"
 val logbackVersion       = "1.2.11"
 
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
@@ -55,7 +56,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, examples, docs)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, slf4j2Bridge, jpl, benchmarks, examples, docs)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -107,6 +108,26 @@ lazy val slf4jBridge = project
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4jVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
+      "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
+lazy val slf4j2Bridge = project
+  .in(file("slf4j2-bridge"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-slf4j2-bridge"))
+  .settings(mimaSettings(failOnProblem = true))
+  .settings(
+    compileOrder := CompileOrder.JavaThenScala,
+    Compile / packageBin / packageOptions += Package.ManifestAttributes(
+    "Automatic-Module-Name" -> s"${organization.value}.${moduleName.value}".replace("-", ".")
+  ))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.slf4j"               % "slf4j-api"               % slf4j2Version,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1",
       "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
     ),
