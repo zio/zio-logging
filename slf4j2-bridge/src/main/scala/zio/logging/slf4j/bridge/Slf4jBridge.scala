@@ -4,11 +4,12 @@ import org.slf4j
 import zio.{ZIO, ZLayer}
 
 object Slf4jBridge {
+
   def initialize: ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
-          slf4j.ZioLoggerFactory.initialize(runtime)
+          slf4j.ZioLoggerRuntime.initialize(runtime)
         }
       }
     }

@@ -3,8 +3,6 @@ package org.slf4j.zio;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.IMarkerFactory;
-import org.slf4j.Logger;
-//import org.slf4j.ZioLoggerFactory;
 import org.slf4j.helpers.BasicMDCAdapter;
 import org.slf4j.helpers.BasicMarkerFactory;
 import org.slf4j.spi.MDCAdapter;
@@ -39,13 +37,7 @@ public class ZioSLF4JServiceProvider implements org.slf4j.spi.SLF4JServiceProvid
     @Override
     public void initialize() {
         markerFactory = new BasicMarkerFactory();
-//        loggerFactory = new ZioLoggerFactory();
-        loggerFactory = new ILoggerFactory() {
-            @Override
-            public Logger getLogger(String name) {
-                return null;
-            }
-        };
+        loggerFactory = new LoggerFactory();
         mdcAdapter = new BasicMDCAdapter();
     }
 
