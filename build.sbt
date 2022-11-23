@@ -121,6 +121,9 @@ lazy val slf4j2Bridge = project
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     compileOrder := CompileOrder.JavaThenScala,
+//    compileOrder := CompileOrder.Mixed,
+    javacOptions := overwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
+    javaOptions := overwriteModulePath((Compile / dependencyClasspath).value.map(_.data) )(javaOptions.value),
     Compile / packageBin / packageOptions += Package.ManifestAttributes(
     "Automatic-Module-Name" -> s"${organization.value}.${moduleName.value}".replace("-", ".")
   ))
@@ -133,6 +136,18 @@ lazy val slf4j2Bridge = project
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
+
+
+def overwriteModulePath(modulePath: Seq[File])(options: Seq[String]): Seq[String] = {
+  val modPathString = modulePath.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
+  overwriteOption("--module-path", modPathString)(options)
+}
+def overwriteOption(option: String, value: String, moveToEnd: Boolean = false)(options: Seq[String]): Seq[String] = {
+  val index = options.indexWhere(_ == option)
+  if (index == -1) options ++ List(option, value)
+  else if (moveToEnd) options.patch(index, Nil, 2) ++ List(option, value)
+  else options.patch(index + 1, List(value), 1)
+}
 
 lazy val jpl = project
   .in(file("jpl"))
