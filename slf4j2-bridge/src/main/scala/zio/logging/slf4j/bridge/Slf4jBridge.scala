@@ -1,7 +1,7 @@
 package zio.logging.slf4j.bridge
 
 import org.slf4j
-import zio.{ZIO, ZLayer}
+import zio.{ ZIO, ZLayer }
 
 object Slf4jBridge {
 

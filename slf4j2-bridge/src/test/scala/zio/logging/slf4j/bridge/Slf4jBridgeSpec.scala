@@ -89,7 +89,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         for {
           logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("zio.test.logger"))
         } yield assertTrue(logger.getName == "zio.test.logger")
-      },
+      }
 //      test("implements MarkerFactoryBinder") {
 //        for {
 //          markerFactory <- ZIO.attempt(MarkerFactory.getIMarkerFactory)

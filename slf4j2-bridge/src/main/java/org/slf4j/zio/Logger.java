@@ -23,7 +23,6 @@ final public class Logger extends AbstractLogger {
         factory.log(name, level, marker, messagePattern, arguments, throwable);
     }
 
-
     @Override
     public boolean isTraceEnabled() {
         return true;

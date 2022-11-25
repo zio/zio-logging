@@ -7,7 +7,7 @@ import org.slf4j.helpers.BasicMDCAdapter;
 import org.slf4j.helpers.BasicMarkerFactory;
 import org.slf4j.spi.MDCAdapter;
 
-public class ZioSLF4JServiceProvider implements org.slf4j.spi.SLF4JServiceProvider {
+final public class ZioSLF4JServiceProvider implements org.slf4j.spi.SLF4JServiceProvider {
     public static final String REQUESTED_API_VERSION = "2.0.99";
 
     private ILoggerFactory loggerFactory;
@@ -40,5 +40,4 @@ public class ZioSLF4JServiceProvider implements org.slf4j.spi.SLF4JServiceProvid
         loggerFactory = new LoggerFactory();
         mdcAdapter = new BasicMDCAdapter();
     }
-
 }

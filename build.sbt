@@ -120,13 +120,15 @@ lazy val slf4j2Bridge = project
   .settings(stdSettings("zio-logging-slf4j2-bridge"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
-    compileOrder := CompileOrder.JavaThenScala,
+    compileOrder                           := CompileOrder.JavaThenScala,
 //    compileOrder := CompileOrder.Mixed,
-    javacOptions := overwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
-    javaOptions := overwriteModulePath((Compile / dependencyClasspath).value.map(_.data) )(javaOptions.value),
+    javacOptions                           := overwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
+    javaOptions                            := overwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javaOptions.value),
+    Compile / packageDoc / publishArtifact := false,
     Compile / packageBin / packageOptions += Package.ManifestAttributes(
-    "Automatic-Module-Name" -> s"${organization.value}.${moduleName.value}".replace("-", ".")
-  ))
+      "Automatic-Module-Name" -> s"${organization.value}.${moduleName.value}".replace("-", ".")
+    )
+  )
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4j2Version,
@@ -137,8 +139,7 @@ lazy val slf4j2Bridge = project
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
-
-def overwriteModulePath(modulePath: Seq[File])(options: Seq[String]): Seq[String] = {
+def overwriteModulePath(modulePath: Seq[File])(options: Seq[String]): Seq[String]                                 = {
   val modPathString = modulePath.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
   overwriteOption("--module-path", modPathString)(options)
 }

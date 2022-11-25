@@ -36,6 +36,7 @@ final class ZioLoggerRuntime(runtime: _root_.zio.Runtime[Any]) extends org.slf4j
       ()
     }
 }
+
 object ZioLoggerRuntime {
 
   val logLevelMapping: Map[Level, _root_.zio.LogLevel] = Map(
