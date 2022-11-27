@@ -1,4 +1,4 @@
-package org.slf4j.zio;
+package zio.logging.slf4j.bridge;
 
 
 import org.slf4j.ILoggerFactory;

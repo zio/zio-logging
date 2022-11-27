@@ -1,6 +1,5 @@
 package zio.logging.slf4j.bridge
 
-import org.slf4j
 import zio.{ ZIO, ZLayer }
 
 object Slf4jBridge {
@@ -9,7 +8,10 @@ object Slf4jBridge {
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
-          slf4j.ZioLoggerRuntime.initialize(runtime)
+          org.slf4j.LoggerFactory
+            .getILoggerFactory()
+            .asInstanceOf[LoggerFactory]
+            .attacheRuntime(new ZioLoggerRuntime(runtime))
         }
       }
     }

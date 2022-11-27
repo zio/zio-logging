@@ -1,10 +1,10 @@
-package org.slf4j.zio;
+package zio.logging.slf4j.bridge;
 
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
 import org.slf4j.helpers.AbstractLogger;
 
-final public class Logger extends AbstractLogger {
+final class Logger extends AbstractLogger {
 
     private LoggerFactory factory;
 

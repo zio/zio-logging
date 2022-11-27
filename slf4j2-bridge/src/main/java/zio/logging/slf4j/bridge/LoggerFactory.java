@@ -1,4 +1,4 @@
-package org.slf4j.zio;
+package zio.logging.slf4j.bridge;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Marker;
@@ -7,13 +7,13 @@ import org.slf4j.event.Level;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-final public class LoggerFactory implements ILoggerFactory {
+final class LoggerFactory implements ILoggerFactory {
 
     private Map<String, Logger> loggers = new ConcurrentHashMap<String, Logger>();
 
     private LoggerRuntime runtime = null;
 
-    public void attacheRuntime(LoggerRuntime runtime) {
+    void attacheRuntime(LoggerRuntime runtime) {
         this.runtime = runtime;
     }
 
