@@ -93,7 +93,7 @@ lazy val slf4j = project
       "dev.zio"               %%% "zio-test-sbt"             % ZioVersion     % Test,
       "ch.qos.logback"          % "logback-classic"          % logbackVersion % Test,
       "net.logstash.logback"    % "logstash-logback-encoder" % "6.6"          % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.8.1"        % Test
+      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"        % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -106,7 +106,7 @@ lazy val slf4jBridge = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4jVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
       "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
       "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
     ),
