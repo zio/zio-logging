@@ -153,6 +153,25 @@ object LogFilterSpec extends ZIOSpecDefault {
         testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
       }
     },
+    test("log filtering by log level and name fail on invalid config") {
+
+      val configProvider = ConfigProvider.fromMap(
+        Map(
+          "LOGGER/ROOT_LEVEL"     -> LogLevel.Debug.label,
+          "LOGGER/MAPPINGS/a"     -> LogLevel.Info.label,
+          "LOGGER/MAPPINGS/a.b.c" -> "INVALID",
+          "LOGGER/MAPPINGS/e.f"   -> LogLevel.Error.label
+        ),
+        "/"
+      )
+
+      configProvider
+        .load(LogLevelByNameFilterConfig.config.nested("LOGGER"))
+        .fold(
+          error => assertTrue(error.toString == "(Invalid data at : Expected a LogLevel, but found INVALID)"),
+          _ => assertTrue(false)
+        )
+    },
     test("log filtering by log level and name matcher with annotation") {
 
       val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
