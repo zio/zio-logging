@@ -265,6 +265,12 @@ object LogFilter {
   def logLevelByName[M](rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[M] =
     logLevelByGroup[M](rootLevel, LogGroup.loggerName, mappings: _*)
 
+  def logLevelByGroup[M](group: LogGroup[M, String], config: LogLevelByNameFilterConfig): LogFilter[M] =
+    logLevelByGroup[M](config.rootLevel, group, config.mappings.toList: _*)
+
+  def logLevelByName[M](config: LogLevelByNameFilterConfig): LogFilter[M] =
+    logLevelByGroup[M](LogGroup.loggerName, config)
+
   private[logging] val splitNameByDotAndLevel: (String, LogLevel) => (List[String], LogLevel) = (name, level) =>
     splitNameByDot(name) -> level
 

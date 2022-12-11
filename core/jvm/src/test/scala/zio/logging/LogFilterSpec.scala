@@ -3,7 +3,7 @@ package zio.logging
 import zio.logging.test.TestService
 import zio.test.ZTestLogger.LogEntry
 import zio.test._
-import zio.{ Cause, Chunk, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
+import zio.{ Cause, Chunk, ConfigProvider, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
 
 object LogFilterSpec extends ZIOSpecDefault {
 
@@ -121,6 +121,37 @@ object LogFilterSpec extends ZIOSpecDefault {
       testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
       testFilterAnnotation(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
       testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+    },
+    test("log filtering by log level and name with annotation from config") {
+
+      val configProvider = ConfigProvider.fromMap(
+        Map(
+          "LOGGER/ROOT_LEVEL"     -> LogLevel.Debug.label,
+          "LOGGER/MAPPINGS/a"     -> LogLevel.Info.label,
+          "LOGGER/MAPPINGS/a.b.c" -> LogLevel.Warning.label,
+          "LOGGER/MAPPINGS/e.f"   -> LogLevel.Error.label
+        ),
+        "/"
+      )
+
+      configProvider.load(LogLevelByNameFilterConfig.config.nested("LOGGER")).map { config =>
+        val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
+
+        val filter: LogFilter[String] = LogFilter.logLevelByGroup(
+          loggerName,
+          config
+        )
+
+        testFilterAnnotation(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+      }
     },
     test("log filtering by log level and name matcher with annotation") {
 
