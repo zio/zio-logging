@@ -46,9 +46,8 @@ object LogLevelByNameFilterConfig {
     }
 
   val config: Config[LogLevelByNameFilterConfig] = {
-    val rootLevelConfig = Config.string("ROOT_LEVEL").mapOrFail(logLevelValue)
-
-    val mappingsConfig = Config.table("MAPPINGS", Config.string.mapOrFail(logLevelValue))
+    val rootLevelConfig = Config.string("ROOT_LEVEL").mapOrFail(logLevelValue).withDefault(LogLevel.Info)
+    val mappingsConfig = Config.table("MAPPINGS", Config.string.mapOrFail(logLevelValue)).withDefault(Map.empty)
 
     (rootLevelConfig ++ mappingsConfig).map { case (rootLevel, mappings) =>
       LogLevelByNameFilterConfig(rootLevel, mappings)
