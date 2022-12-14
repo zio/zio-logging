@@ -4,204 +4,120 @@ title: "Introduction to ZIO Logging"
 sidebar_label: "Introduction"
 ---
 
-_ZIO Logging_ is the official logging library for ZIO 2 applications, with integrations for common logging backends.
+[ZIO Logging](https://github.com/zio/zio-logging) is simple logging for ZIO apps, with correlation, context, and pluggable backends out of the box with integrations for common logging backends.
 
 - Type-safe, purely-functional, ZIO-powered
 - Compositional, type-safe log formatting
 - Richly integrated into ZIO 2's built-in logging facilities
 - ZIO Console, SLF4j, and other backends
 
+## Introduction
+
+When we are writing our applications using ZIO effects, to log easy way we need a ZIO native solution for logging. ZIO Logging is an environmental effect for adding logging into our ZIO applications.
+
+Key features of ZIO Logging:
+
+- **ZIO Native** — Other than it is a type-safe and purely functional solution, it leverages ZIO's features.
+- **Multi-Platform** - It supports both JVM and JS platforms.
+- **Composable** — Loggers are composable together via contraMap.
+- **Pluggable Backends** — Support multiple backends like ZIO Console, SLF4j, JS Console, JS HTTP endpoint.
+- **Logger Context** — It has a first citizen _Logger Context_ implemented on top of `FiberRef`. The Logger Context maintains information like logger name, filters, correlation id, and so forth across different fibers. It supports _Mapped Diagnostic Context (MDC)_ which manages contextual information across fibers in a concurrent environment.
+
 ## Installation
 
-`ZIO-Logging` is available via maven repo.
-In order to use this library, we need to add the following line in our build.sbt file:
+In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging" % @VERSION@
+libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 
-### Log Format
-
-A `LogFormat` represents a DSL to describe the format of text log messages.
+There are also some optional dependencies:
 
 ```scala
-import zio.logging.console
-import zio.logging.LogFormat._
+// SLF4j integration
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 
-val myLogFormat = timestamp.fixed(32) |-| level |-| label("message", quoted(line))
-val myConsoleLogger = console(myLogFormat)
+// Using ZIO Logging for SLF4j loggers, usually third-party non-ZIO libraries
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
+
+// Scala.js console integration
+libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % "@VERSION@"
+
+// Scala.js HTTP Logger which sends logs to a backend via Ajax POST
+libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "@VERSION@"
 ```
 
-### Logger Context and Annotations
+## Example
 
-The `logContext` fiber reference is used to store typed, structured log
-annotations, which can be utilized by backends to enrich log messages.
+Let's try an example of ZIO Logging which demonstrates a simple application of ZIO logging along with its _Logger Context_ feature:
 
-Because `logContext` is an ordinary `zio.FiberRef`, it may be get, set,
-and updated like any other fiber reference. However, the idiomatic way to
-interact with `logContext` is by using `zio.logging.LogAnnotation`.
-
-For example:
+[//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
-myResponseHandler(request) @@ LogAnnotation.UserId(request.userId)
-```
+import zio.clock.Clock
+import zio.duration.durationInt
+import zio.logging._
+import zio.random.Random
+import zio.{ExitCode, NonEmptyChunk, ZIO}
 
-This code would add the structured log annotation `LogAnnotation.UserId`
-to all log messages emitted by the `myResponseHandler(request)` effect.
+object ZIOLoggingExample extends zio.App {
 
-The user of the library is allowed to add a custom `LogAnnotation`:
-
-```scala
-import zio.logging.LogAnnotation
-
-val customLogAnnotation = LogAnnotation[Int]("custom_annotation", _ + _, _.toString)
-```
-
-### Logger setup in ZIO application
-
-The recommended place for setting the logger is application boostrap.
-In this case, custom logger will be set for whole application runtime (also application failures will be logged with specified logger).
-
-```scala
-package zio.logging.example
-
-import zio.logging.{ LogFormat, console }
-import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
-
-object SimpleApp extends ZIOAppDefault {
-
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default)
-
-  override def run: ZIO[Scope, Any, ExitCode] =
+  val myApp: ZIO[Logging with Clock with Random, Nothing, Unit] =
     for {
-      _ <- ZIO.logInfo("Start")
-      _ <- ZIO.fail("FAILURE")
-      _ <- ZIO.logInfo("Done")
-    } yield ExitCode.success
+      _ <- log.info("Hello from ZIO logger")
+      _ <-
+        ZIO.foreachPar(NonEmptyChunk("UserA", "UserB", "UserC")) { user =>
+          log.locally(UserId(Some(user))) {
+            for {
+              _ <- log.info("User validation")
+              _ <- zio.random
+                .nextIntBounded(1000)
+                .flatMap(t => ZIO.sleep(t.millis))
+              _ <- log.info("Connecting to the database")
+              _ <- zio.random
+                .nextIntBounded(100)
+                .flatMap(t => ZIO.sleep(t.millis))
+              _ <- log.info("Releasing resources.")
+            } yield ()
+          }
 
+        }
+    } yield ()
+
+  type UserId = String
+  def UserId: LogAnnotation[Option[UserId]] = LogAnnotation[Option[UserId]](
+    name = "user-id",
+    initialValue = None,
+    combine = (_, r) => r,
+    render = _.map(userId => s"[user-id: $userId]")
+      .getOrElse("undefined-user-id")
+  )
+
+  val env =
+    Logging.console(
+      logLevel = LogLevel.Info,
+      format =
+        LogFormat.ColoredLogFormat((ctx, line) => s"${ctx(UserId)} $line")
+    ) >>> Logging.withRootLoggerName("MyZIOApp")
+
+  override def run(args: List[String]) =
+    myApp.provideCustom(env).as(ExitCode.success)
 }
 ```
 
-Expected console output:
+The output should be something like this:
 
 ```
-timestamp=2022-10-28T18:40:25.517623+02:00 level=INFO thread=zio-fiber-6 message="Start"
-timestamp=2022-10-28T18:40:25.54676+02:00  level=ERROR thread=zio-fiber-0 message="" cause=Exception in thread "zio-fiber-6" java.lang.String: FAILURE
-	at zio.logging.example.SimpleApp.run(SimpleApp.scala:14)
+2021-07-09 00:14:47.457+0000  info [MyZIOApp] undefined-user-id Hello from ZIO logger
+2021-07-09 00:14:47.807+0000  info [MyZIOApp] [user-id: UserA] User validation
+2021-07-09 00:14:47.808+0000  info [MyZIOApp] [user-id: UserC] User validation
+2021-07-09 00:14:47.818+0000  info [MyZIOApp] [user-id: UserB] User validation
+2021-07-09 00:14:48.290+0000  info [MyZIOApp] [user-id: UserC] Connecting to the database
+2021-07-09 00:14:48.299+0000  info [MyZIOApp] [user-id: UserA] Connecting to the database
+2021-07-09 00:14:48.321+0000  info [MyZIOApp] [user-id: UserA] Releasing resources.
+2021-07-09 00:14:48.352+0000  info [MyZIOApp] [user-id: UserC] Releasing resources.
+2021-07-09 00:14:48.820+0000  info [MyZIOApp] [user-id: UserB] Connecting to the database
+2021-07-09 00:14:48.882+0000  info [MyZIOApp] [user-id: UserB] Releasing resources.
 ```
-
-## Examples
 
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
-
-### JSON console logger
-
-```scala
-package zio.logging.example
-
-import zio.logging.{ LogAnnotation, LogFormat, consoleJson }
-import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
-
-import java.util.UUID
-
-object ConsoleJsonApp extends ZIOAppDefault {
-
-  private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
-
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
-        userLogAnnotation
-      )
-    )
-
-  private val users = List.fill(2)(UUID.randomUUID())
-
-  override def run: ZIO[Scope, Any, ExitCode] =
-    (for {
-      traceId <- ZIO.succeed(UUID.randomUUID())
-      _       <- ZIO.foreachPar(users) { uId =>
-        {
-          ZIO.logInfo("Starting operation") *>
-            ZIO.sleep(500.millis) *>
-            ZIO.logInfo("Stopping operation")
-        } @@ userLogAnnotation(uId)
-      } @@ LogAnnotation.TraceId(traceId)
-      _       <- ZIO.logInfo("Done")
-    } yield ExitCode.success)
-
-}
-```
-
-Expected console output:
-
-```
-{"timestamp":"2022-10-28T13:48:20.350244+02:00","level":"INFO","thread":"zio-fiber-8","message":"Starting operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"b4cf9c71-5b1d-4fe1-bfb4-35a6e51483b2"}
-{"timestamp":"2022-10-28T13:48:20.350238+02:00","level":"INFO","thread":"zio-fiber-7","message":"Starting operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"372071a6-a643-452b-a07c-d0966e556bfa"}
-{"timestamp":"2022-10-28T13:48:20.899453+02:00","level":"INFO","thread":"zio-fiber-7","message":"Stopping operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"372071a6-a643-452b-a07c-d0966e556bfa"}
-{"timestamp":"2022-10-28T13:48:20.899453+02:00","level":"INFO","thread":"zio-fiber-8","message":"Stopping operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"b4cf9c71-5b1d-4fe1-bfb4-35a6e51483b2"}
-{"timestamp":"2022-10-28T13:48:20.908254+02:00","level":"INFO","thread":"zio-fiber-6","message":"Done"}
-```
-
-### Console colored logger with log filtering
-
-```scala
-package zio.logging.example
-
-import zio.logging.{ LogFilter, LogFormat, console }
-import zio.{ Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
-
-object ConsoleColoredApp extends ZIOAppDefault {
-
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> console(
-      LogFormat.colored,
-      LogFilter
-        .logLevelByName(
-          LogLevel.Info,
-          "zio.logging.example.LivePingService" -> LogLevel.Debug
-        )
-        .cached
-    )
-
-  private def ping(address: String): URIO[PingService, Unit] =
-    PingService
-      .ping(address)
-      .foldZIO(
-        e => ZIO.logErrorCause(s"ping: $address - error", Cause.fail(e)),
-        r => ZIO.logInfo(s"ping: $address - result: $r")
-      )
-
-  override def run: ZIO[Scope, Any, ExitCode] =
-    (for {
-      _ <- ping("127.0.0.1")
-      _ <- ping("x8.8.8.8")
-    } yield ExitCode.success).provide(LivePingService.layer)
-
-}
-```
-
-Expected console output:
-
-```
-timestamp=2022-10-28T21:12:07.313782+02:00 level=DEBUG thread=zio-fiber-6 message="ping: /127.0.0.1"
-timestamp=2022-10-28T21:12:07.326911+02:00 level=INFO thread=zio-fiber-6 message="ping: 127.0.0.1 - result: true"
-timestamp=2022-10-28T21:12:07.348939+02:00 level=ERROR thread=zio-fiber-6 message="ping: x8.8.8.8 - invalid address error" cause=Exception in thread "zio-fiber-6" java.net.UnknownHostException: java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
-	at java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
-	at java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
-	at java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
-	at java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:848)
-	at java.net.InetAddress.getAllByName0(InetAddress.java:1519)
-	at java.net.InetAddress.getAllByName(InetAddress.java:1378)
-	at java.net.InetAddress.getAllByName(InetAddress.java:1306)
-	at java.net.InetAddress.getByName(InetAddress.java:1256)
-	at zio.logging.example.LivePingService.ping(PingService.scala:35)
-	at zio.logging.example.LivePingService.ping(PingService.scala:36)
-	at zio.logging.example.LivePingService.ping(PingService.scala:33)
-	at zio.logging.example.ConsoleColoredApp.ping(ConsoleColoredApp.scala:37)
-	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:45)
-	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:46)
-timestamp=2022-10-28T21:12:07.357647+02:00 level=ERROR thread=zio-fiber-6 message="ping: x8.8.8.8 - error" cause=Exception in thread "zio-fiber-" java.net.UnknownHostException: java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
-```
