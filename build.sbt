@@ -153,12 +153,12 @@ lazy val examples = project
 lazy val docs = project
   .in(file("zio-logging-docs"))
   .settings(
-    publish / skip := true,
-    moduleName     := "zio-logging-docs",
+    publish / skip    := true,
+    moduleName        := "zio-logging-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    projectName    := "ZIO Logging",
-    badgeInfo      := Some(
+    projectName       := "ZIO Logging",
+    badgeInfo         := Some(
       BadgeInfo(
         artifact = "zio-logging_2.12",
         projectStage = ProjectStage.ProductionReady
