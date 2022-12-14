@@ -6,10 +6,7 @@ sidebar_label: "Introduction"
 
 [ZIO Logging](https://github.com/zio/zio-logging) is simple logging for ZIO apps, with correlation, context, and pluggable backends out of the box with integrations for common logging backends.
 
-- Type-safe, purely-functional, ZIO-powered
-- Compositional, type-safe log formatting
-- Richly integrated into ZIO 2's built-in logging facilities
-- ZIO Console, SLF4j, and other backends
+@PROJECT_BADGES@
 
 ## Introduction
 
@@ -22,6 +19,8 @@ Key features of ZIO Logging:
 - **Composable** — Loggers are composable together via contraMap.
 - **Pluggable Backends** — Support multiple backends like ZIO Console, SLF4j, JS Console, JS HTTP endpoint.
 - **Logger Context** — It has a first citizen _Logger Context_ implemented on top of `FiberRef`. The Logger Context maintains information like logger name, filters, correlation id, and so forth across different fibers. It supports _Mapped Diagnostic Context (MDC)_ which manages contextual information across fibers in a concurrent environment.
+- Richly integrated into ZIO 2's built-in logging facilities
+- ZIO Console, SLF4j, and other backends
 
 ## Installation
 
