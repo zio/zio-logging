@@ -43,7 +43,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
-        run: sbt compileDocs
+        run: sbt docs/compileDocs
 
   test:
     runs-on: ubuntu-20.04
@@ -76,7 +76,7 @@ jobs:
         run: sbt ++${{ matrix.scala }}! testJVM8
       - name: Compile additional subprojects
         if: ${{ ( startsWith(matrix.scala, '2.12.') || startsWith(matrix.scala, '2.13.') ) && endsWith(matrix.java, '.11') }}
-        run: sbt ++${{ matrix.scala }}! examples/compile compileDocs benchmarks/compile
+        run: sbt ++${{ matrix.scala }}! examples/compile benchmarks/compile
 
   ci:
     runs-on: ubuntu-20.04
