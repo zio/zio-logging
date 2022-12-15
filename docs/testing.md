@@ -19,6 +19,8 @@ You can find the source code of examples [here](https://github.com/zio/zio-loggi
 
 Test example:
 
+[//]: # (TODO: make snippet type-checked using mdoc)
+
 ```scala
 package zio.logging.example
 

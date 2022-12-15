@@ -8,7 +8,7 @@ The Simple Logging Facade for Java ([`SLF4J`](https://www.slf4j.org/)) serves as
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % @VERSION@
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 ```
 
 Logger layer:
@@ -45,6 +45,8 @@ You can find the source code [here](https://github.com/zio/zio-logging/tree/mast
 
 
 ### SLF4J logger name and annotations
+
+[//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
 package zio.logging.example

@@ -8,10 +8,12 @@ title: "Java Platform/System Logger"
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-jpl" % @VERSION@
+libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 ```
 
 Logger layer:
+
+[//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
 import zio.logging.backend.JPL
@@ -38,6 +40,8 @@ ZIO.logInfo("Starting user operation") @@ JPL.loggerName("zio.logging.example.Us
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
 
 ### Java Platform/System logger name and annotations
+
+[//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
 package zio.logging.example

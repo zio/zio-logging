@@ -1,5 +1,5 @@
 ---
-id: slf4j_bridge
+id: slf4j-bridge
 title: "SLF4J bridge"
 ---
 
@@ -7,7 +7,7 @@ It is possible to use `zio-logging` for SLF4j loggers, usually third-party non-Z
 the `zio-logging-slf4j-bridge` module:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % @VERSION@
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 ```
 
 and use the `Slf4jBridge.initialize` layer when setting up logging:
@@ -33,6 +33,8 @@ ZIO logging. Enabling both causes circular logging and makes no sense.
 ## Examples
 
 ### SLF4J bridge with JSON console logger
+
+[//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
 package zio.logging.slf4j.bridge

@@ -55,7 +55,6 @@ lazy val root = project
     publish / skip := true
   )
   .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, examples)
-  .enablePlugins(WebsitePlugin)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -150,3 +149,23 @@ lazy val examples = project
       "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test
     )
   )
+
+lazy val docs = project
+  .in(file("zio-logging-docs"))
+  .settings(
+    publish / skip    := true,
+    moduleName        := "zio-logging-docs",
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    projectName       := "ZIO Logging",
+    badgeInfo         := Some(
+      BadgeInfo(
+        artifact = "zio-logging_2.12",
+        projectStage = ProjectStage.ProductionReady
+      )
+    ),
+    docsPublishBranch := "master"
+  )
+  .settings(macroDefinitionSettings)
+  .dependsOn(coreJVM, coreJS, slf4j, slf4jBridge, jpl)
+  .enablePlugins(WebsitePlugin)
