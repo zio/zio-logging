@@ -48,75 +48,37 @@ libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "@VERSION@"
 
 ## Example
 
-Let's try an example of ZIO Logging which demonstrates a simple application of ZIO logging along with its _Logger Context_ feature:
+Let's try an example of ZIO Logging which demonstrates a simple application of ZIO logging.
+
+The recommended place for setting the logger is application boostrap. In this case, custom logger will be set for whole application runtime (also application failures will be logged with specified logger).
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
-import zio.clock.Clock
-import zio.duration.durationInt
-import zio.logging._
-import zio.random.Random
-import zio.{ExitCode, NonEmptyChunk, ZIO}
+import zio.logging.{ LogFormat, console }
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
-object ZIOLoggingExample extends zio.App {
+object SimpleApp extends ZIOAppDefault {
 
-  val myApp: ZIO[Logging with Clock with Random, Nothing, Unit] =
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+    Runtime.removeDefaultLoggers >>> console(LogFormat.default)
+
+  override def run: ZIO[Scope, Any, ExitCode] =
     for {
-      _ <- log.info("Hello from ZIO logger")
-      _ <-
-        ZIO.foreachPar(NonEmptyChunk("UserA", "UserB", "UserC")) { user =>
-          log.locally(UserId(Some(user))) {
-            for {
-              _ <- log.info("User validation")
-              _ <- zio.random
-                .nextIntBounded(1000)
-                .flatMap(t => ZIO.sleep(t.millis))
-              _ <- log.info("Connecting to the database")
-              _ <- zio.random
-                .nextIntBounded(100)
-                .flatMap(t => ZIO.sleep(t.millis))
-              _ <- log.info("Releasing resources.")
-            } yield ()
-          }
+      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.fail("FAILURE")
+      _ <- ZIO.logInfo("Done")
+    } yield ExitCode.success
 
-        }
-    } yield ()
-
-  type UserId = String
-  def UserId: LogAnnotation[Option[UserId]] = LogAnnotation[Option[UserId]](
-    name = "user-id",
-    initialValue = None,
-    combine = (_, r) => r,
-    render = _.map(userId => s"[user-id: $userId]")
-      .getOrElse("undefined-user-id")
-  )
-
-  val env =
-    Logging.console(
-      logLevel = LogLevel.Info,
-      format =
-        LogFormat.ColoredLogFormat((ctx, line) => s"${ctx(UserId)} $line")
-    ) >>> Logging.withRootLoggerName("MyZIOApp")
-
-  override def run(args: List[String]) =
-    myApp.provideCustom(env).as(ExitCode.success)
 }
 ```
 
-The output should be something like this:
+Expected console output:
 
 ```
-2021-07-09 00:14:47.457+0000  info [MyZIOApp] undefined-user-id Hello from ZIO logger
-2021-07-09 00:14:47.807+0000  info [MyZIOApp] [user-id: UserA] User validation
-2021-07-09 00:14:47.808+0000  info [MyZIOApp] [user-id: UserC] User validation
-2021-07-09 00:14:47.818+0000  info [MyZIOApp] [user-id: UserB] User validation
-2021-07-09 00:14:48.290+0000  info [MyZIOApp] [user-id: UserC] Connecting to the database
-2021-07-09 00:14:48.299+0000  info [MyZIOApp] [user-id: UserA] Connecting to the database
-2021-07-09 00:14:48.321+0000  info [MyZIOApp] [user-id: UserA] Releasing resources.
-2021-07-09 00:14:48.352+0000  info [MyZIOApp] [user-id: UserC] Releasing resources.
-2021-07-09 00:14:48.820+0000  info [MyZIOApp] [user-id: UserB] Connecting to the database
-2021-07-09 00:14:48.882+0000  info [MyZIOApp] [user-id: UserB] Releasing resources.
+timestamp=2022-10-28T18:40:25.517623+02:00 level=INFO thread=zio-fiber-6 message="Start"
+timestamp=2022-10-28T18:40:25.54676+02:00  level=ERROR thread=zio-fiber-0 message="" cause=Exception in thread "zio-fiber-6" java.lang.String: FAILURE
+	at zio.logging.example.SimpleApp.run(SimpleApp.scala:14)
 ```
 
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
