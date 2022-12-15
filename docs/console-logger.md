@@ -3,7 +3,7 @@ id: console-logger
 title: "Console Logger"
 ---
 
-## Colorful Console Logger
+## Colorful Console Logger With Log Filtering
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 
