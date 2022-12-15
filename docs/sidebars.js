@@ -8,8 +8,7 @@ const sidebars = {
       items: [
         'formatting-log-records',
         'logger-context-and-annotations',
-        'json-console-logger',
-        'colorful-console-logger',
+        'console-logger',
         'jpl',
         'slf4j',
         'slf4j-bridge',
