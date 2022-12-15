@@ -33,6 +33,9 @@ libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 There are also some optional dependencies:
 
 ```scala
+// JPL integration
+libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
+
 // SLF4j integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 
