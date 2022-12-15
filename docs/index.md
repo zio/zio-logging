@@ -38,12 +38,6 @@ libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 
 // Using ZIO Logging for SLF4j loggers, usually third-party non-ZIO libraries
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
-
-// Scala.js console integration
-libraryDependencies += "dev.zio" %% "zio-logging-jsconsole" % "@VERSION@"
-
-// Scala.js HTTP Logger which sends logs to a backend via Ajax POST
-libraryDependencies += "dev.zio" %% "zio-logging-jshttp" % "@VERSION@"
 ```
 
 ## Example
