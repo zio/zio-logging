@@ -13,6 +13,7 @@ const sidebars = {
         'jpl',
         'slf4j',
         'slf4j-bridge',
+        'metrics',
         'testing'
       ]
     }
