@@ -23,7 +23,7 @@ object MetricsSpec extends ZIOSpecDefault {
         fatalCounter <- loggedTotalMetrics(LogLevel.Fatal).value
       } yield assertTrue(debugCounter.count == 2d) && assertTrue(infoCounter.count == 2d) && assertTrue(
         warnCounter.count == 2d
-      ) && assertTrue(errorCounter.count == 1d) && assertTrue(fatalCounter.count == 0d)).provideLayer(metrics)
+      ) && assertTrue(errorCounter.count == 1d) && assertTrue(fatalCounter.count == 0d)).provideLayer(logMetrics)
     }
   )
 }

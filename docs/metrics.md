@@ -10,7 +10,7 @@ which is responsible just for collecting metrics of all logs - `ZIO.log*` functi
 Metrics layer:
 
 ```scala
-val layer = zio.logging.metrics
+val layer = zio.logging.logMetrics
 ```
 
 Metrics:
@@ -36,7 +36,7 @@ You can find the source code [here](https://github.com/zio/zio-logging/tree/mast
 ```scala
 package zio.logging.example
 
-import zio.logging.{ LogFormat, console, metrics }
+import zio.logging.{ LogFormat, console, logMetrics }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 import zio.metrics.connectors.prometheus.{ prometheusLayer, publisherLayer, PrometheusPublisher }
 import zio.metrics.connectors.MetricsConfig
@@ -45,7 +45,7 @@ import zio._
 object MetricsApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> (console(LogFormat.default) ++ metrics)
+    Runtime.removeDefaultLoggers >>> (console(LogFormat.default) ++ logMetrics)
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {

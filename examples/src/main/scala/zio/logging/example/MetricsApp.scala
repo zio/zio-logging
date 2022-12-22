@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogFormat, console, metrics }
+import zio.logging.{ LogFormat, console, logMetrics }
 import zio.metrics.connectors.MetricsConfig
 import zio.metrics.connectors.prometheus.{ PrometheusPublisher, prometheusLayer, publisherLayer }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, _ }
@@ -23,7 +23,7 @@ import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, _
 object MetricsApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> (console(LogFormat.default) ++ metrics)
+    Runtime.removeDefaultLoggers >>> (console(LogFormat.default) ++ logMetrics)
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {

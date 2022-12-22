@@ -333,5 +333,5 @@ package object logging {
     }
   }
 
-  val metrics: ZLayer[Any, Nothing, Unit] = Runtime.addLogger(metricLogger)
+  val logMetrics: ZLayer[Any, Nothing, Unit] = Runtime.addLogger(metricLogger)
 }
