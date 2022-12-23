@@ -15,6 +15,8 @@
  */
 package zio
 
+import zio.metrics.Metric
+
 import java.io.PrintStream
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
@@ -42,6 +44,18 @@ package object logging {
     zio.Unsafe.unsafe { implicit u =>
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
+
+  private[logging] val loggedTotalMetrics =
+    List(
+      LogLevel.All,
+      LogLevel.Fatal,
+      LogLevel.Error,
+      LogLevel.Warning,
+      LogLevel.Info,
+      LogLevel.Debug,
+      LogLevel.Trace,
+      LogLevel.None
+    ).map(level => (level, Metric.counter(s"zio_logger_${level.label.toLowerCase}_total"))).toMap
 
   def console(
     format: LogFormat = LogFormat.colored,
@@ -299,4 +313,25 @@ package object logging {
     })
     stringLogger
   }
+
+  private val metricLogger = new ZLogger[String, Unit] {
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Unit = {
+      loggedTotalMetrics.get(logLevel).foreach { counter =>
+        val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
+        counter.unsafe.update(1, tags)(Unsafe.unsafe)
+      }
+      ()
+    }
+  }
+
+  val logMetrics: ZLayer[Any, Nothing, Unit] = Runtime.addLogger(metricLogger)
 }
