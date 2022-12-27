@@ -15,7 +15,7 @@
  */
 package zio
 
-import zio.metrics.Metric
+import zio.metrics.{ Metric, MetricLabel }
 
 import java.io.PrintStream
 import java.nio.charset.{ Charset, StandardCharsets }
@@ -45,17 +45,10 @@ package object logging {
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
 
-  private[logging] val loggedTotalMetrics =
-    List(
-      LogLevel.All,
-      LogLevel.Fatal,
-      LogLevel.Error,
-      LogLevel.Warning,
-      LogLevel.Info,
-      LogLevel.Debug,
-      LogLevel.Trace,
-      LogLevel.None
-    ).map(level => (level, Metric.counter(s"zio_logger_${level.label.toLowerCase}_total"))).toMap
+  private[logging] val DefaultLogLevelLabel = "level"
+
+  private[logging] val loggedTotalMetric =
+    Metric.counter(name = "zio_log_total")
 
   def console(
     format: LogFormat = LogFormat.colored,
@@ -314,7 +307,7 @@ package object logging {
     stringLogger
   }
 
-  private val metricLogger = new ZLogger[String, Unit] {
+  private def metricLogger(counter: Metric.Counter[Long], logLevelLabel: String) = new ZLogger[String, Unit] {
     override def apply(
       trace: Trace,
       fiberId: FiberId,
@@ -325,13 +318,14 @@ package object logging {
       spans: List[LogSpan],
       annotations: Map[String, String]
     ): Unit = {
-      loggedTotalMetrics.get(logLevel).foreach { counter =>
-        val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
-        counter.unsafe.update(1, tags)(Unsafe.unsafe)
-      }
+      val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
+      counter.unsafe.update(1, tags + MetricLabel(logLevelLabel, logLevel.label.toLowerCase))(Unsafe.unsafe)
       ()
     }
   }
 
-  val logMetrics: ZLayer[Any, Nothing, Unit] = Runtime.addLogger(metricLogger)
+  val logMetrics: ZLayer[Any, Nothing, Unit]                                          =
+    Runtime.addLogger(metricLogger(loggedTotalMetric, DefaultLogLevelLabel))
+  def logMetricsWith(name: String, logLevelLabel: String): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(metricLogger(Metric.counter(name), logLevelLabel))
 }

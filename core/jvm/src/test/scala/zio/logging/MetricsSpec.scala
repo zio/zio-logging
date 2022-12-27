@@ -16,11 +16,11 @@ object MetricsSpec extends ZIOSpecDefault {
         _            <- TestService.testInfo
         _            <- TestService.testWarning
         _            <- TestService.testError
-        debugCounter <- loggedTotalMetrics(LogLevel.Debug).value
-        infoCounter  <- loggedTotalMetrics(LogLevel.Info).value
-        warnCounter  <- loggedTotalMetrics(LogLevel.Warning).value
-        errorCounter <- loggedTotalMetrics(LogLevel.Error).value
-        fatalCounter <- loggedTotalMetrics(LogLevel.Fatal).value
+        debugCounter <- loggedTotalMetric.tagged(DefaultLogLevelLabel, LogLevel.Debug.label.toLowerCase).value
+        infoCounter  <- loggedTotalMetric.tagged(DefaultLogLevelLabel, LogLevel.Info.label.toLowerCase).value
+        warnCounter  <- loggedTotalMetric.tagged(DefaultLogLevelLabel, LogLevel.Warning.label.toLowerCase).value
+        errorCounter <- loggedTotalMetric.tagged(DefaultLogLevelLabel, LogLevel.Error.label.toLowerCase).value
+        fatalCounter <- loggedTotalMetric.tagged(DefaultLogLevelLabel, LogLevel.Fatal.label.toLowerCase).value
       } yield assertTrue(debugCounter.count == 2d) && assertTrue(infoCounter.count == 2d) && assertTrue(
         warnCounter.count == 2d
       ) && assertTrue(errorCounter.count == 1d) && assertTrue(fatalCounter.count == 0d)).provideLayer(logMetrics)
