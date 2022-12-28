@@ -45,7 +45,7 @@ package object logging {
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
 
-  private[logging] val DefaultLogLevelLabel = "level"
+  private[logging] val logLevelMetricLabel = "level"
 
   private[logging] val loggedTotalMetric =
     Metric.counter(name = "zio_log_total")
@@ -324,8 +324,9 @@ package object logging {
     }
   }
 
-  val logMetrics: ZLayer[Any, Nothing, Unit]                                          =
-    Runtime.addLogger(metricLogger(loggedTotalMetric, DefaultLogLevelLabel))
+  val logMetrics: ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(metricLogger(loggedTotalMetric, logLevelMetricLabel))
+
   def logMetricsWith(name: String, logLevelLabel: String): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(metricLogger(Metric.counter(name), logLevelLabel))
 }
