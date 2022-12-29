@@ -42,42 +42,42 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             LogEntry(
               List("test.logger"),
               LogLevel.Debug,
-              Map.empty,
+              Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger"),
               "test debug message",
               Cause.empty
             ),
             LogEntry(
               List("test.logger"),
               LogLevel.Warning,
-              Map.empty,
+              Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger"),
               "hello world",
               Cause.empty
             ),
             LogEntry(
               List("test.logger"),
               LogLevel.Warning,
-              Map.empty,
+              Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger"),
               "3..2..1 ... go!",
               Cause.empty
             ),
             LogEntry(
               List("test.logger"),
               LogLevel.Warning,
-              Map.empty,
+              Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger"),
               "warn cause",
               Cause.die(testFailure)
             ),
             LogEntry(
               List("test.logger"),
               LogLevel.Error,
-              Map.empty,
+              Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger"),
               "error",
               Cause.die(testFailure)
             ),
             LogEntry(
               List("test.logger"),
               LogLevel.Error,
-              Map.empty,
+              Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger"),
               "error",
               Cause.empty
             )

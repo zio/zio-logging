@@ -19,19 +19,21 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
       runtime.unsafe.run {
         val logLevel = ZioLoggerRuntime.logLevelMapping(level)
         ZIO.logSpan(name) {
-          ZIO.logLevel(logLevel) {
-            lazy val msg = if (arguments != null) {
-              MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage
-            } else {
-              messagePattern
-            }
-            val cause    = if (throwable != null) {
-              Cause.die(throwable)
-            } else {
-              Cause.empty
-            }
+          ZIO.logAnnotate(Slf4jBridge.loggerNameAnnotationKey, name) {
+            ZIO.logLevel(logLevel) {
+              lazy val msg = if (arguments != null) {
+                MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage
+              } else {
+                messagePattern
+              }
+              val cause    = if (throwable != null) {
+                Cause.die(throwable)
+              } else {
+                Cause.empty
+              }
 
-            ZIO.logCause(msg, cause)
+              ZIO.logCause(msg, cause)
+            }
           }
         }
       }
