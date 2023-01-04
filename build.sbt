@@ -54,7 +54,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, examples)
+  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, jpl, benchmarks, examples, docs)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -154,18 +154,18 @@ lazy val examples = project
 lazy val docs = project
   .in(file("zio-logging-docs"))
   .settings(
-    publish / skip    := true,
-    moduleName        := "zio-logging-docs",
+    moduleName                                 := "zio-logging-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    projectName       := "ZIO Logging",
-    badgeInfo         := Some(
+    projectName                                := "ZIO Logging",
+    badgeInfo                                  := Some(
       BadgeInfo(
         artifact = "zio-logging_2.12",
         projectStage = ProjectStage.ProductionReady
       )
     ),
-    docsPublishBranch := "master"
+    docsPublishBranch                          := "master",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j, slf4jBridge, jpl)
   )
   .settings(macroDefinitionSettings)
   .dependsOn(coreJVM, coreJS, slf4j, slf4jBridge, jpl)
