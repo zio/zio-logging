@@ -26,9 +26,21 @@ SLF4J logger name is stored in log annotation with key `slf4j_logger_name` (`Slf
 import zio.logging.slf4j.Slf4jBridge
 import zio.logging.LoggerNameExtractor
 
-val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey).toLogFormat()
+val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
+val loggerNameFormat = loggerName.toLogFormat()
 ```
-may be used to get logger name from log annotation or ZIO Trace.
+may be used to get logger name from log annotation or ZIO Trace. 
+
+This logger name extractor can be used also in log filter, which applying log filtering by defined logger name and level:
+
+```scala
+val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
+  LogLevel.Info,
+  loggerName.toLogGroup(),
+  "zio.logging.slf4j" -> LogLevel.Debug,
+  "SLF4J-LOGGER"      -> LogLevel.Warning
+)
+```
 
 <br/>
 
@@ -56,7 +68,7 @@ ZIO logging. Enabling both causes circular logging and makes no sense.
 package zio.logging.slf4j.bridge
 
 import org.slf4j.{ Logger, LoggerFactory }
-import zio.logging.{ LogFormat, LoggerNameExtractor, consoleJson }
+import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor, consoleJson }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
@@ -65,17 +77,25 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
   private val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
 
+  private val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
+    LogLevel.Info,
+    loggerName.toLogGroup(),
+    "zio.logging.slf4j" -> LogLevel.Debug,
+    "SLF4J-LOGGER"      -> LogLevel.Warning
+  )
+
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
       LogFormat.label("name", loggerName.toLogFormat()) + LogFormat.default,
-      LogLevel.Debug
+      logFilter
     ) >+> Slf4jBridge.initialize
 
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
-      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.logDebug("Start")
+      _ <- ZIO.succeed(slf4jLogger.debug("Test {}!", "DEBUG"))
       _ <- ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))
-      _ <- ZIO.logDebug("Done")
+      _ <- ZIO.logInfo("Done")
     } yield ExitCode.success
 
 }
@@ -83,7 +103,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
 Expected Console Output:
 ```
-{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-01-07T10:26:55.228361+01:00","level":"INFO","thread":"zio-fiber-4","message":"Start"}
-{"name":"SLF4J-LOGGER","timestamp":"2023-01-07T10:26:55.250692+01:00","level":"WARN","thread":"zio-fiber-5","message":"Test WARNING!"}
-{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-01-07T10:26:55.255064+01:00","level":"DEBUG","thread":"zio-fiber-4","message":"Done"}
+{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-01-07T18:25:40.397593+01:00","level":"DEBUG","thread":"zio-fiber-4","message":"Start"}
+{"name":"SLF4J-LOGGER","timestamp":"2023-01-07T18:25:40.416612+01:00","level":"WARN","thread":"zio-fiber-6","message":"Test WARNING!"}
+{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-01-07T18:25:40.42043+01:00 ","level":"INFO","thread":"zio-fiber-4","message":"Done"}
 ```
