@@ -85,9 +85,14 @@ object LogFilterSpec extends ZIOSpecDefault {
 
       val filter: LogFilter[String] = LogFilter.logLevelByName(
         LogLevel.Debug,
-        "a"     -> LogLevel.Info,
-        "a.b.c" -> LogLevel.Warning,
-        "e.f"   -> LogLevel.Error
+        "a"         -> LogLevel.Info,
+        "a.b.c"     -> LogLevel.Warning,
+        "e.f"       -> LogLevel.Error,
+        "k.*.m"     -> LogLevel.Trace,
+        "k2.a*c.m2" -> LogLevel.Trace,
+        "k3.a*.m3"  -> LogLevel.Trace,
+        "k4.*c.m4"  -> LogLevel.Trace,
+        "q.**.t"    -> LogLevel.Trace
       )
 
       testFilter(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
@@ -98,7 +103,20 @@ object LogFilterSpec extends ZIOSpecDefault {
       testFilter(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
       testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
       testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+      testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+      testFilter(filter, "k.l.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+      testFilter(filter, "k.l.m.Exec.exec", LogLevel.Trace, Assertion.isTrue) &&
+      testFilter(filter, "k2.alc.m2.Exec.exec", LogLevel.Trace, Assertion.isTrue) &&
+      testFilter(filter, "k3.alc.m3.Exec.exec", LogLevel.Trace, Assertion.isTrue) &&
+      testFilter(filter, "k3.lc.m3.Exec.exec", LogLevel.Trace, Assertion.isFalse) &&
+      testFilter(filter, "k4.alc.m4.Exec.exec", LogLevel.Trace, Assertion.isTrue) &&
+      testFilter(filter, "k4.al.m4.Exec.exec", LogLevel.Trace, Assertion.isFalse) &&
+      testFilter(filter, "k.l.l.m.Exec.exec", LogLevel.Trace, Assertion.isFalse) &&
+      testFilter(filter, "k.l.l.m.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+      testFilter(filter, "q.r.s.t.Exec.exec", LogLevel.Trace, Assertion.isTrue) &&
+      testFilter(filter, "q.r.t.Exec.exec", LogLevel.Trace, Assertion.isTrue) &&
+      testFilter(filter, "q.r.s.u.Exec.exec", LogLevel.Trace, Assertion.isFalse) &&
+      testFilter(filter, "q.r.s.u.Exec.exec", LogLevel.Debug, Assertion.isTrue)
     },
     test("log filtering by log level and name with annotation") {
 
