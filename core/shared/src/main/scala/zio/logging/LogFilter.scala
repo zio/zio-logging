@@ -292,24 +292,27 @@ object LogFilter {
       case (l @ (lh :: ls), m @ (mh :: ms)) =>
         l.startsWith(m) ||
           (m.span(g => !g.contains("*")) match {
-            case (_, Nil)                => false
-            case (m0, "**" :: Nil)       => true
-            case (Nil, "*" :: m)         =>
+            case (_, Nil)          => false
+            case (m0, "**" :: Nil) => true
+            case (Nil, "*" :: m)   =>
               // we drop lh which is matched by '*'
               compareRoutes(ls, m)
-            case (m0, "*" :: m)          =>
+
+            case (m0, "*" :: m) =>
               // match the m0 part and remove it from the list before the compare the remainder
               l.startsWith(m0) && (l.drop(m0.size) match {
                 case Nil      => false
                 case lh :: ls => compareRoutes(ls, m)
               })
+
             case (Nil, "**" :: mh :: ms) =>
               // remove any paths not matching the mh part
               l.dropWhile(_ != mh) match {
                 case Nil      => false // we didn't find a match so this route is invalid
                 case lh :: ls => compareRoutes(ls, ms)
               }
-            case (m0, "**" :: mh :: ms)  =>
+
+            case (m0, "**" :: mh :: ms) =>
               // match the m0 part and remove it from the list before the compare the remainder
               l.startsWith(m0) && (
                 ls.dropWhile(_ != mh) match {
@@ -317,7 +320,8 @@ object LogFilter {
                   case lh :: ls => compareRoutes(ls, ms)
                 }
               )
-            case (m0, s"$s*$e" :: m)     =>
+
+            case (m0, s"$s*$e" :: m) =>
               // match the m0 part and remove it from the list before the compare the remainder
               l.startsWith(m0) && (l.drop(m0.size) match {
                 case Nil      => false
@@ -325,6 +329,8 @@ object LogFilter {
                   // check if lh starts with s, strip it (we don't want overlap) and ends with e, then the compare the remainder
                   lh.startsWith(s) && lh.stripPrefix(s).endsWith(e) && compareRoutes(ls, m)
               })
+
+            case _ => false // should not happen, to dismiss exhaustiveness warning
           })
     }
 
