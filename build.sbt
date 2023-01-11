@@ -3,7 +3,7 @@ import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 
 name := "zio-logging"
-
+Global / resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 inThisBuild(
   List(
     organization := "dev.zio",

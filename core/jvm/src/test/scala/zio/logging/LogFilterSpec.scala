@@ -134,7 +134,7 @@ object LogFilterSpec extends ZIOSpecDefault {
         "/"
       )
 
-      configProvider.load(LogLevelByNameFilterConfig.config.nested("LOGGER")).map { config =>
+      configProvider.load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER")).map { config =>
         val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
 
         val filter: LogFilter[String] = LogFilter.logLevelByGroup(
@@ -153,16 +153,26 @@ object LogFilterSpec extends ZIOSpecDefault {
         testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
       }
     },
-//    test("log filtering by log level and name default config") { // FIXME failing on Exception in thread "zio-fiber-148" zio.Config$Error$MissingData: (Missing data at LOGGER: The element at index 0 in a sequence at LOGGER was missing)
-//
-//      val configProvider = ConfigProvider.fromMap(Map.empty, "/")
-//
-//      configProvider
-//        .load(LogLevelByNameFilterConfig.config.nested("LOGGER"))
-//        .map { config =>
-//          assertTrue(config.rootLevel == LogLevel.Info) //&& assertTrue(config.mappings.isEmpty)
-//        }
-//    },
+    test("log filtering by log level and name default config") {
+
+      val configProvider = ConfigProvider.fromMap(Map.empty, "/")
+
+      configProvider
+        .load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER"))
+        .map { config =>
+          assertTrue(config.rootLevel == LogLevel.Info) && assertTrue(config.mappings.isEmpty)
+        }
+    },
+    test("log filtering by log level and name config should fail on invalid values") { // FIXME should fail
+
+      val configProvider = ConfigProvider.fromMap(Map("LOGGER/ROOT_LEVEL" -> "INVALID_LOG_LEVEL"), "/")
+
+      configProvider
+        .load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER"))
+        .map { config =>
+          assertTrue(config.rootLevel == LogLevel.Info)
+        }
+    },
     test("log filtering by log level and name matcher with annotation") {
 
       val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
