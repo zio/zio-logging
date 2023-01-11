@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
+import zio.{ Cause, Chunk, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import scala.annotation.tailrec
 
@@ -135,6 +135,58 @@ sealed trait LogFilter[-Message] { self =>
 }
 
 object LogFilter {
+
+  /**
+   * Defines a filter from a list of log-levels specified per tree node
+   *
+   * Example:
+   *
+   * {{{
+   *   val filter =
+   *     logLevelByName(
+   *      LogLevel.Debug,
+   *      "io.netty"                                       -> LogLevel.Info,
+   *      "io.grpc.netty"                                  -> LogLevel.Info
+   * )
+   * }}}
+   *
+   * will use the `Debug` log level for everything except for log events with the logger name
+   * prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
+   * Logger name is extracted from [[Trace]].
+   *
+   * @param rootLevel Minimum log level for the root node
+   * @param mappings  List of mappings, nesting defined by dot-separated strings
+   */
+  case class LogLevelByNameConfig(rootLevel: LogLevel, mappings: Map[String, LogLevel])
+
+  object LogLevelByNameConfig {
+
+    private[logging] val logLevelMapping: Map[String, LogLevel] = Map(
+      LogLevel.All.label     -> LogLevel.All,
+      LogLevel.Trace.label   -> LogLevel.Trace,
+      LogLevel.Debug.label   -> LogLevel.Debug,
+      LogLevel.Info.label    -> LogLevel.Info,
+      LogLevel.Warning.label -> LogLevel.Warning,
+      LogLevel.Error.label   -> LogLevel.Error,
+      LogLevel.Fatal.label   -> LogLevel.Fatal,
+      LogLevel.None.label    -> LogLevel.None
+    )
+
+    private[logging] def logLevelValue(value: String): Either[Config.Error.InvalidData, LogLevel] =
+      logLevelMapping.get(value.toUpperCase) match {
+        case Some(l) => Right(l)
+        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogLevel, but found ${value}"))
+      }
+
+    val config: Config[LogLevelByNameConfig] = {
+      val rootLevelConfig = Config.string("ROOT_LEVEL").mapOrFail(logLevelValue).withDefault(LogLevel.Info)
+      val mappingsConfig  = Config.table("MAPPINGS", Config.string.mapOrFail(logLevelValue)).withDefault(Map.empty)
+
+      (rootLevelConfig ++ mappingsConfig).map { case (rootLevel, mappings) =>
+        LogLevelByNameConfig(rootLevel, mappings)
+      }
+    }
+  }
 
   def apply[M, V](
     group0: LogGroup[M, V],
@@ -265,10 +317,10 @@ object LogFilter {
   def logLevelByName[M](rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[M] =
     logLevelByGroup[M](rootLevel, LogGroup.loggerName, mappings: _*)
 
-  def logLevelByGroup[M](group: LogGroup[M, String], config: LogLevelByNameFilterConfig): LogFilter[M] =
+  def logLevelByGroup[M](group: LogGroup[M, String], config: LogLevelByNameConfig): LogFilter[M] =
     logLevelByGroup[M](config.rootLevel, group, config.mappings.toList: _*)
 
-  def logLevelByName[M](config: LogLevelByNameFilterConfig): LogFilter[M] =
+  def logLevelByName[M](config: LogLevelByNameConfig): LogFilter[M] =
     logLevelByGroup[M](LogGroup.loggerName, config)
 
   private[logging] val splitNameByDotAndLevel: (String, LogLevel) => (List[String], LogLevel) = (name, level) =>
