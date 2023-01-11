@@ -204,7 +204,11 @@ object SLF4J {
   def slf4jLogger(
     format: LogFormat,
     loggerName: Trace => String
-  ): ZLogger[String, Unit] =
+  ): ZLogger[String, Unit] = {
+    // get some slf4j logger to invoke slf4j initialisation
+    // as in some program failure cases it may happen, that program exit sooner then log message will be logged (#616)
+    LoggerFactory.getLogger("zio-slf4j-logger")
+
     new ZLogger[String, Unit] {
       override def apply(
         trace: Trace,
@@ -229,5 +233,6 @@ object SLF4J {
         ()
       }
     }
+  }
 
 }
