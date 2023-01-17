@@ -3,7 +3,7 @@ package zio.logging
 import zio.logging.test.TestService
 import zio.test.ZTestLogger.LogEntry
 import zio.test._
-import zio.{ Cause, Chunk, ConfigProvider, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
+import zio.{ Cause, Chunk, Config, ConfigProvider, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
 
 object LogFilterSpec extends ZIOSpecDefault {
 
@@ -163,14 +163,15 @@ object LogFilterSpec extends ZIOSpecDefault {
           assertTrue(config.rootLevel == LogLevel.Info) && assertTrue(config.mappings.isEmpty)
         }
     },
-    test("log filtering by log level and name config should fail on invalid values") { // FIXME should fail
+    test("log filtering by log level and name config should fail on invalid values") {
 
       val configProvider = ConfigProvider.fromMap(Map("LOGGER/ROOT_LEVEL" -> "INVALID_LOG_LEVEL"), "/")
 
       configProvider
         .load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER"))
-        .map { config =>
-          assertTrue(config.rootLevel == LogLevel.Info)
+        .exit
+        .map { e =>
+          assert(e)(Assertion.failsWithA[Config.Error])
         }
     },
     test("log filtering by log level and name matcher with annotation") {
