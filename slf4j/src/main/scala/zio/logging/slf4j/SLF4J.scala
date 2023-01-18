@@ -187,17 +187,29 @@ object SLF4J {
   ): ZLayer[Any, Nothing, Unit] =
     slf4j(logLevel, logFormatDefault, getLoggerName())
 
+  /**
+   * Use this layer to register an use an Slf4j logger in your app.
+   * To avoid double logging, you should create this layer only once in your application
+   */
   def slf4j(
     format: LogFormat,
     loggerName: Trace => String
   ): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(slf4jLogger(format, loggerName))
 
+  /**
+   * Use this layer to register an use an Slf4j logger in your app.
+   * To avoid double logging, you should create this layer only once in your application
+   */
   def slf4j(
     format: LogFormat
   ): ZLayer[Any, Nothing, Unit] =
     slf4j(format, getLoggerName())
 
+  /**
+   * Use this layer to register an use an Slf4j logger in your app.
+   * To avoid double logging, you should create this layer only once in your application
+   */
   def slf4j: ZLayer[Any, Nothing, Unit] =
     slf4j(logFormatDefault)
 
