@@ -16,7 +16,8 @@ inThisBuild(
         "Przemyslaw Wierzbicki",
         "rzbikson@gmail.com",
         url("https://github.com/pshemass")
-      )
+      ),
+      Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     )
   )
 )
