@@ -24,7 +24,8 @@ object MetricsSpec extends ZIOSpecDefault {
         clearCounter <- loggedTotalMetric.tagged(logLevelMetricLabel, LogLevel.None.label.toLowerCase).value
       } yield assertTrue(debugCounter.count == 2d) && assertTrue(infoCounter.count == 2d) && assertTrue(
         warnCounter.count == 2d
-      ) && assertTrue(errorCounter.count == 1d) && assertTrue(fatalCounter.count == 0d) && assertTrue(clearCounter.count == 0d)).provideLayer(logMetrics)
+      ) && assertTrue(errorCounter.count == 1d) && assertTrue(fatalCounter.count == 0d)
+        && assertTrue(clearCounter.count == 0d)).provideLayer(logMetrics)
     }
   )
 }
