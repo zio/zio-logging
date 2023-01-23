@@ -1,8 +1,8 @@
 package zio.logging.slf4j.bridge
 
-import org.slf4j.{Logger, LoggerFactory}
-import zio.logging.{LogFilter, LogFormat, LoggerNameExtractor, consoleJson}
-import zio.{ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
+import org.slf4j.{ Logger, LoggerFactory }
+import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor, consoleJson }
+import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
@@ -14,7 +14,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     LogLevel.Info,
     loggerName.toLogGroup(),
     "zio.logging.slf4j" -> LogLevel.Debug,
-    "SLF4J-LOGGER" -> LogLevel.Warning
+    "SLF4J-LOGGER"      -> LogLevel.Warning
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
