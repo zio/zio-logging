@@ -39,8 +39,11 @@ libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 // SLF4j integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 
-// Using ZIO Logging for SLF4j loggers, usually third-party non-ZIO libraries
+// Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
+
+// Using ZIO Logging for SLF4j v2 loggers, usually third-party non-ZIO libraries
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
 ```
 
 ## Example
