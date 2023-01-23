@@ -22,10 +22,10 @@ inThisBuild(
   )
 )
 
-val ZioVersion           = "2.0.6"
-val slf4jVersion         = "1.7.36"
-val slf4j2Version        = "2.0.6"
-val logbackVersion       = "1.2.11"
+val ZioVersion     = "2.0.6"
+val slf4jVersion   = "1.7.36"
+val slf4j2Version  = "2.0.6"
+val logbackVersion = "1.2.11"
 
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
