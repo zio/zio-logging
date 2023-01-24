@@ -126,15 +126,15 @@ object LogFilterSpec extends ZIOSpecDefault {
 
       val configProvider = ConfigProvider.fromMap(
         Map(
-          "LOGGER/ROOT_LEVEL"     -> LogLevel.Debug.label,
-          "LOGGER/MAPPINGS/a"     -> LogLevel.Info.label,
-          "LOGGER/MAPPINGS/a.b.c" -> LogLevel.Warning.label,
-          "LOGGER/MAPPINGS/e.f"   -> LogLevel.Error.label
+          "logger/rootLevel"      -> LogLevel.Debug.label,
+          "logger/mappings/a"     -> LogLevel.Info.label,
+          "logger/mappings/a.b.c" -> LogLevel.Warning.label,
+          "logger/mappings/e.f"   -> LogLevel.Error.label
         ),
         "/"
       )
 
-      configProvider.load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER")).map { config =>
+      configProvider.load(LogFilter.LogLevelByNameConfig.config.nested("logger")).map { config =>
         val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
 
         val filter: LogFilter[String] = LogFilter.logLevelByGroup(
@@ -158,17 +158,17 @@ object LogFilterSpec extends ZIOSpecDefault {
       val configProvider = ConfigProvider.fromMap(Map.empty, "/")
 
       configProvider
-        .load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER"))
+        .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
         .map { config =>
           assertTrue(config.rootLevel == LogLevel.Info) && assertTrue(config.mappings.isEmpty)
         }
     },
     test("log filtering by log level and name config should fail on invalid values") {
 
-      val configProvider = ConfigProvider.fromMap(Map("LOGGER/ROOT_LEVEL" -> "INVALID_LOG_LEVEL"), "/")
+      val configProvider = ConfigProvider.fromMap(Map("logger/rootLevel" -> "INVALID_LOG_LEVEL"), "/")
 
       configProvider
-        .load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER"))
+        .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
         .exit
         .map { e =>
           assert(e)(Assertion.failsWithA[Config.Error])

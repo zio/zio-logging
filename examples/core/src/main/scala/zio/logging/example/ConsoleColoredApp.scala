@@ -22,14 +22,14 @@ object ConsoleColoredApp extends ZIOAppDefault {
 
   val loggerConfigProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "LOGGER/ROOT_LEVEL"                                   -> LogLevel.Info.label,
-      "LOGGER/MAPPINGS/zio.logging.example.LivePingService" -> LogLevel.Debug.label
+      "logger/mappings"                                     -> LogLevel.Info.label,
+      "logger/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
     ),
     "/"
   )
 
   val logger = for {
-    config <- ZLayer.fromZIO(loggerConfigProvider.load(LogFilter.LogLevelByNameConfig.config.nested("LOGGER")))
+    config <- ZLayer.fromZIO(loggerConfigProvider.load(LogFilter.LogLevelByNameConfig.config.nested("logger")))
     logger <- console(LogFormat.colored, LogFilter.logLevelByName(config.get).cached)
   } yield logger
 

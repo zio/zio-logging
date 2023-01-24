@@ -179,8 +179,8 @@ object LogFilter {
       }
 
     val config: Config[LogLevelByNameConfig] = {
-      val rootLevelConfig = Config.string.mapOrFail(logLevelValue).nested("ROOT_LEVEL").withDefault(LogLevel.Info)
-      val mappingsConfig  = Config.table("MAPPINGS", Config.string.mapOrFail(logLevelValue)).withDefault(Map.empty)
+      val rootLevelConfig = Config.string.mapOrFail(logLevelValue).nested("rootLevel").withDefault(LogLevel.Info)
+      val mappingsConfig  = Config.table("mappings", Config.string.mapOrFail(logLevelValue)).withDefault(Map.empty)
 
       (rootLevelConfig ++ mappingsConfig).map { case (rootLevel, mappings) =>
         LogLevelByNameConfig(rootLevel, mappings)
