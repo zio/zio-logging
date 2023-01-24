@@ -23,11 +23,10 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     ) >+> Slf4jBridge.initialize
 
   override def run: ZIO[Scope, Any, ExitCode] =
-    for {
-      _ <- ZIO.logDebug("Start")
-      _ <- ZIO.succeed(slf4jLogger.debug("Test {}!", "DEBUG"))
+    (for {
+      _ <- ZIO.logInfo("Start")
       _ <- ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))
-      _ <- ZIO.logInfo("Done")
-    } yield ExitCode.success
+      _ <- ZIO.logDebug("Done")
+    } yield ExitCode.success)
 
 }

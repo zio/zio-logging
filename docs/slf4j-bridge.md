@@ -4,11 +4,19 @@ title: "SLF4J bridge"
 ---
 
 It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-ZIO libraries. To do so, import
-the `zio-logging-slf4j-bridge` module:
+
+* the `zio-logging-slf4j-bridge` module for SLF4J v1:
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 ```
+
+* the `zio-logging-slf4j2-bridge` module for [SLF4J v2](https://www.slf4j.org/faq.html#changesInVersion200) (using JDK9+ module system ([JPMS](http://openjdk.java.net/projects/jigsaw/spec/)))
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
+```
+
 
 and use the `Slf4jBridge.initialize` layer when setting up logging:
 
@@ -67,13 +75,12 @@ ZIO logging. Enabling both causes circular logging and makes no sense.
 ```scala
 package zio.logging.slf4j.bridge
 
-import org.slf4j.{ Logger, LoggerFactory }
 import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor, consoleJson }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
-  private val slf4jLogger: Logger = LoggerFactory.getLogger("SLF4J-LOGGER")
+  private val slf4jLogger = org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER")
 
   private val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
 

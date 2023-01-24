@@ -287,6 +287,14 @@ object BuildHelper {
       Compile / doc / sources := Seq.empty
     )
 
+  def jpmsOverwriteModulePath(modulePaths: Seq[File])(options: Seq[String]): Seq[String] = {
+    val modPathString = modulePaths.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
+    val option        = "--module-path"
+    val index         = options.indexWhere(_ == option)
+    if (index == -1) options ++ List(option, modPathString)
+    else options.patch(index + 1, List(modPathString), 1)
+  }
+
   val scalaReflectTestSettings: List[Setting[_]] = List(
     libraryDependencies ++= {
       if (scalaVersion.value == Scala3)
