@@ -12,6 +12,7 @@ object MetricsSpec extends ZIOSpecDefault {
         _            <- ZIO.logDebug("debug")
         _            <- ZIO.logInfo("info")
         _            <- ZIO.logWarning("warning")
+        _            <- ZIO.logError("error")
         _            <- TestService.testDebug
         _            <- TestService.testInfo
         _            <- TestService.testWarning
@@ -25,7 +26,7 @@ object MetricsSpec extends ZIOSpecDefault {
         traceCounter <- loggedTotalMetric.tagged(logLevelMetricLabel, LogLevel.Trace.label.toLowerCase).value
       } yield assertTrue(debugCounter.count == 2d) && assertTrue(infoCounter.count == 2d) && assertTrue(
         warnCounter.count == 2d
-      ) && assertTrue(errorCounter.count == 1d) && assertTrue(fatalCounter.count == 0d)
+      ) && assertTrue(errorCounter.count == 2d) && assertTrue(fatalCounter.count == 0d)
         && assertTrue(clearCounter.count == 0d) && assertTrue(traceCounter.count == 0d))
         .provideLayer(logMetrics)
     }
