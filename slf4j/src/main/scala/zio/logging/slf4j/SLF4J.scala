@@ -18,7 +18,20 @@ package zio.logging.backend
 import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
 import zio.logging.internal.LogAppender
 import zio.logging.{ LogFormat, LoggerNameExtractor }
-import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
+import zio.{
+  Cause,
+  FiberFailure,
+  FiberId,
+  FiberRefs,
+  LogLevel,
+  LogSpan,
+  Runtime,
+  Trace,
+  ZIOAspect,
+  ZLayer,
+  ZLogger,
+  logging
+}
 
 import java.util
 
@@ -27,6 +40,7 @@ object SLF4J {
   /**
    * log aspect annotation key for slf4j logger name
    */
+  @deprecated
   val loggerNameAnnotationKey = "slf4j_logger_name"
 
   /**
@@ -39,7 +53,7 @@ object SLF4J {
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys =
-      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey)
+      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey, logging.loggerNameAnnotationKey)
     ) + LogFormat.line + LogFormat.cause
 
   /**
@@ -47,6 +61,7 @@ object SLF4J {
    *
    * annotation key: [[SLF4J.loggerNameAnnotationKey]]
    */
+  @deprecated
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
@@ -247,7 +262,10 @@ object SLF4J {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
+        val slf4jLoggerName = annotations.getOrElse(
+          loggerNameAnnotationKey,
+          annotations.getOrElse(logging.loggerNameAnnotationKey, loggerName(trace))
+        )
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
         val slf4jMarkerName = annotations.get(logMarkerNameAnnotationKey)
         val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))

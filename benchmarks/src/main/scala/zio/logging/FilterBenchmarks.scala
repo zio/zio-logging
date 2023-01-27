@@ -1,7 +1,7 @@
 package zio.logging
 
 import org.openjdk.jmh.annotations._
-import zio.{ LogLevel, Runtime, Unsafe, ZIO, ZIOAspect, ZLayer }
+import zio.{ LogLevel, Runtime, Unsafe, ZIO, ZLayer }
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
@@ -10,9 +10,6 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class FilterBenchmarks {
-  val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
-
-  val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ LogGroup.logLevel
 
   val runtime = Runtime.default
 
@@ -20,10 +17,11 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
-    val filter: LogFilter[String] = LogFilter[String, (List[String], LogLevel)](
+    val loggerNameGroup: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
+    val filter: LogFilter[String]              = LogFilter[String, (List[String], LogLevel)](
       LogGroup { (trace, fiberId, level, message, cause, context, spans, annotations) =>
         val loggerNames =
-          LogFilter.splitNameByDot(loggerName(trace, fiberId, level, message, cause, context, spans, annotations))
+          LogFilter.splitNameByDot(loggerNameGroup(trace, fiberId, level, message, cause, context, spans, annotations))
 
         loggerNames -> level
       },
@@ -45,9 +43,8 @@ class FilterBenchmarks {
   val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
-      LogFilter.logLevelByGroup(
+      LogFilter.logLevelByName(
         LogLevel.Debug,
-        loggerName,
         "a.b.c" -> LogLevel.Info,
         "a.b.d" -> LogLevel.Warning,
         "e"     -> LogLevel.Info,
@@ -60,9 +57,8 @@ class FilterBenchmarks {
     Runtime.removeDefaultLoggers >>> console(
       LogFormat.default,
       LogFilter
-        .logLevelByGroup(
+        .logLevelByName(
           LogLevel.Debug,
-          loggerName,
           "a.b.c" -> LogLevel.Info,
           "a.b.d" -> LogLevel.Warning,
           "e"     -> LogLevel.Info,
@@ -101,7 +97,7 @@ class FilterBenchmarks {
     val name = names(rnd.nextInt(names.length))
     Unsafe.unsafe { implicit u =>
       runtime.unsafe.run {
-        (ZIO.logDebug("test") @@ ZIOAspect.annotated("name", name)).provide(logging)
+        (ZIO.logDebug("test") @@ loggerName(name)).provide(logging)
       }
     }
     ()

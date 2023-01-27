@@ -161,14 +161,14 @@ object LogGroup {
   /**
    * Log group by logger name
    *
-   * Logger name is extracted from [[Trace]]
+   * Logger name is extracted from annotation or [[Trace]]
    */
-  val loggerName: LogGroup[Any, String] = fromLoggerNameExtractor(LoggerNameExtractor.trace)
+  val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
 
   /**
    * Log group by logger name and log level
    *
-   * Logger name is extracted from [[Trace]]
+   * Logger name is extracted from annotation or [[Trace]]
    */
   val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ logLevel
 

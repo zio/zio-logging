@@ -17,7 +17,20 @@ package zio.logging.backend
 
 import zio.logging.internal.LogAppender
 import zio.logging.{ LogFormat, LoggerNameExtractor }
-import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
+import zio.{
+  Cause,
+  FiberFailure,
+  FiberId,
+  FiberRefs,
+  LogLevel,
+  LogSpan,
+  Runtime,
+  Trace,
+  ZIOAspect,
+  ZLayer,
+  ZLogger,
+  logging
+}
 
 object JPL {
 
@@ -35,19 +48,23 @@ object JPL {
   /**
    * log aspect annotation key for JPL logger name
    */
+  @deprecated
   val loggerNameAnnotationKey = "jpl_logger_name"
 
   /**
    * default log format for JPL logger
    */
   val logFormatDefault: LogFormat =
-    LogFormat.allAnnotations(excludeKeys = Set(loggerNameAnnotationKey)) + LogFormat.line + LogFormat.cause
+    LogFormat.allAnnotations(excludeKeys =
+      Set(loggerNameAnnotationKey, logging.loggerNameAnnotationKey)
+    ) + LogFormat.line + LogFormat.cause
 
   /**
    * JPL logger name aspect, by this aspect is possible to change default logger name (default logger name is extracted from [[Trace]])
    *
    * annotation key: [[JPL.loggerNameAnnotationKey]]
    */
+  @deprecated
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
@@ -137,7 +154,10 @@ object JPL {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val jpLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
+        val jpLoggerName = annotations.getOrElse(
+          loggerNameAnnotationKey,
+          annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
+        )
         val jpLogger     = getJPLogger(jpLoggerName)
         if (isLogLevelEnabled(jpLogger, logLevel)) {
           val appender = logAppender(jpLogger, logLevel)

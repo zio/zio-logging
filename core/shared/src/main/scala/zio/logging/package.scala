@@ -45,10 +45,23 @@ package object logging {
       FiberRef.unsafe.make(LogContext.empty, ZIO.identityFn[LogContext], (old, newV) => old ++ newV)
     }
 
+  /**
+   * log aspect annotation key for logger name
+   */
+  val loggerNameAnnotationKey = "logger_name"
+
   private[logging] val logLevelMetricLabel = "level"
 
   private[logging] val loggedTotalMetric =
     Metric.counter(name = "zio_log_total")
+
+  /**
+   * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted from [[Trace]])
+   *
+   * annotation key: [[zio.logging.loggerNameAnnotationKey]]
+   */
+  def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
+    ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   def console(
     format: LogFormat = LogFormat.colored,
