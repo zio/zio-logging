@@ -12,7 +12,8 @@ const sidebars = {
         'console-logger',
         'jpl',
         'slf4j',
-        'slf4j-bridge',
+        'slf4j1-bridge',
+        'slf4j2-bridge',
         'metrics',
         'testing'
       ]

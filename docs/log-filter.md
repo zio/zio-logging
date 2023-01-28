@@ -22,6 +22,6 @@ val filter = LogFilter.logLevelByName(
 
 will use the `Debug` log level for everything except for log events with the logger name
 prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
-Logger name is extracted from `zio.Trace`.
+Logger name is extracted from log annotation or `zio.Trace`.
 
 `LogFilter.filter` returns a version of `zio.ZLogger` that only logs messages when this filter is satisfied.

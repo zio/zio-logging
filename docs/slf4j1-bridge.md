@@ -1,22 +1,13 @@
 ---
-id: slf4j-bridge
-title: "SLF4J bridge"
+id: slf4j1-bridge
+title: "SLF4J v1 bridge"
 ---
 
-It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-ZIO libraries. To do so, import
-
-* the `zio-logging-slf4j-bridge` module for SLF4J v1:
+It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-ZIO libraries. To do so, import the `zio-logging-slf4j-bridge` module for SLF4J v1:
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 ```
-
-* the `zio-logging-slf4j2-bridge` module for [SLF4J v2](https://www.slf4j.org/faq.html#changesInVersion200) (using JDK9+ module system ([JPMS](http://openjdk.java.net/projects/jigsaw/spec/)))
-
-```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
-```
-
 
 and use the `Slf4jBridge.initialize` layer when setting up logging:
 

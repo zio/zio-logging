@@ -161,7 +161,7 @@ object LogGroup {
   /**
    * Log group by logger name
    *
-   * Logger name is extracted from annotation or [[Trace]]
+   * Logger name is extracted from annotation or [[Trace]], see: [[LoggerNameExtractor.loggerNameAnnotationOrTrace]]
    */
   val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
 
