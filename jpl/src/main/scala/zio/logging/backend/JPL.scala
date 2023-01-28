@@ -56,7 +56,7 @@ object JPL {
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys =
-      Set(loggerNameAnnotationKey, logging.loggerNameAnnotationKey)
+      Set(JPL.loggerNameAnnotationKey, logging.loggerNameAnnotationKey)
     ) + LogFormat.line + LogFormat.cause
 
   /**
@@ -155,7 +155,7 @@ object JPL {
         annotations: Map[String, String]
       ): Unit = {
         val jpLoggerName = annotations.getOrElse(
-          loggerNameAnnotationKey,
+          JPL.loggerNameAnnotationKey,
           annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
         )
         val jpLogger     = getJPLogger(jpLoggerName)

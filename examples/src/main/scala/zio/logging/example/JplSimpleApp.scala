@@ -37,7 +37,7 @@ object JplSimpleApp extends ZIOAppDefault {
                        ZIO.sleep(500.millis) *>
                        ZIO.logInfo("Stopping user operation")
                    } @@ ZIOAspect.annotated("user", uId.toString)
-                 } @@ LogAnnotation.TraceId(traceId) @@ JPL.loggerName("zio.logging.example.UserOperation")
+                 } @@ LogAnnotation.TraceId(traceId) @@ zio.logging.loggerName("zio.logging.example.UserOperation")
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success
 

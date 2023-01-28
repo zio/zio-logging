@@ -53,7 +53,7 @@ object SLF4J {
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys =
-      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey, logging.loggerNameAnnotationKey)
+      Set(SLF4J.loggerNameAnnotationKey, SLF4J.logMarkerNameAnnotationKey, logging.loggerNameAnnotationKey)
     ) + LogFormat.line + LogFormat.cause
 
   /**
@@ -263,11 +263,11 @@ object SLF4J {
         annotations: Map[String, String]
       ): Unit = {
         val slf4jLoggerName = annotations.getOrElse(
-          loggerNameAnnotationKey,
+          SLF4J.loggerNameAnnotationKey,
           annotations.getOrElse(logging.loggerNameAnnotationKey, loggerName(trace))
         )
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
-        val slf4jMarkerName = annotations.get(logMarkerNameAnnotationKey)
+        val slf4jMarkerName = annotations.get(SLF4J.logMarkerNameAnnotationKey)
         val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
         if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
           val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
