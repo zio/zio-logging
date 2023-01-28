@@ -16,14 +16,13 @@
 package org.slf4j.impl
 
 import org.slf4j.helpers.{ MessageFormatter, ZioLoggerBase }
-import zio.logging.slf4j.bridge.Slf4jBridge
 import zio.{ Cause, ZIO }
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
 
   private def run(f: ZIO[Any, Nothing, Unit]): Unit =
     factory.run {
-      ZIO.logSpan(name)(ZIO.logAnnotate(Slf4jBridge.loggerNameAnnotationKey, name)(f))
+      ZIO.logSpan(name)(ZIO.logAnnotate(factory.nameAnnotationKey, name)(f))
     }
 
   override def isTraceEnabled: Boolean = true

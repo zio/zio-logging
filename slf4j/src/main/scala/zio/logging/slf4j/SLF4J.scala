@@ -38,13 +38,13 @@ import java.util
 object SLF4J {
 
   /**
-   * log aspect annotation key for slf4j logger name
+   * log annotation key for slf4j logger name
    */
   @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
   val loggerNameAnnotationKey = "slf4j_logger_name"
 
   /**
-   * log aspect annotation key for slf4j marker name
+   * log annotation key for slf4j marker name
    */
   val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
 

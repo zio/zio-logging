@@ -20,13 +20,29 @@ import zio.{ ZIO, ZLayer }
 
 object Slf4jBridge {
 
+  /**
+   * log annotation key for slf4j logger name
+   */
+  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
   val loggerNameAnnotationKey: String = "slf4j_logger_name"
 
+  /**
+   * initialize SLF4J bridge
+   */
   def initialize: ZLayer[Any, Nothing, Unit] =
+    initialize(zio.logging.loggerNameAnnotationKey)
+
+  /**
+   * initialize SLF4J bridge, where custom annotation key for logger name may be provided
+   * this is to achieve backward compatibility where [[Slf4jBridge.loggerNameAnnotationKey]] was used
+   *
+   * NOTE: this feature may be removed in future releases
+   */
+  def initialize(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
-          ZioLoggerFactory.initialize(runtime)
+          ZioLoggerFactory.initialize(runtime, nameAnnotationKey)
         }
       }
     }
