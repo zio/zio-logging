@@ -22,10 +22,11 @@ inThisBuild(
   )
 )
 
-val ZioVersion     = "2.0.6"
-val slf4jVersion   = "1.7.36"
-val slf4j2Version  = "2.0.6"
-val logbackVersion = "1.2.11"
+val ZioVersion      = "2.0.6"
+val slf4jVersion    = "1.7.36"
+val slf4j2Version   = "2.0.6"
+val logbackVersion  = "1.2.11"
+val logback2Version = "1.4.5"
 
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
@@ -37,7 +38,7 @@ addCommandAlias(
 
 addCommandAlias(
   "testJVM",
-  ";coreJVM/test;slf4j/test;jpl/test;slf4jBridge/test;slf4j2Bridge/test"
+  ";coreJVM/test;slf4j/test;slf4j2/test;jpl/test;slf4jBridge/test;slf4j2Bridge/test"
 )
 
 addCommandAlias(
@@ -47,7 +48,7 @@ addCommandAlias(
 
 addCommandAlias(
   "mimaChecks",
-  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
+  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4j2/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
 )
 
 lazy val root = project
@@ -55,7 +56,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4jBridge, slf4j2Bridge, jpl, benchmarks, examples, docs)
+  .aggregate(coreJVM, coreJS, slf4j, slf4j2, slf4jBridge, slf4j2Bridge, jpl, benchmarks, examples, docs)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -94,6 +95,23 @@ lazy val slf4j = project
       "ch.qos.logback"          % "logback-classic"          % logbackVersion % Test,
       "net.logstash.logback"    % "logstash-logback-encoder" % "6.6"          % Test,
       "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"        % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
+lazy val slf4j2 = project
+  .in(file("slf4j2"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-slf4j2"))
+  .settings(mimaSettings(failOnProblem = true))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.slf4j"               % "slf4j-api"                % slf4j2Version,
+      "dev.zio"               %%% "zio-test"                 % ZioVersion      % Test,
+      "dev.zio"               %%% "zio-test-sbt"             % ZioVersion      % Test,
+      "ch.qos.logback"          % "logback-classic"          % logback2Version % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % "7.2"           % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"         % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
