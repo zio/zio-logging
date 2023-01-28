@@ -40,7 +40,7 @@ object SLF4J {
   /**
    * log aspect annotation key for slf4j logger name
    */
-  @deprecated
+  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
   val loggerNameAnnotationKey = "slf4j_logger_name"
 
   /**
@@ -61,7 +61,7 @@ object SLF4J {
    *
    * annotation key: [[SLF4J.loggerNameAnnotationKey]]
    */
-  @deprecated
+  @deprecated("use zio.logging.loggerName", "2.1.8")
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 

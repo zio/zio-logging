@@ -22,7 +22,7 @@ val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 Default `SLF4J` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jSimpleApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
-    * NOTE: custom logger name may be set by `SLF4J.loggerName` aspect
+    * NOTE: custom logger name may be set by `zio.logging.loggerName` aspect
 * all annotations (logger name and log marker name annotations are excluded) are placed into MDC context
 * cause is logged as throwable
 
@@ -31,7 +31,7 @@ See also [LogFormat and LogAppender](formatting-log-records.md#logformat-and-log
 Custom logger name set by aspect:
 
 ```scala
-ZIO.logInfo("Starting user operation") @@ SLF4J.loggerName("zio.logging.example.UserOperation")
+ZIO.logInfo("Starting user operation") @@ zio.logging.loggerName("zio.logging.example.UserOperation")
 ```
 
 Log marker name set by aspect:
@@ -76,7 +76,7 @@ object Slf4jSimpleApp extends ZIOAppDefault {
             ZIO.sleep(500.millis) *>
             ZIO.logInfo("Stopping user operation")
         } @@ ZIOAspect.annotated("user", uId.toString)
-      } @@ LogAnnotation.TraceId(traceId) @@ SLF4J.loggerName("zio.logging.example.UserOperation")
+      } @@ LogAnnotation.TraceId(traceId) @@ zio.logging.loggerName("zio.logging.example.UserOperation")
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success
 

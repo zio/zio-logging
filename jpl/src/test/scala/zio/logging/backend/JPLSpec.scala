@@ -96,9 +96,28 @@ object JPLSpec extends ZIOSpecDefault {
         )
       }
     }.provide(loggerDefault),
-    test("log with custom logger name") {
+    test("log with custom logger name - legacy") {
       val loggerName = "my-logger"
       (startStop() @@ JPL.loggerName(loggerName)).map { case (traceId, users) =>
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(loggerOutput.size == 5) && assertTrue(
+          loggerOutput.forall(_.loggerName == loggerName)
+        ) && assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
+          equalTo(
+            Chunk(
+              s"user=${users(0)} trace_id=$traceId Starting operation",
+              s"user=${users(0)} trace_id=$traceId Stopping operation",
+              s"user=${users(1)} trace_id=$traceId Starting operation",
+              s"user=${users(1)} trace_id=$traceId Stopping operation",
+              s"Done"
+            )
+          )
+        )
+      }
+    }.provide(loggerDefault),
+    test("log with custom logger name") {
+      val loggerName = "my-logger"
+      (startStop() @@ zio.logging.loggerName(loggerName)).map { case (traceId, users) =>
         val loggerOutput = TestAppender.logOutput
         assertTrue(loggerOutput.size == 5) && assertTrue(
           loggerOutput.forall(_.loggerName == loggerName)
@@ -133,7 +152,7 @@ object JPLSpec extends ZIOSpecDefault {
         )
       }
     }.provide(loggerTraceAnnotation),
-    test("logger name changes") {
+    test("logger name changes - legacy logger name annotation") {
       val users = Chunk.fill(2)(UUID.randomUUID())
       for {
         traceId <- ZIO.succeed(UUID.randomUUID())
@@ -163,14 +182,50 @@ object JPLSpec extends ZIOSpecDefault {
         )
       }
     }.provide(loggerDefault),
+    test("logger name changes") {
+      val users = Chunk.fill(2)(UUID.randomUUID())
+      for {
+        traceId <- ZIO.succeed(UUID.randomUUID())
+        _        = TestAppender.reset()
+        _       <- ZIO.logInfo("Start") @@ logging.loggerName("root-logger")
+        _       <- ZIO.foreach(users) { uId =>
+                     {
+                       ZIO.logInfo("Starting user operation") *> ZIO.sleep(500.millis) *> ZIO.logInfo(
+                         "Stopping user operation"
+                       )
+                     } @@ ZIOAspect.annotated("user", uId.toString) @@ logging.loggerName("user-logger")
+                   } @@ LogAnnotation.TraceId(traceId) @@ logging.loggerName("user-root-logger")
+        _       <- ZIO.logInfo("Done") @@ logging.loggerName("root-logger")
+      } yield {
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.loggerName))(
+          equalTo(
+            Chunk(
+              "root-logger",
+              "user-logger",
+              "user-logger",
+              "user-logger",
+              "user-logger",
+              "root-logger"
+            )
+          )
+        )
+      }
+    }.provide(loggerDefault),
     test("log error with cause") {
       someError().map { _ =>
         val loggerOutput = TestAppender.logOutput
         someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
       }
     }.provide(loggerLineCause),
-    test("log error with cause with custom logger name") {
+    test("log error with cause with custom logger name - legacy") {
       (someError() @@ JPL.loggerName("my-logger")).map { _ =>
+        val loggerOutput = TestAppender.logOutput
+        someErrorAssert(loggerOutput, "my-logger") && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
+      }
+    }.provide(loggerLineCause),
+    test("log error with cause with custom logger name") {
+      (someError() @@ logging.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
       }

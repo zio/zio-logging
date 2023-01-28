@@ -48,7 +48,7 @@ object JPL {
   /**
    * log aspect annotation key for JPL logger name
    */
-  @deprecated
+  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
   val loggerNameAnnotationKey = "jpl_logger_name"
 
   /**
@@ -64,7 +64,7 @@ object JPL {
    *
    * annotation key: [[JPL.loggerNameAnnotationKey]]
    */
-  @deprecated
+  @deprecated("use zio.logging.loggerName", "2.1.8")
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 

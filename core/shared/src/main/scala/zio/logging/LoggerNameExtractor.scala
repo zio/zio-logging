@@ -86,7 +86,6 @@ object LoggerNameExtractor {
 
   /**
    * Extractor which take logger name from annotation with key [[zio.logging.loggerNameAnnotationKey]] or [[Trace]] if specified annotation is not present
-   *
    */
   val loggerNameAnnotationOrTrace: LoggerNameExtractor =
     annotationOrTrace(loggerNameAnnotationKey)
