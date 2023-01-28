@@ -92,38 +92,40 @@ object SLF4JSpec extends ZIOSpecDefault {
     )
 
   val spec: Spec[Environment, Any] = suite("SLF4JSpec")(
-    test("log only user annotation into MDC") {
+    test("log only user annotation into key values") {
       startStop().map { case (_, users) =>
         val loggerOutput = TestAppender.logOutput
-        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
+        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name)))(
           equalTo(Chunk.fill(5)(None))
-        ) && assert(loggerOutput.map(_.mdc.get("user")))(
+        ) && assert(loggerOutput.map(_.keyValues.get("user")))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
         )
       }
     }.provide(loggerUserAnnotation),
-    test("log only trace annotation into MDC") {
+    test("log only trace annotation into key values") {
       startStop().map { case (traceId, _) =>
         val loggerOutput = TestAppender.logOutput
-        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
+        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name)))(
           equalTo(
             Chunk.fill(4)(Some(traceId.toString)) :+ None
           )
-        ) && assert(loggerOutput.map(_.mdc.get("user")))(
+        ) && assert(loggerOutput.map(_.keyValues.get("user")))(
           equalTo(Chunk.fill(5)(None))
         )
       }
     }.provide(loggerTraceAnnotation),
-    test("log all annotations into MDC with custom logger name") {
+    test("log all annotations into key values with custom logger name") {
       (startStop() @@ SLF4J.loggerName("my-logger")).map { case (traceId, users) =>
         val loggerOutput = TestAppender.logOutput
-        startStopAssert(loggerOutput, "my-logger") && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
+        startStopAssert(loggerOutput, "my-logger") && assert(
+          loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name))
+        )(
           equalTo(
             Chunk.fill(4)(Some(traceId.toString)) :+ None
           )
-        ) && assert(loggerOutput.map(_.mdc.get("user")))(
+        ) && assert(loggerOutput.map(_.keyValues.get("user")))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-        ) && assert(loggerOutput.map(_.mdc.contains(SLF4J.loggerNameAnnotationKey)))(
+        ) && assert(loggerOutput.map(_.keyValues.contains(SLF4J.loggerNameAnnotationKey)))(
           equalTo(Chunk.fill(5)(false))
         )
       }
@@ -181,7 +183,7 @@ object SLF4JSpec extends ZIOSpecDefault {
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(
           loggerOutput(0).cause.exists(_.contains("input < 1"))
         ) &&
-        assertTrue(!loggerOutput(0).mdc.contains(SLF4J.loggerNameAnnotationKey))
+        assertTrue(!loggerOutput(0).keyValues.contains(SLF4J.loggerNameAnnotationKey))
       }
     }.provide(loggerLineCause),
     test("log error without cause") {

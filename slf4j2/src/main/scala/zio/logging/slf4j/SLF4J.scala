@@ -15,13 +15,11 @@
  */
 package zio.logging.backend
 
-import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
 import org.slf4j.event.Level
+import org.slf4j.{ Logger, LoggerFactory, Marker, MarkerFactory }
 import zio.logging.internal.LogAppender
 import zio.logging.{ LogFormat, LoggerNameExtractor }
 import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
-
-import java.util
 
 object SLF4J {
 
@@ -94,9 +92,10 @@ object SLF4J {
 
   private def logAppender(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): LogAppender =
     new LogAppender { self =>
-      val message: StringBuilder                                = new StringBuilder()
-      val keyValues: scala.collection.mutable.HashMap[String, String] = new scala.collection.mutable.HashMap[String, String]()
-      var throwable: Throwable                                  = null
+      val message: StringBuilder                                      = new StringBuilder()
+      val keyValues: scala.collection.mutable.HashMap[String, String] =
+        new scala.collection.mutable.HashMap[String, String]()
+      var throwable: Throwable                                        = null
 
       /**
        * cause as throwable
@@ -119,7 +118,7 @@ object SLF4J {
         appendText("=")
 
       /**
-       * all key-value into mdc
+       * all key-value into slf4j key-values
        */
       override def appendKeyValue(key: String, value: String): Unit = {
         keyValues.put(key, value)
@@ -127,7 +126,7 @@ object SLF4J {
       }
 
       /**
-       * all key-value into mdc
+       * all key-value into slf4j key-values
        */
       override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
         val builder = new StringBuilder()
@@ -165,27 +164,6 @@ object SLF4J {
         ()
       }
     }
-
-  @deprecated("use layer without logLevel", "2.0.1")
-  def slf4j(
-    logLevel: zio.LogLevel,
-    format: LogFormat,
-    loggerName: Trace => String
-  ): ZLayer[Any, Nothing, Unit] =
-    Runtime.addLogger(slf4jLogger(format, loggerName).filterLogLevel(_ >= logLevel))
-
-  @deprecated("use layer without logLevel", "2.0.1")
-  def slf4j(
-    logLevel: zio.LogLevel,
-    format: LogFormat
-  ): ZLayer[Any, Nothing, Unit] =
-    slf4j(logLevel, format, getLoggerName())
-
-  @deprecated("use layer without logLevel", "2.0.1")
-  def slf4j(
-    logLevel: zio.LogLevel
-  ): ZLayer[Any, Nothing, Unit] =
-    slf4j(logLevel, logFormatDefault, getLoggerName())
 
   /**
    * Use this layer to register an use an Slf4j logger in your app.

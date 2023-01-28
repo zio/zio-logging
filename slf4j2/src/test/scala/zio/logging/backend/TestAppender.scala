@@ -33,20 +33,27 @@ object TestAppender {
     message: String,
     timestamp: Long,
     cause: Option[String],
-    mdc: Map[String, String]
+    keyValues: Map[String, String]
   )
 
   object LogEntry {
-    def apply(event: ILoggingEvent): LogEntry =
+    def apply(event: ILoggingEvent): LogEntry = {
+      val keyValues = if (event.getKeyValuePairs != null) {
+        event.getKeyValuePairs.asScala.map(kv => (kv.key, kv.value.toString)).toMap
+      } else Map.empty[String, String]
+      val cause     = Option(event.getThrowableProxy).map(_.getMessage)
+      val level     = logLevelMapping(event.getLevel)
+
       LogEntry(
         event.getLoggerName,
         event.getThreadName,
-        logLevelMapping(event.getLevel),
+        level,
         event.getMessage,
         event.getTimeStamp,
-        Option(event.getThrowableProxy).map(_.getMessage),
-        event.getKeyValuePairs.asScala.map(kv => (kv.key, kv.value.toString)).toMap
+        cause,
+        keyValues
       )
+    }
   }
 
   private val logEntriesRef: AtomicReference[Chunk[LogEntry]] = new AtomicReference[Chunk[LogEntry]](Chunk.empty)
