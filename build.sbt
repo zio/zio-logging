@@ -56,7 +56,23 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(coreJVM, coreJS, slf4j, slf4j2, slf4jBridge, slf4j2Bridge, jpl, benchmarks, examples, docs)
+  .aggregate(
+    coreJVM,
+    coreJS,
+    slf4j,
+    slf4j2,
+    slf4jBridge,
+    slf4j2Bridge,
+    jpl,
+    benchmarks,
+    examplesCore,
+    examplesJpl,
+    examplesSlf4jBridge,
+    examplesSlf4jLogback,
+    examplesSlf4j2Logback,
+    examplesSlf4jLog4j,
+    docs
+  )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -176,19 +192,68 @@ lazy val benchmarks = project
   .dependsOn(coreJVM)
   .enablePlugins(JmhPlugin)
 
-lazy val examples = project
-  .in(file("examples"))
-  .dependsOn(slf4j, jpl)
-  .settings(stdSettings("zio-logging-examples"))
+lazy val examplesCore = project
+  .in(file("examples/core"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-examples-core"))
+  .settings(
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "dev.zio"  %% "zio-metrics-connectors" % "2.0.4",
+      "dev.zio" %%% "zio-test"               % ZioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt"           % ZioVersion % Test
+    )
+  )
+
+lazy val examplesSlf4jLogback = project
+  .in(file("examples/slf4j-logback"))
+  .dependsOn(slf4j)
+  .settings(stdSettings("zio-logging-examples-slf4j-logback"))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % logbackVersion,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6",
-      "dev.zio"             %% "zio-metrics-connectors"   % "2.0.4",
-      "dev.zio"            %%% "zio-test"                 % ZioVersion % Test,
-      "dev.zio"            %%% "zio-test-sbt"             % ZioVersion % Test
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
     )
+  )
+
+lazy val examplesSlf4j2Logback = project
+  .in(file("examples/slf4j2-logback"))
+  .dependsOn(slf4j2)
+  .settings(stdSettings("zio-logging-examples-slf4j2-logback"))
+  .settings(
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "ch.qos.logback"       % "logback-classic"          % logback2Version,
+      "net.logstash.logback" % "logstash-logback-encoder" % "7.2"
+    )
+  )
+
+lazy val examplesSlf4jLog4j = project
+  .in(file("examples/slf4j-log4j"))
+  .dependsOn(slf4j)
+  .settings(stdSettings("zio-logging-examples-slf4j-log4j"))
+  .settings(
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.2"
+    )
+  )
+
+lazy val examplesJpl = project
+  .in(file("examples/jpl"))
+  .dependsOn(jpl)
+  .settings(stdSettings("zio-logging-examples-jpl"))
+  .settings(
+    publish / skip := true
+  )
+
+lazy val examplesSlf4jBridge = project
+  .in(file("examples/slf4j-bridge"))
+  .dependsOn(slf4jBridge)
+  .settings(stdSettings("zio-logging-examples-slf4j-bridge"))
+  .settings(
+    publish / skip := true
   )
 
 lazy val docs = project
