@@ -12,4 +12,6 @@ object TestService {
 
   val testError: UIO[Unit] = ZIO.logError("test error")
 
+  val testTrace: UIO[Unit] = ZIO.logTrace("test trace")
+
 }
