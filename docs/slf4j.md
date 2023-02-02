@@ -26,6 +26,8 @@ Default `SLF4J` logger setup:
 * all annotations (logger name and log marker name annotations are excluded) are placed into MDC context
 * cause is logged as throwable
 
+See also [LogFormat and LogAppender](formatting-log-records.md#logformat-and-logappender)
+
 Custom logger name set by aspect:
 
 ```scala

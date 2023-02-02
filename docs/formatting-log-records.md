@@ -55,10 +55,15 @@ format function arguments can be split to two sections:
 
 essential `LogAppender` functions, which are used in predefined log formats: 
 
-* `def appendCause(cause: Cause[Any])` - appends a [[zio.Cause]] to the log. Some logging backends may have special support for logging failures 
+* `def appendCause(cause: Cause[Any])` - appends a `zio.Cause` to the log, some logging backends may have special support for logging failures 
 * `def appendNumeric[A](numeric: A)` - appends a numeric value to the log
 * `def appendText(text: String)` - appends unstructured text to the log
 * `def appendKeyValue(key: String, value: String)` - appends a key/value string pair to the log
+
+then it depends on the specific logging backend how these functions are implemented with respect to the backend output, for example:
+* slf4j logging backend - key/value is appended to slf4j MDC context, Cause is transformed to Throwable and placed to slf4j throwable section, all other text and numeric parts are added to slf4j log message
+* console logging backend - in general all values are added to log line, `Cause.prettyPrint` is used to log cause details
+
 
 example of some predefined log formats implementations:
 
