@@ -28,6 +28,8 @@ Default `JPL` logger setup:
 * all annotations (logger name annotation is excluded) are placed at the beginning of log message
 * cause is logged as throwable
 
+See also [LogFormat and LogAppender](formatting-log-records.md#logformat-and-logappender)
+
 Custom logger name set by aspect:
 
 ```scala
