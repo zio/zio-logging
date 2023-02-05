@@ -5,12 +5,10 @@ import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
 
 import java.util.UUID
 
-import LogFormat.{ level, line, _ }
-
 object LogFormatSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("LogFormatSpec")(
     test("line") {
-      val format = line
+      val format = LogFormat.line
       check(Gen.string) { line =>
         val result = format
           .toLogger(
@@ -27,7 +25,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("level") {
-      val format = level
+      val format = LogFormat.level
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(
@@ -44,7 +42,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("levelSyslog") {
-      val format = levelSyslog
+      val format = LogFormat.levelSyslog
       check(Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) { level =>
         val result =
           format.toLogger(
@@ -61,7 +59,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("fiberId") {
-      val format = fiberId
+      val format = LogFormat.fiberId
       check(Gen.int, Gen.int) { (seq, time) =>
         val result = format.toLogger(
           Trace.empty,
@@ -77,7 +75,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("loggerName") {
-      val format = loggerName(LoggerNameExtractor.annotation("name"))
+      val format = LogFormat.loggerName(LoggerNameExtractor.annotation("name"))
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
           Trace.empty,
@@ -93,7 +91,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("annotation") {
-      val format = annotation("test")
+      val format = LogFormat.annotation("test")
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
           Trace.empty,
@@ -109,7 +107,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("annotation (structured)") {
-      val format = annotation(LogAnnotation.UserId)
+      val format = LogFormat.annotation(LogAnnotation.UserId)
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
           Trace.empty,
@@ -128,7 +126,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("empty annotation") {
-      val format = annotation("test")
+      val format = LogFormat.annotation("test")
       val result = format.toLogger(
         Trace.empty,
         FiberId.None,
@@ -142,7 +140,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       assertTrue(result == "")
     },
     test("allAnnotations") {
-      val format = allAnnotations
+      val format = LogFormat.allAnnotations
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
           Trace.empty,
@@ -161,7 +159,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("allAnnotations with exclusion") {
-      val format = allAnnotations(excludeKeys = Set("test2", LogAnnotation.TraceId.name))
+      val format = LogFormat.allAnnotations(excludeKeys = Set("test2", LogAnnotation.TraceId.name))
       check(Gen.string) { annotationValue =>
         val result = format.toLogger(
           Trace.empty,
@@ -182,7 +180,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("enclosing class") {
-      val format = enclosingClass
+      val format = LogFormat.enclosingClass
       val result = format
         .toLogger(
           implicitly[Trace],
@@ -197,7 +195,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       assertTrue(result == "")
     } @@ TestAspect.ignore,
     test("string concat") {
-      val format = text("a") + line + text("c")
+      val format = LogFormat.text("a") + LogFormat.line + LogFormat.text("c")
       check(Gen.string) { line =>
         val result = format
           .toLogger(
@@ -214,7 +212,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("spaced") {
-      val format = line |-| text("c")
+      val format = LogFormat.line |-| LogFormat.text("c")
       check(Gen.string) { line =>
         val result = format
           .toLogger(
@@ -231,7 +229,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("colored") {
-      val format = line.color(LogColor.RED)
+      val format = LogFormat.line.color(LogColor.RED)
       check(Gen.string) { line =>
         val result = format
           .toLogger(
@@ -248,7 +246,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("fixed") {
-      val format = line.fixed(10)
+      val format = LogFormat.line.fixed(10)
       check(Gen.string) { line =>
         val result = format.toLogger(
           Trace.empty,
@@ -264,7 +262,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("traceLine") {
-      val format = traceLine
+      val format = LogFormat.traceLine
       check(Gen.int) { tLine =>
         val result = format.toLogger(
           Trace("location", "file", tLine),
@@ -280,7 +278,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("cause") {
-      val format = cause
+      val format = LogFormat.cause
       check(Gen.string) { msg =>
         val failure = Cause.fail(new Exception(msg))
         val result  = format.toLogger(
@@ -297,7 +295,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("cause empty") {
-      val format = cause
+      val format = LogFormat.cause
 
       val failure = Cause.empty
       val result  = format.toLogger(
@@ -313,7 +311,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       assertTrue(result == failure.prettyPrint)
     },
     test("not empty cause with label if not empty") {
-      val format = (label("cause", cause)).filter(LogFilter.causeNonEmpty)
+      val format = (LogFormat.label("cause", LogFormat.cause)).filter(LogFilter.causeNonEmpty)
       check(Gen.string) { msg =>
         val failure = Cause.fail(new Exception(msg))
         val result  = format.toLogger(
@@ -330,7 +328,7 @@ object LogFormatSpec extends ZIOSpecDefault {
       }
     },
     test("empty cause with label if not empty") {
-      val format = label("cause", cause).filter(LogFilter.causeNonEmpty)
+      val format = LogFormat.label("cause", LogFormat.cause).filter(LogFilter.causeNonEmpty)
 
       val failure = Cause.empty
       val result  = format.toLogger(
@@ -346,10 +344,10 @@ object LogFormatSpec extends ZIOSpecDefault {
       assertTrue(result == "")
     },
     test("default without timestamp") {
-      val format = label("level", level) |-|
-        label("thread", fiberId) |-|
-        label("message", quoted(line)) +
-        (space + label("cause", cause)).filter(LogFilter.causeNonEmpty)
+      val format = LogFormat.label("level", LogFormat.level) |-|
+        LogFormat.label("thread", LogFormat.fiberId) |-|
+        LogFormat.label("message", LogFormat.quoted(LogFormat.line)) +
+        (LogFormat.space + LogFormat.label("cause", LogFormat.cause)).filter(LogFilter.causeNonEmpty)
 
       check(Gen.int, Gen.string, Gen.string, Gen.boolean) { (fiberId, message, cause, hasCause) =>
         val failure                    = if (hasCause) Cause.fail(new Exception(cause)) else Cause.empty
@@ -376,7 +374,7 @@ object LogFormatSpec extends ZIOSpecDefault {
         _.startsWith("EXCLUDE#")
       )
 
-      val format = line.filter(filter)
+      val format = LogFormat.line.filter(filter)
       check(Gen.alphaNumericString, Gen.boolean) { (msg, hasExclude) =>
         val message  = if (hasExclude) "EXCLUDE#" + msg else msg
         val expected = if (hasExclude) message else ""

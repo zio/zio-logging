@@ -34,7 +34,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
       runtime.unsafe.run {
         val logLevel = ZioLoggerRuntime.logLevelMapping(level)
         ZIO.logSpan(name) {
-          ZIO.logAnnotate(Slf4jBridge.loggerNameAnnotationKey, name) {
+          ZIO.logAnnotate(zio.logging.loggerNameAnnotationKey, name) {
             ZIO.logLevel(logLevel) {
               lazy val msg = if (arguments != null) {
                 MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage

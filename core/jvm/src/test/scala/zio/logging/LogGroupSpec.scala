@@ -21,7 +21,7 @@ object LogGroupSpec extends ZIOSpecDefault {
         assertTrue(result == level)
       }
     },
-    test("loggerName") {
+    test("loggerName with trace") {
       val group = LogGroup.loggerName
       check(Gen.alphaNumericString) { value =>
         val result = group(
@@ -33,6 +33,22 @@ object LogGroupSpec extends ZIOSpecDefault {
           FiberRefs.empty,
           Nil,
           Map.empty
+        )
+        assertTrue(result == value)
+      }
+    },
+    test("loggerName with logger name annotation") {
+      val group = LogGroup.loggerName
+      check(Gen.alphaNumericString) { value =>
+        val result = group(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map(loggerNameAnnotationKey -> value)
         )
         assertTrue(result == value)
       }

@@ -24,7 +24,7 @@ val logger = Runtime.removeDefaultLoggers >>> JPL.jpl
 Default `JPL` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.JplSimpleApp.run(JplSimpleApp.scala:17)` will have `zio.logging.example.JplSimpleApp` as logger name
-    * NOTE: custom logger name may be set by `JPL.loggerName` aspect
+    * NOTE: custom logger name may be set by `zio.logging.loggerName` aspect
 * all annotations (logger name annotation is excluded) are placed at the beginning of log message
 * cause is logged as throwable
 
@@ -33,7 +33,7 @@ See also [LogFormat and LogAppender](formatting-log-records.md#logformat-and-log
 Custom logger name set by aspect:
 
 ```scala
-ZIO.logInfo("Starting user operation") @@ JPL.loggerName("zio.logging.example.UserOperation")
+ZIO.logInfo("Starting user operation") @@ zio.logging.loggerName("zio.logging.example.UserOperation")
 ```
 
 
@@ -70,7 +70,7 @@ object JplSimpleApp extends ZIOAppDefault {
             ZIO.sleep(500.millis) *>
             ZIO.logInfo("Stopping user operation")
         } @@ ZIOAspect.annotated("user", uId.toString)
-      } @@ LogAnnotation.TraceId(traceId) @@ JPL.loggerName("zio.logging.example.UserOperation")
+      } @@ LogAnnotation.TraceId(traceId) @@ zio.logging.loggerName("zio.logging.example.UserOperation")
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success
 

@@ -38,7 +38,7 @@ object Slf4jSimpleApp extends ZIOAppDefault {
                        ZIO.sleep(500.millis) *>
                        ZIO.logInfo("Stopping user operation")
                    } @@ ZIOAspect.annotated("user", uId.toString)
-                 } @@ LogAnnotation.TraceId(traceId) @@ SLF4J.loggerName("zio.logging.example.UserOperation")
+                 } @@ LogAnnotation.TraceId(traceId) @@ logging.loggerName("zio.logging.example.UserOperation")
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success
 

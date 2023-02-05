@@ -7,18 +7,15 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
   private val slf4jLogger = org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER")
 
-  private val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
-
-  private val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
+  private val logFilter: LogFilter[String] = LogFilter.logLevelByName(
     LogLevel.Info,
-    loggerName.toLogGroup(),
     "zio.logging.slf4j" -> LogLevel.Debug,
     "SLF4J-LOGGER"      -> LogLevel.Warning
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.label("name", loggerName.toLogFormat()) + LogFormat.default,
+      LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
       logFilter
     ) >+> Slf4jBridge.initialize
 

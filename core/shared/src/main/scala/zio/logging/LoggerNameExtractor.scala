@@ -53,21 +53,6 @@ trait LoggerNameExtractor { self =>
 object LoggerNameExtractor {
 
   /**
-   * Extractor which take logger name from annotation
-   *
-   * @param name name of annotation
-   */
-  def annotation(name: String): LoggerNameExtractor = (_, _, annotations) => annotations.get(name)
-
-  /**
-   * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
-   *
-   * @param name name of annotation
-   */
-  def annotationOrTrace(name: String): LoggerNameExtractor =
-    annotation(name) || trace
-
-  /**
    * Extractor which take logger name from [[Trace]]
    *
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
@@ -83,5 +68,26 @@ object LoggerNameExtractor {
         Some(name)
       case _                     => None
     }
+
+  /**
+   * Extractor which take logger name from annotation
+   *
+   * @param name name of annotation
+   */
+  def annotation(name: String): LoggerNameExtractor = (_, _, annotations) => annotations.get(name)
+
+  /**
+   * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
+   *
+   * @param name name of annotation
+   */
+  def annotationOrTrace(name: String): LoggerNameExtractor =
+    annotation(name) || LoggerNameExtractor.trace
+
+  /**
+   * Extractor which take logger name from annotation with key [[zio.logging.loggerNameAnnotationKey]] or [[Trace]] if specified annotation is not present
+   */
+  val loggerNameAnnotationOrTrace: LoggerNameExtractor =
+    annotationOrTrace(loggerNameAnnotationKey)
 
 }

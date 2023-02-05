@@ -256,7 +256,7 @@ object LogFilter {
    *
    * will use the `Debug` log level for everything except for log events with the logger name
    * prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
-   * Logger name is extracted from [[Trace]].
+   * Logger name is extracted from log annotation or [[Trace]], see: [[LogGroup.loggerName]]
    *
    * @param rootLevel Minimum log level for the root node
    * @param mappings  List of mappings, nesting defined by dot-separated strings

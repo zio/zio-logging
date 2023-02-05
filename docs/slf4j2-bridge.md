@@ -1,22 +1,13 @@
 ---
-id: slf4j-bridge
-title: "SLF4J bridge"
+id: slf4j2-bridge
+title: "SLF4J v2 bridge"
 ---
 
-It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-ZIO libraries. To do so, import
-
-* the `zio-logging-slf4j-bridge` module for SLF4J v1:
-
-```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
-```
-
-* the `zio-logging-slf4j2-bridge` module for [SLF4J v2](https://www.slf4j.org/faq.html#changesInVersion200) (using JDK9+ module system ([JPMS](http://openjdk.java.net/projects/jigsaw/spec/)))
+It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-ZIO libraries. To do so, import  the `zio-logging-slf4j2-bridge` module for [SLF4J v2](https://www.slf4j.org/faq.html#changesInVersion200) (using JDK9+ module system ([JPMS](http://openjdk.java.net/projects/jigsaw/spec/)))
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
 ```
-
 
 and use the `Slf4jBridge.initialize` layer when setting up logging:
 
@@ -28,23 +19,22 @@ program.provideCustom(Slf4jBridge.initialize)
 
 <br/>
 
-SLF4J logger name is stored in log annotation with key `slf4j_logger_name` (`Slf4jBridge.loggerNameAnnotationKey`), following log format
+SLF4J logger name is stored in log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`), following log format
 
 ```scala
 import zio.logging.slf4j.Slf4jBridge
 import zio.logging.LoggerNameExtractor
 
-val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
+val loggerName = LoggerNameExtractor.loggerNameAnnotationOrTrace
 val loggerNameFormat = loggerName.toLogFormat()
 ```
 may be used to get logger name from log annotation or ZIO Trace. 
 
-This logger name extractor can be used also in log filter, which applying log filtering by defined logger name and level:
+This logger name extractor is used by default in log filter, which applying log filtering by defined logger name and level:
 
 ```scala
-val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
+val logFilter: LogFilter[String] = LogFilter.logLevelByName(
   LogLevel.Info,
-  loggerName.toLogGroup(),
   "zio.logging.slf4j" -> LogLevel.Debug,
   "SLF4J-LOGGER"      -> LogLevel.Warning
 )
@@ -82,27 +72,23 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
   private val slf4jLogger = org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER")
 
-  private val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
-
-  private val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
+  private val logFilter: LogFilter[String] = LogFilter.logLevelByName(
     LogLevel.Info,
-    loggerName.toLogGroup(),
     "zio.logging.slf4j" -> LogLevel.Debug,
     "SLF4J-LOGGER"      -> LogLevel.Warning
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.label("name", loggerName.toLogFormat()) + LogFormat.default,
+      LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
       logFilter
     ) >+> Slf4jBridge.initialize
 
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
-      _ <- ZIO.logDebug("Start")
-      _ <- ZIO.succeed(slf4jLogger.debug("Test {}!", "DEBUG"))
+      _ <- ZIO.logInfo("Start")
       _ <- ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))
-      _ <- ZIO.logInfo("Done")
+      _ <- ZIO.logDebug("Done")
     } yield ExitCode.success
 
 }

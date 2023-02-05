@@ -32,7 +32,7 @@ object LogFilterSpec extends ZIOSpecDefault {
         Cause.empty,
         FiberRefs.empty,
         List.empty,
-        Map("name" -> location)
+        Map(loggerNameAnnotationKey -> location)
       )
     )(
       expectation ?? s"$location with $level"
@@ -102,7 +102,7 @@ object LogFilterSpec extends ZIOSpecDefault {
     },
     test("log filtering by log level and name with annotation") {
 
-      val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
+      val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
 
       val filter: LogFilter[String] = LogFilter.logLevelByGroup(
         LogLevel.Debug,
@@ -124,7 +124,7 @@ object LogFilterSpec extends ZIOSpecDefault {
     },
     test("log filtering by log level and name matcher with annotation") {
 
-      val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
+      val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
 
       val filter: LogFilter[String] = LogFilter.logLevelByGroup(
         LogLevel.Debug,

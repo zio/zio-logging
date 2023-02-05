@@ -19,8 +19,9 @@ import zio.{ ZIO, ZLayer }
 
 object Slf4jBridge {
 
-  val loggerNameAnnotationKey: String = "slf4j_logger_name"
-
+  /**
+   * initialize SLF4J bridge
+   */
   def initialize: ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>

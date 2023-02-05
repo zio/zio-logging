@@ -18,19 +18,33 @@ package zio.logging.backend
 import org.slf4j.{ Logger, LoggerFactory, MDC, Marker, MarkerFactory }
 import zio.logging.internal.LogAppender
 import zio.logging.{ LogFormat, LoggerNameExtractor }
-import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIOAspect, ZLayer, ZLogger }
+import zio.{
+  Cause,
+  FiberFailure,
+  FiberId,
+  FiberRefs,
+  LogLevel,
+  LogSpan,
+  Runtime,
+  Trace,
+  ZIOAspect,
+  ZLayer,
+  ZLogger,
+  logging
+}
 
 import java.util
 
 object SLF4J {
 
   /**
-   * log aspect annotation key for slf4j logger name
+   * log annotation key for slf4j logger name
    */
+  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
   val loggerNameAnnotationKey = "slf4j_logger_name"
 
   /**
-   * log aspect annotation key for slf4j marker name
+   * log annotation key for slf4j marker name
    */
   val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
 
@@ -39,7 +53,7 @@ object SLF4J {
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys =
-      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey)
+      Set(SLF4J.loggerNameAnnotationKey, SLF4J.logMarkerNameAnnotationKey, logging.loggerNameAnnotationKey)
     ) + LogFormat.line + LogFormat.cause
 
   /**
@@ -47,6 +61,7 @@ object SLF4J {
    *
    * annotation key: [[SLF4J.loggerNameAnnotationKey]]
    */
+  @deprecated("use zio.logging.loggerName", "2.1.8")
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
@@ -247,9 +262,12 @@ object SLF4J {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
+        val slf4jLoggerName = annotations.getOrElse(
+          SLF4J.loggerNameAnnotationKey,
+          annotations.getOrElse(logging.loggerNameAnnotationKey, loggerName(trace))
+        )
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
-        val slf4jMarkerName = annotations.get(logMarkerNameAnnotationKey)
+        val slf4jMarkerName = annotations.get(SLF4J.logMarkerNameAnnotationKey)
         val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
         if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
           val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
