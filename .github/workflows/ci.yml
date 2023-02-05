@@ -76,7 +76,7 @@ jobs:
         run: sbt ++${{ matrix.scala }}! testJVM8
       - name: Compile additional subprojects
         if: ${{ ( startsWith(matrix.scala, '2.12.') || startsWith(matrix.scala, '2.13.') ) && endsWith(matrix.java, '.11') }}
-        run: sbt ++${{ matrix.scala }}! examples/compile benchmarks/compile
+        run: sbt ++${{ matrix.scala }}! examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4jLog4j/compile benchmarks/compile
 
   ci:
     runs-on: ubuntu-20.04
