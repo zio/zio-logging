@@ -48,7 +48,7 @@ addCommandAlias(
 
 addCommandAlias(
   "mimaChecks",
-  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4j2/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
+  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
 )
 
 lazy val root = project
@@ -67,7 +67,7 @@ lazy val root = project
     benchmarks,
     examplesCore,
     examplesJpl,
-    examplesSlf4jBridge,
+    examplesSlf4j2Bridge,
     examplesSlf4jLogback,
     examplesSlf4j2Logback,
     examplesSlf4jLog4j,
@@ -248,10 +248,10 @@ lazy val examplesJpl = project
     publish / skip := true
   )
 
-lazy val examplesSlf4jBridge = project
-  .in(file("examples/slf4j-bridge"))
-  .dependsOn(slf4jBridge)
-  .settings(stdSettings("zio-logging-examples-slf4j-bridge"))
+lazy val examplesSlf4j2Bridge = project
+  .in(file("examples/slf4j2-bridge"))
+  .dependsOn(slf4j2Bridge)
+  .settings(stdSettings("zio-logging-examples-slf4j2-bridge"))
   .settings(
     publish / skip := true
   )

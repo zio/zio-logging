@@ -43,7 +43,7 @@ ZIO.logInfo("Confidential user operation") @@ SLF4J.logMarkerName("CONFIDENTIAL"
 
 ## Examples
 
-You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
+You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
 
 
 ### SLF4J logger name and annotations
@@ -172,9 +172,9 @@ object CustomTracingAnnotationApp extends ZIOAppDefault {
 
 Expected Console Output:
 ```
-19:09:57.695 [ZScheduler-Worker-9] trace_id= user_id= INFO  z.l.e.CustomTracingAnnotationApp Starting operation
-19:09:57.695 [ZScheduler-Worker-9] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=35d36d10-4b64-48fc-bf9d-6b6b37d2f4cc INFO  z.l.e.CustomTracingAnnotationApp Starting operation
-19:09:58.056 [ZScheduler-Worker-8] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=068a35f2-2633-4404-9522-ffbfabe63730 INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
-19:09:58.197 [ZScheduler-Worker-10] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=35d36d10-4b64-48fc-bf9d-6b6b37d2f4cc INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
-19:09:58.202 [ZScheduler-Worker-13] trace_id= user_id= INFO  z.l.e.CustomTracingAnnotationApp Done
+15:53:20.145 [ZScheduler-Worker-9] [user=1abd8458-aefd-4780-88ec-cccd1310d4c8, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Starting operation
+15:53:20.145 [ZScheduler-Worker-13] [user=878689e0-da30-49f8-8923-ed915c00db9c, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Starting operation
+15:53:20.688 [ZScheduler-Worker-15] [user=1abd8458-aefd-4780-88ec-cccd1310d4c8, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
+15:53:20.688 [ZScheduler-Worker-11] [user=878689e0-da30-49f8-8923-ed915c00db9c, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
+15:53:20.691 [ZScheduler-Worker-15] [] INFO  z.l.e.CustomTracingAnnotationApp Done
 ```

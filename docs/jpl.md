@@ -39,7 +39,7 @@ ZIO.logInfo("Starting user operation") @@ zio.logging.loggerName("zio.logging.ex
 
 ## Examples
 
-You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
+You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
 
 ### Java Platform/System logger name and annotations
 
