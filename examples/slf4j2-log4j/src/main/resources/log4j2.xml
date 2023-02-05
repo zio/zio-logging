@@ -2,7 +2,7 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %X %-5level %logger{36} - %msg%n"/>
             <MarkerFilter marker="CONFIDENTIAL" onMatch="DENY" onMismatch="ACCEPT"/>
         </Console>
     </Appenders>

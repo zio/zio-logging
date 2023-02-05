@@ -70,7 +70,7 @@ lazy val root = project
     examplesSlf4j2Bridge,
     examplesSlf4jLogback,
     examplesSlf4j2Logback,
-    examplesSlf4jLog4j,
+    examplesSlf4j2Log4j,
     docs
   )
 
@@ -229,14 +229,15 @@ lazy val examplesSlf4j2Logback = project
     )
   )
 
-lazy val examplesSlf4jLog4j = project
-  .in(file("examples/slf4j-log4j"))
-  .dependsOn(slf4j)
-  .settings(stdSettings("zio-logging-examples-slf4j-log4j"))
+lazy val examplesSlf4j2Log4j = project
+  .in(file("examples/slf4j2-log4j"))
+  .dependsOn(slf4j2)
+  .settings(stdSettings("zio-logging-examples-slf4j2-log4j"))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.2"
+      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.19.0",
+      "org.apache.logging.log4j" % "log4j-core"        % "2.19.0"
     )
   )
 
