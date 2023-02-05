@@ -24,12 +24,6 @@ import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime
 object SLF4J {
 
   /**
-   * log aspect annotation key for slf4j logger name
-   */
-  @deprecated
-  val loggerNameAnnotationKey = "logger_name"
-
-  /**
    * log aspect annotation key for slf4j marker name
    */
   val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
@@ -39,17 +33,8 @@ object SLF4J {
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys =
-      Set(loggerNameAnnotationKey, logMarkerNameAnnotationKey)
+      Set(zio.logging.loggerNameAnnotationKey, logMarkerNameAnnotationKey)
     ) + LogFormat.line + LogFormat.cause
-
-  /**
-   * slf4j logger name aspect, by this aspect is possible to change default logger name (default logger name is extracted from [[Trace]])
-   *
-   * annotation key: [[SLF4J.loggerNameAnnotationKey]]
-   */
-  @deprecated
-  def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   /**
    * slf4j marker name aspect
@@ -210,7 +195,7 @@ object SLF4J {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): Unit = {
-        val slf4jLoggerName = annotations.getOrElse(loggerNameAnnotationKey, loggerName(trace))
+        val slf4jLoggerName = annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
         val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
         val slf4jMarkerName = annotations.get(logMarkerNameAnnotationKey)
         val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))

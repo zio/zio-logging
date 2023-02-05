@@ -115,7 +115,7 @@ object SLF4JSpec extends ZIOSpecDefault {
       }
     }.provide(loggerTraceAnnotation),
     test("log all annotations into key values with custom logger name") {
-      (startStop() @@ SLF4J.loggerName("my-logger")).map { case (traceId, users) =>
+      (startStop() @@ zio.logging.loggerName("my-logger")).map { case (traceId, users) =>
         val loggerOutput = TestAppender.logOutput
         startStopAssert(loggerOutput, "my-logger") && assert(
           loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name))
@@ -125,7 +125,7 @@ object SLF4JSpec extends ZIOSpecDefault {
           )
         ) && assert(loggerOutput.map(_.keyValues.get("user")))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-        ) && assert(loggerOutput.map(_.keyValues.contains(SLF4J.loggerNameAnnotationKey)))(
+        ) && assert(loggerOutput.map(_.keyValues.contains(zio.logging.loggerNameAnnotationKey)))(
           equalTo(Chunk.fill(5)(false))
         )
       }
@@ -135,15 +135,15 @@ object SLF4JSpec extends ZIOSpecDefault {
       for {
         traceId <- ZIO.succeed(UUID.randomUUID())
         _        = TestAppender.reset()
-        _       <- ZIO.logInfo("Start") @@ SLF4J.loggerName("root-logger")
+        _       <- ZIO.logInfo("Start") @@ zio.logging.loggerName("root-logger")
         _       <- ZIO.foreach(users) { uId =>
                      {
                        ZIO.logInfo("Starting user operation") *> ZIO.sleep(500.millis) *> ZIO.logInfo(
                          "Stopping user operation"
                        )
-                     } @@ ZIOAspect.annotated("user", uId.toString) @@ SLF4J.loggerName("user-logger")
-                   } @@ LogAnnotation.TraceId(traceId) @@ SLF4J.loggerName("user-root-logger")
-        _       <- ZIO.logInfo("Done") @@ SLF4J.loggerName("root-logger")
+                     } @@ ZIOAspect.annotated("user", uId.toString) @@ zio.logging.loggerName("user-logger")
+                   } @@ LogAnnotation.TraceId(traceId) @@ zio.logging.loggerName("user-root-logger")
+        _       <- ZIO.logInfo("Done") @@ zio.logging.loggerName("root-logger")
       } yield {
         val loggerOutput = TestAppender.logOutput
         assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
@@ -178,12 +178,12 @@ object SLF4JSpec extends ZIOSpecDefault {
       }
     }.provide(loggerLineCause),
     test("log error with cause with custom logger name") {
-      (someError() @@ SLF4J.loggerName("my-logger")).map { _ =>
+      (someError() @@ zio.logging.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(
           loggerOutput(0).cause.exists(_.contains("input < 1"))
         ) &&
-        assertTrue(!loggerOutput(0).keyValues.contains(SLF4J.loggerNameAnnotationKey))
+        assertTrue(!loggerOutput(0).keyValues.contains(zio.logging.loggerNameAnnotationKey))
       }
     }.provide(loggerLineCause),
     test("log error without cause") {

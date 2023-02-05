@@ -3,12 +3,12 @@ id: slf4j
 title: "SLF4J"
 ---
 
-The Simple Logging Facade for Java ([`SLF4J`](https://www.slf4j.org/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
+The Simple Logging Facade for Java ([`SLF4J v2`](https://www.slf4j.org/) - using JDK9+ module system [JPMS](http://openjdk.java.net/projects/jigsaw/spec/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
 
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
 ```
 
 Logger layer:
@@ -23,7 +23,7 @@ Default `SLF4J` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jSimpleApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `zio.logging.loggerName` aspect
-* all annotations (logger name and log marker name annotations are excluded) are placed into MDC context
+* all annotations (logger name and log marker name annotations are excluded) are passed like [key-value pairs](https://www.slf4j.org/manual.html#fluent)
 * cause is logged as throwable
 
 See also [LogFormat and LogAppender](formatting-log-records.md#logformat-and-logappender)
@@ -90,7 +90,7 @@ Logback configuration:
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n</Pattern>
+            <Pattern>%d{HH:mm:ss.SSS} [%thread] [%kvp] %-5level %logger{36} %msg%n</Pattern>
         </layout>
     </appender>
     <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
@@ -106,12 +106,12 @@ Logback configuration:
 
 Expected Console Output:
 ```
-13:49:14.060 [ZScheduler-Worker-2] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Start
-13:49:14.090 [ZScheduler-Worker-12] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=3b6163f5-0677-4909-b17f-c181b53312b6 INFO  zio.logging.example.UserOperation Starting user operation
-13:49:14.091 [ZScheduler-Worker-8] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Starting user operation
-13:49:14.616 [ZScheduler-Worker-0] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=3b6163f5-0677-4909-b17f-c181b53312b6 INFO  zio.logging.example.UserOperation Stopping user operation
-13:49:14.616 [ZScheduler-Worker-10] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Stopping user operation
-13:49:14.626 [ZScheduler-Worker-0] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Done
+12:13:17.495 [ZScheduler-Worker-8] [] INFO  zio.logging.example.Slf4j2SimpleApp Start
+12:13:17.601 [ZScheduler-Worker-11] [trace_id="7826dd28-7e37-4b54-b84d-05399bb6cbeb" user="7b6a1af5-bad2-4846-aa49-138d31b40a24"] INFO  zio.logging.example.UserOperation Starting user operation
+12:13:17.601 [ZScheduler-Worker-10] [trace_id="7826dd28-7e37-4b54-b84d-05399bb6cbeb" user="4df9cdbc-e770-4bc9-b884-756e671a6435"] INFO  zio.logging.example.UserOperation Starting user operation
+12:13:18.167 [ZScheduler-Worker-13] [trace_id="7826dd28-7e37-4b54-b84d-05399bb6cbeb" user="7b6a1af5-bad2-4846-aa49-138d31b40a24"] INFO  zio.logging.example.UserOperation Stopping user operation
+12:13:18.167 [ZScheduler-Worker-15] [trace_id="7826dd28-7e37-4b54-b84d-05399bb6cbeb" user="4df9cdbc-e770-4bc9-b884-756e671a6435"] INFO  zio.logging.example.UserOperation Stopping user operation
+12:13:18.173 [ZScheduler-Worker-13] [] INFO  zio.logging.example.Slf4j2SimpleApp Done
 ```
 
 ### Custom tracing annotation
