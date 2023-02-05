@@ -1,6 +1,6 @@
 ---
-id: slf4j
-title: "SLF4J"
+id: slf4j2
+title: "SLF4J v2"
 ---
 
 The Simple Logging Facade for Java ([`SLF4J v2`](https://www.slf4j.org/) - using JDK9+ module system [JPMS](http://openjdk.java.net/projects/jigsaw/spec/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
