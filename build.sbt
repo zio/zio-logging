@@ -22,7 +22,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion      = "2.0.6"
+val ZioVersion      = "2.0.7"
 val slf4jVersion    = "1.7.36"
 val slf4j2Version   = "2.0.6"
 val logbackVersion  = "1.2.11"
