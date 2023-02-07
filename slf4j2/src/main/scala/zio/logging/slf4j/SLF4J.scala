@@ -77,10 +77,10 @@ object SLF4J {
 
   private def logAppender(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): LogAppender =
     new LogAppender { self =>
-      val message: StringBuilder                                      = new StringBuilder()
-      val keyValues: scala.collection.mutable.HashMap[String, String] =
-        new scala.collection.mutable.HashMap[String, String]()
-      var throwable: Throwable                                        = null
+      val message: StringBuilder                                            = new StringBuilder()
+      val keyValues: scala.collection.mutable.ArrayBuffer[(String, String)] =
+        new scala.collection.mutable.ArrayBuffer[(String, String)]()
+      var throwable: Throwable                                              = null
 
       /**
        * cause as throwable
@@ -106,7 +106,7 @@ object SLF4J {
        * all key-value into slf4j key-values
        */
       override def appendKeyValue(key: String, value: String): Unit = {
-        keyValues.put(key, value)
+        keyValues.addOne((key, value))
         ()
       }
 
@@ -116,8 +116,8 @@ object SLF4J {
       override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
         val builder = new StringBuilder()
         appendValue(LogAppender.unstructured(builder.append(_)))
-        builder.toString()
-        keyValues.put(key, builder.toString())
+        val value   = builder.toString()
+        keyValues.addOne((key, value))
         ()
       }
 

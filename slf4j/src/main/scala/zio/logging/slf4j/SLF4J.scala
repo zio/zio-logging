@@ -134,8 +134,8 @@ object SLF4J {
       override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
         val builder = new StringBuilder()
         appendValue(LogAppender.unstructured(builder.append(_)))
-        builder.toString()
-        mdc.put(key, builder.toString())
+        val value   = builder.toString()
+        mdc.put(key, value)
         ()
       }
 

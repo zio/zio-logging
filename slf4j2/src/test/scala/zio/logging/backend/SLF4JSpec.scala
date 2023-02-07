@@ -95,9 +95,11 @@ object SLF4JSpec extends ZIOSpecDefault {
     test("log only user annotation into key values") {
       startStop().map { case (_, users) =>
         val loggerOutput = TestAppender.logOutput
-        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name)))(
+        startStopAssert(loggerOutput) && assert(
+          loggerOutput.map(_.keyValues.find(_._1 == LogAnnotation.TraceId.name).map(_._2))
+        )(
           equalTo(Chunk.fill(5)(None))
-        ) && assert(loggerOutput.map(_.keyValues.get("user")))(
+        ) && assert(loggerOutput.map(_.keyValues.find(_._1 == "user").map(_._2)))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
         )
       }
@@ -105,11 +107,13 @@ object SLF4JSpec extends ZIOSpecDefault {
     test("log only trace annotation into key values") {
       startStop().map { case (traceId, _) =>
         val loggerOutput = TestAppender.logOutput
-        startStopAssert(loggerOutput) && assert(loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name)))(
+        startStopAssert(loggerOutput) && assert(
+          loggerOutput.map(_.keyValues.find(_._1 == LogAnnotation.TraceId.name).map(_._2))
+        )(
           equalTo(
             Chunk.fill(4)(Some(traceId.toString)) :+ None
           )
-        ) && assert(loggerOutput.map(_.keyValues.get("user")))(
+        ) && assert(loggerOutput.map(_.keyValues.find(_._1 == "user").map(_._2)))(
           equalTo(Chunk.fill(5)(None))
         )
       }
@@ -118,14 +122,14 @@ object SLF4JSpec extends ZIOSpecDefault {
       (startStop() @@ zio.logging.loggerName("my-logger")).map { case (traceId, users) =>
         val loggerOutput = TestAppender.logOutput
         startStopAssert(loggerOutput, "my-logger") && assert(
-          loggerOutput.map(_.keyValues.get(LogAnnotation.TraceId.name))
+          loggerOutput.map(_.keyValues.find(_._1 == LogAnnotation.TraceId.name).map(_._2))
         )(
           equalTo(
             Chunk.fill(4)(Some(traceId.toString)) :+ None
           )
-        ) && assert(loggerOutput.map(_.keyValues.get("user")))(
+        ) && assert(loggerOutput.map(_.keyValues.find(_._1 == "user").map(_._2)))(
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-        ) && assert(loggerOutput.map(_.keyValues.contains(zio.logging.loggerNameAnnotationKey)))(
+        ) && assert(loggerOutput.map(_.keyValues.exists(_._1 == zio.logging.loggerNameAnnotationKey)))(
           equalTo(Chunk.fill(5)(false))
         )
       }
@@ -183,9 +187,20 @@ object SLF4JSpec extends ZIOSpecDefault {
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(
           loggerOutput(0).cause.exists(_.contains("input < 1"))
         ) &&
-        assertTrue(!loggerOutput(0).keyValues.contains(zio.logging.loggerNameAnnotationKey))
+        assertTrue(!loggerOutput(0).keyValues.exists(_._1 == zio.logging.loggerNameAnnotationKey))
       }
     }.provide(loggerLineCause),
+    test("log multiple key values with same key") {
+      for {
+        _ <- ZIO.succeed(TestAppender.reset())
+        _ <- ZIO.logInfo("info") @@ ZIOAspect.annotated(LogAnnotation.UserId.name, "u1") @@ LogAnnotation.UserId("u2")
+      } yield {
+        val loggerOutput = TestAppender.logOutput
+        assertTrue(
+          loggerOutput(0).keyValues.filter(_._1 == LogAnnotation.UserId.name).map(_._2).toSet == Set("u1", "u2")
+        )
+      }
+    }.provide(loggerDefault),
     test("log error without cause") {
       someError().map { _ =>
         val loggerOutput = TestAppender.logOutput

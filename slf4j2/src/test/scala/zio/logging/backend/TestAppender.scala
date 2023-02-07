@@ -33,14 +33,14 @@ object TestAppender {
     message: String,
     timestamp: Long,
     cause: Option[String],
-    keyValues: Map[String, String]
+    keyValues: List[(String, String)]
   )
 
   object LogEntry {
     def apply(event: ILoggingEvent): LogEntry = {
       val keyValues = if (event.getKeyValuePairs != null) {
-        event.getKeyValuePairs.asScala.map(kv => (kv.key, kv.value.toString)).toMap
-      } else Map.empty[String, String]
+        event.getKeyValuePairs.asScala.map(kv => (kv.key, kv.value.toString)).toList
+      } else List.empty[(String, String)]
       val cause     = Option(event.getThrowableProxy).map(_.getMessage)
       val level     = logLevelMapping(event.getLevel)
 
