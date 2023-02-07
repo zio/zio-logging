@@ -215,19 +215,23 @@ object JPLSpec extends ZIOSpecDefault {
     test("log error with cause") {
       someError().map { _ =>
         val loggerOutput = TestAppender.logOutput
-        someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
+        someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.exists(_.getMessage.contains("input < 1")))
       }
     }.provide(loggerLineCause),
     test("log error with cause with custom logger name - legacy") {
       (someError() @@ JPL.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
-        someErrorAssert(loggerOutput, "my-logger") && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
+        someErrorAssert(loggerOutput, "my-logger") && assertTrue(
+          loggerOutput(0).cause.exists(_.getMessage.contains("input < 1"))
+        )
       }
     }.provide(loggerLineCause),
     test("log error with cause with custom logger name") {
       (someError() @@ logging.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
-        someErrorAssert(loggerOutput, "my-logger") && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
+        someErrorAssert(loggerOutput, "my-logger") && assertTrue(
+          loggerOutput(0).cause.exists(_.getMessage.contains("input < 1"))
+        )
       }
     }.provide(loggerLineCause),
     test("log error without cause") {

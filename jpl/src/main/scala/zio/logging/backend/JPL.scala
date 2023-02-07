@@ -81,7 +81,11 @@ object JPL {
      */
     override def appendCause(cause: Cause[Any]): Unit = {
       if (!cause.isEmpty) {
-        throwable = FiberFailure(cause)
+        cause match {
+          case Cause.Die(t, _)             => throwable = t
+          case Cause.Fail(t: Throwable, _) => throwable = t
+          case _                           => throwable = FiberFailure(cause)
+        }
       }
       ()
     }

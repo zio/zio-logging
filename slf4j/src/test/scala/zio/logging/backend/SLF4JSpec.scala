@@ -227,14 +227,14 @@ object SLF4JSpec extends ZIOSpecDefault {
     test("log error with cause") {
       someError().map { _ =>
         val loggerOutput = TestAppender.logOutput
-        someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.exists(_.contains("input < 1")))
+        someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.exists(_.getMessage.contains("input < 1")))
       }
     }.provide(loggerLineCause),
     test("log error with cause with custom logger name - legacy") {
       (someError() @@ SLF4J.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(
-          loggerOutput(0).cause.exists(_.contains("input < 1"))
+          loggerOutput(0).cause.exists(_.getMessage.contains("input < 1"))
         ) &&
         assertTrue(!loggerOutput(0).mdc.contains(SLF4J.loggerNameAnnotationKey))
       }
@@ -243,7 +243,7 @@ object SLF4JSpec extends ZIOSpecDefault {
       (someError() @@ logging.loggerName("my-logger")).map { _ =>
         val loggerOutput = TestAppender.logOutput
         someErrorAssert(loggerOutput, "my-logger") && assertTrue(
-          loggerOutput(0).cause.exists(_.contains("input < 1"))
+          loggerOutput(0).cause.exists(_.getMessage.contains("input < 1"))
         ) &&
         assertTrue(!loggerOutput(0).mdc.contains(logging.loggerNameAnnotationKey))
       }
