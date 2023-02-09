@@ -105,10 +105,10 @@ object SLF4J {
        */
       override def appendCause(cause: Cause[Any]): Unit = {
         if (!cause.isEmpty) {
-          cause match {
-            case Cause.Die(t, _)             => throwable = t
-            case Cause.Fail(t: Throwable, _) => throwable = t
-            case _                           => throwable = FiberFailure(cause)
+          val maybeThrowable = (cause.failures.collect { case t: Throwable => t } ++ cause.defects).headOption
+          maybeThrowable match {
+            case Some(t) => throwable = t
+            case None    => throwable = FiberFailure(cause)
           }
         }
         ()
