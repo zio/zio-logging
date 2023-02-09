@@ -20,7 +20,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion           = "1.0.12"
+val ZioVersion           = "1.0.18"
 val scalaJavaTimeVersion = "2.3.0"
 val slf4jVersion         = "1.7.33"
 
