@@ -153,10 +153,10 @@ lazy val slf4j2Bridge = project
   .settings(stdSettings("zio-logging-slf4j2-bridge", "9"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
-    compileOrder                           := CompileOrder.JavaThenScala,
-    javacOptions                           := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
-    javaOptions                            := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javaOptions.value),
-    Compile / packageDoc / publishArtifact := false // module-info.java compilation issue
+    compileOrder            := CompileOrder.JavaThenScala,
+    javacOptions            := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
+    javaOptions             := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javaOptions.value),
+    Compile / doc / sources := Seq.empty // module-info.java compilation issue
   )
   .settings(
     libraryDependencies ++= Seq(
