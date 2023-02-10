@@ -36,8 +36,11 @@ There are also some optional dependencies:
 // JPL integration
 libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "2.1.8"
 
-// SLF4j integration
+// SLF4j v1 integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "2.1.8"
+
+// SLF4j v2 integration
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "2.1.8"
 
 // Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "2.1.8"
