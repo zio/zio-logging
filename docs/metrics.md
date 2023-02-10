@@ -36,7 +36,7 @@ val layer = zio.logging.logMetricsWith("log_counter", "log_level")
 ## Examples
 
 You can find the source
-code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
+code [here](https://github.com/zio/zio-logging/tree/master/examples)
 
 ### Console logger with metrics
 

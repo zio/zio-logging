@@ -81,7 +81,7 @@ timestamp=2022-10-28T18:40:25.54676+02:00  level=ERROR thread=zio-fiber-0 messag
 	at zio.logging.example.SimpleApp.run(SimpleApp.scala:14)
 ```
 
-You can find the source code of examples [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
+You can find the source code of examples [here](https://github.com/zio/zio-logging/tree/master/examples)
 
 ## Documentation
 

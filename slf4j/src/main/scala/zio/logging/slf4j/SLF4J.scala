@@ -105,7 +105,11 @@ object SLF4J {
        */
       override def appendCause(cause: Cause[Any]): Unit = {
         if (!cause.isEmpty) {
-          throwable = FiberFailure(cause)
+          val maybeThrowable = (cause.failures.collect { case t: Throwable => t } ++ cause.defects).headOption
+          maybeThrowable match {
+            case Some(t) => throwable = t
+            case None    => throwable = FiberFailure(cause)
+          }
         }
         ()
       }
@@ -134,7 +138,6 @@ object SLF4J {
       override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
         val builder = new StringBuilder()
         appendValue(LogAppender.unstructured(builder.append(_)))
-        builder.toString()
         mdc.put(key, builder.toString())
         ()
       }

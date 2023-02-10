@@ -1,9 +1,9 @@
 ---
-id: slf4j
-title: "SLF4J"
+id: slf4j1
+title: "SLF4J v1"
 ---
 
-The Simple Logging Facade for Java ([`SLF4J`](https://www.slf4j.org/)) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
+The Simple Logging Facade for Java ([`SLF4J v1`](https://www.slf4j.org/) - working with JDK8) serves as a simple facade or abstraction for various logging frameworks (e.g. java.util.logging, logback, log4j).
 
 In order to use this logging backend, we need to add the following line in our build.sbt file:
 
@@ -43,7 +43,7 @@ ZIO.logInfo("Confidential user operation") @@ SLF4J.logMarkerName("CONFIDENTIAL"
 
 ## Examples
 
-You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
+You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
 
 
 ### SLF4J logger name and annotations
@@ -90,7 +90,7 @@ Logback configuration:
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n</Pattern>
+            <Pattern>%d{HH:mm:ss.SSS} [%thread] [%mdc] %-5level %logger{36} %msg%n</Pattern>
         </layout>
     </appender>
     <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
@@ -106,12 +106,12 @@ Logback configuration:
 
 Expected Console Output:
 ```
-13:49:14.060 [ZScheduler-Worker-2] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Start
-13:49:14.090 [ZScheduler-Worker-12] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=3b6163f5-0677-4909-b17f-c181b53312b6 INFO  zio.logging.example.UserOperation Starting user operation
-13:49:14.091 [ZScheduler-Worker-8] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Starting user operation
-13:49:14.616 [ZScheduler-Worker-0] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=3b6163f5-0677-4909-b17f-c181b53312b6 INFO  zio.logging.example.UserOperation Stopping user operation
-13:49:14.616 [ZScheduler-Worker-10] trace_id=98cdf7b7-dc09-4935-8cbc-4a3399b67d2a user_id=75e17c12-d397-455c-89b1-4e5292d860ba INFO  zio.logging.example.UserOperation Stopping user operation
-13:49:14.626 [ZScheduler-Worker-0] trace_id= user_id= INFO  zio.logging.example.Slf4jSimpleApp Done
+12:16:21.951 [ZScheduler-Worker-8] [] INFO  zio.logging.example.Slf4jSimpleApp Start
+12:16:22.024 [ZScheduler-Worker-12] [user=0e3bd69c-ee62-4096-82b2-593760d3fb19, trace_id=6e956bcf-d534-4c16-9402-fb6bca13c9ab] INFO  zio.logging.example.UserOperation Starting user operation
+12:16:22.024 [ZScheduler-Worker-10] [user=869ed4c7-924d-4c02-ab5c-c30c1996a139, trace_id=6e956bcf-d534-4c16-9402-fb6bca13c9ab] INFO  zio.logging.example.UserOperation Starting user operation
+12:16:22.592 [ZScheduler-Worker-14] [user=869ed4c7-924d-4c02-ab5c-c30c1996a139, trace_id=6e956bcf-d534-4c16-9402-fb6bca13c9ab] INFO  zio.logging.example.UserOperation Stopping user operation
+12:16:22.592 [ZScheduler-Worker-1] [user=0e3bd69c-ee62-4096-82b2-593760d3fb19, trace_id=6e956bcf-d534-4c16-9402-fb6bca13c9ab] INFO  zio.logging.example.UserOperation Stopping user operation
+12:16:22.598 [ZScheduler-Worker-14] [] INFO  zio.logging.example.Slf4jSimpleApp Done
 ```
 
 ### Custom tracing annotation
@@ -172,9 +172,9 @@ object CustomTracingAnnotationApp extends ZIOAppDefault {
 
 Expected Console Output:
 ```
-19:09:57.695 [ZScheduler-Worker-9] trace_id= user_id= INFO  z.l.e.CustomTracingAnnotationApp Starting operation
-19:09:57.695 [ZScheduler-Worker-9] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=35d36d10-4b64-48fc-bf9d-6b6b37d2f4cc INFO  z.l.e.CustomTracingAnnotationApp Starting operation
-19:09:58.056 [ZScheduler-Worker-8] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=068a35f2-2633-4404-9522-ffbfabe63730 INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
-19:09:58.197 [ZScheduler-Worker-10] trace_id=403fe6e9-f666-4688-a609-04813ac26892 user_id=35d36d10-4b64-48fc-bf9d-6b6b37d2f4cc INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
-19:09:58.202 [ZScheduler-Worker-13] trace_id= user_id= INFO  z.l.e.CustomTracingAnnotationApp Done
+15:53:20.145 [ZScheduler-Worker-9] [user=1abd8458-aefd-4780-88ec-cccd1310d4c8, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Starting operation
+15:53:20.145 [ZScheduler-Worker-13] [user=878689e0-da30-49f8-8923-ed915c00db9c, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Starting operation
+15:53:20.688 [ZScheduler-Worker-15] [user=1abd8458-aefd-4780-88ec-cccd1310d4c8, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
+15:53:20.688 [ZScheduler-Worker-11] [user=878689e0-da30-49f8-8923-ed915c00db9c, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
+15:53:20.691 [ZScheduler-Worker-15] [] INFO  z.l.e.CustomTracingAnnotationApp Done
 ```

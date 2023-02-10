@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <Pattern>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n</Pattern>
+            <Pattern>%d{HH:mm:ss.SSS} [%thread] [%mdc] %-5level %logger{36} %msg%n</Pattern>
         </layout>
     </appender>
-
     <turboFilter class="ch.qos.logback.classic.turbo.MarkerFilter">
         <Name>CONFIDENTIAL_FILTER</Name>
         <Marker>CONFIDENTIAL</Marker>
         <OnMatch>DENY</OnMatch>
     </turboFilter>
-
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
-
 </configuration>

@@ -36,8 +36,11 @@ There are also some optional dependencies:
 // JPL integration
 libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 
-// SLF4j integration
+// SLF4j v1 integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
+
+// SLF4j v2 integration
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
 
 // Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
@@ -81,4 +84,4 @@ timestamp=2022-10-28T18:40:25.54676+02:00  level=ERROR thread=zio-fiber-0 messag
 	at zio.logging.example.SimpleApp.run(SimpleApp.scala:14)
 ```
 
-You can find the source code of examples [here](https://github.com/zio/zio-logging/tree/master/examples/src/main/scala/zio/logging/example)
+You can find the source code of examples [here](https://github.com/zio/zio-logging/tree/master/examples)

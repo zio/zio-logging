@@ -81,7 +81,11 @@ object JPL {
      */
     override def appendCause(cause: Cause[Any]): Unit = {
       if (!cause.isEmpty) {
-        throwable = FiberFailure(cause)
+        val maybeThrowable = (cause.failures.collect { case t: Throwable => t } ++ cause.defects).headOption
+        maybeThrowable match {
+          case Some(t) => throwable = t
+          case None    => throwable = FiberFailure(cause)
+        }
       }
       ()
     }

@@ -24,7 +24,7 @@ class TestJPLogger(val name: String) extends System.Logger {
         logLevelMapping(level),
         getString(bundle, msg),
         System.currentTimeMillis(),
-        Option(thrown).map(_.getMessage)
+        Option(thrown)
       )
 
       TestAppender.appendLogEntry(entry)

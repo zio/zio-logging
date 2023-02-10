@@ -58,6 +58,8 @@ ZIO logging. Enabling both causes circular logging and makes no sense.
 
 ## Examples
 
+You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
+
 ### SLF4J bridge with JSON console logger
 
 [//]: # (TODO: make snippet type-checked using mdoc)

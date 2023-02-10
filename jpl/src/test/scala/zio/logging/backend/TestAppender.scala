@@ -23,7 +23,7 @@ object TestAppender {
     logLevel: LogLevel,
     message: String,
     timestamp: Long,
-    cause: Option[String]
+    cause: Option[Throwable]
   )
 
   private val logEntriesRef: AtomicReference[Chunk[LogEntry]] = new AtomicReference[Chunk[LogEntry]](Chunk.empty)

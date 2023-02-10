@@ -1,7 +1,7 @@
 package zio.logging.backend
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.classic.spi.{ ILoggingEvent, IThrowableProxy }
 import ch.qos.logback.core.AppenderBase
 import zio.{ Chunk, LogLevel }
 
@@ -32,7 +32,7 @@ object TestAppender {
     logLevel: LogLevel,
     message: String,
     timestamp: Long,
-    cause: Option[String],
+    cause: Option[IThrowableProxy],
     mdc: Map[String, String]
   )
 
@@ -44,7 +44,7 @@ object TestAppender {
         logLevelMapping(event.getLevel),
         event.getMessage,
         event.getTimeStamp,
-        Option(event.getThrowableProxy).map(_.getMessage),
+        Option(event.getThrowableProxy),
         event.getMDCPropertyMap.asScala.toMap
       )
   }
