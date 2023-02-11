@@ -135,12 +135,7 @@ object LogFilterSpec extends ZIOSpecDefault {
       )
 
       configProvider.load(LogFilter.LogLevelByNameConfig.config.nested("logger")).map { config =>
-        val loggerName: LogGroup[Any, String] = LoggerNameExtractor.annotation("name").toLogGroup()
-
-        val filter: LogFilter[String] = LogFilter.logLevelByGroup(
-          loggerName,
-          config
-        )
+        val filter: LogFilter[String] = LogFilter.logLevelByName(config)
 
         testFilterAnnotation(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
         testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
