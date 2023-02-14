@@ -65,8 +65,8 @@ jobs:
         if: ${{ !startsWith(matrix.scala, '3.') }}
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
       - name: Run dotty tests
-        if: ${{ startsWith(matrix.scala, '3.') && matrix.platform == 'JVM' }}
-        run: sbt ++${{ matrix.scala }}! testJVM
+        if: ${{ startsWith(matrix.scala, '3.') }}
+        run: sbt ++${{ matrix.scala }} test${{ matrix.platform }}
       - name: Compile additional subprojects
         if: ${{ !startsWith(matrix.scala, '3.') }}
         run: sbt ++${{ matrix.scala }}! examples/compile docs/compile benchmarks/compile
