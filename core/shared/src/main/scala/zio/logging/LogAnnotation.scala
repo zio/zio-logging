@@ -1,8 +1,8 @@
 package zio.logging
 
+import com.github.ghik.silencer.silent
 import zio.Cause
 
-import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.{ util => ju }
 import scala.reflect.ClassTag

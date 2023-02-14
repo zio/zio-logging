@@ -50,11 +50,11 @@ lazy val core    = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %%% "zio"                     % ZioVersion,
-      "dev.zio"                %%% "zio-streams"             % ZioVersion,
+      "dev.zio"                 %%% "zio"                     % ZioVersion,
+      "dev.zio"                 %%% "zio-streams"             % ZioVersion,
       ("org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0").cross(CrossVersion.for3Use2_13),
-      "dev.zio"                %%% "zio-test"                % ZioVersion % Test,
-      "dev.zio"                %%% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio"                 %%% "zio-test"                % ZioVersion % Test,
+      "dev.zio"                 %%% "zio-test-sbt"            % ZioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -66,7 +66,9 @@ lazy val coreJVM = core.jvm
   .settings(dottySettings)
 lazy val coreJS  = core.js.settings(
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
-  libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13) % Test,
+  libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0").cross(
+    CrossVersion.for3Use2_13
+  )                                            % Test
 )
 
 lazy val slf4j = project
