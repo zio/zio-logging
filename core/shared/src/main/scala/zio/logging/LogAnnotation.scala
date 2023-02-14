@@ -2,6 +2,7 @@ package zio.logging
 
 import zio.Cause
 
+import com.github.ghik.silencer.silent
 import java.time.OffsetDateTime
 import java.{ util => ju }
 import scala.reflect.ClassTag
@@ -40,6 +41,7 @@ object LogAnnotation {
    * If a value for the annotation is present, it will be rendered using the provided function. When
    * absent, it will be rendered as an empty string.
    */
+  @silent("evidence")
   def optional[A: ClassTag](name: String, render: A => String): LogAnnotation[Option[A]] =
     LogAnnotation(
       name = name,
