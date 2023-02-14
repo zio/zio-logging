@@ -142,6 +142,7 @@ private[logging] object LogAppender {
       var separateKeyValue: Boolean = false,
       var writingKey: Boolean = false,
       val content: mutable.StringBuilder = new mutable.StringBuilder,
+      var textContentIsJson: Boolean = false,
       var textContent: mutable.StringBuilder = new mutable.StringBuilder,
       var quoteTextContent: Boolean = false
     ) {
@@ -163,9 +164,11 @@ private[logging] object LogAppender {
       if (current.writingKey) current.appendContent(numeric.toString)
       else current.appendTextContent(numeric.toString, false)
 
-    override def appendText(text: String): Unit =
+    override def appendText(text: String): Unit = {
+      current.textContentIsJson = JsonValidator.isJson(text)
       if (current.writingKey) current.appendContent(text)
-      else current.appendTextContent(text, true)
+      else current.appendTextContent(text, !current.textContentIsJson)
+    }
 
     def beginStructure(root: Boolean = false): Unit = { stack.push(new State(root = root)); () }
 
@@ -190,7 +193,7 @@ private[logging] object LogAppender {
       if (current.content.isEmpty && !current.root) {
         // Simple value
         if (current.quoteTextContent) result.append("\"")
-        result.append(JsonEscape(cleanedTextContent))
+        result.append(escapeTextContent(cleanedTextContent))
         if (current.quoteTextContent) result.append("\"")
       } else {
         // Structure
@@ -199,7 +202,7 @@ private[logging] object LogAppender {
         if (current.textContent.nonEmpty) {
           result.append(""""text_content":""")
           if (current.quoteTextContent) result.append("\"")
-          result.append(JsonEscape(cleanedTextContent))
+          result.append(escapeTextContent(cleanedTextContent))
           if (current.quoteTextContent) result.append("\"")
         }
 
@@ -242,5 +245,9 @@ private[logging] object LogAppender {
       stack.clear()
       beginStructure(true)
     }
+
+    private def escapeTextContent(content: String): CharSequence =
+      if (current.textContentIsJson) content
+      else JsonEscape(content)
   }
 }

@@ -80,26 +80,30 @@ import java.util.UUID
 
 object ConsoleJsonApp extends ZIOAppDefault {
 
-  private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
+  case class User(firstName: String, lastName: String) {
+    def toJson: String = s"""{"first_name":"$firstName","last_name":"$lastName"}""".stripMargin
+  }
+
+  private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
+  private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
-        userLogAnnotation
-      )
+      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) +
+        LogFormat.annotation(userLogAnnotation) + LogFormat.annotation(uuid)
     )
 
-  private val users = List.fill(2)(UUID.randomUUID())
+  private val uuids = List.fill(2)(UUID.randomUUID())
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {
       traceId <- ZIO.succeed(UUID.randomUUID())
-      _       <- ZIO.foreachPar(users) { uId =>
+      _       <- ZIO.foreachPar(uuids) { uId =>
         {
           ZIO.logInfo("Starting operation") *>
             ZIO.sleep(500.millis) *>
             ZIO.logInfo("Stopping operation")
-        } @@ userLogAnnotation(uId)
+        } @@ userLogAnnotation(User("John", "Doe")) @@ uuid(uId)
       } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success)
@@ -110,9 +114,9 @@ object ConsoleJsonApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-{"timestamp":"2022-10-28T13:48:20.350244+02:00","level":"INFO","thread":"zio-fiber-8","message":"Starting operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"b4cf9c71-5b1d-4fe1-bfb4-35a6e51483b2"}
-{"timestamp":"2022-10-28T13:48:20.350238+02:00","level":"INFO","thread":"zio-fiber-7","message":"Starting operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"372071a6-a643-452b-a07c-d0966e556bfa"}
-{"timestamp":"2022-10-28T13:48:20.899453+02:00","level":"INFO","thread":"zio-fiber-7","message":"Stopping operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"372071a6-a643-452b-a07c-d0966e556bfa"}
-{"timestamp":"2022-10-28T13:48:20.899453+02:00","level":"INFO","thread":"zio-fiber-8","message":"Stopping operation","trace_id":"674a118e-2944-46a7-8db2-ceb79d91d51d","user":"b4cf9c71-5b1d-4fe1-bfb4-35a6e51483b2"}
-{"timestamp":"2022-10-28T13:48:20.908254+02:00","level":"INFO","thread":"zio-fiber-6","message":"Done"}
+{"timestamp":"2023-02-22T00:20:09.04078+01:00 ","level":"INFO","thread":"zio-fiber-6","message":"Starting operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"b997115e-c939-485f-a931-39e16ca9f786"}
+{"timestamp":"2023-02-22T00:20:09.040778+01:00","level":"INFO","thread":"zio-fiber-5","message":"Starting operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"da26ff30-57de-44fa-895b-ef7864fc8e7e"}
+{"timestamp":"2023-02-22T00:20:09.576845+01:00","level":"INFO","thread":"zio-fiber-6","message":"Stopping operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"b997115e-c939-485f-a931-39e16ca9f786"}
+{"timestamp":"2023-02-22T00:20:09.577009+01:00","level":"INFO","thread":"zio-fiber-5","message":"Stopping operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"da26ff30-57de-44fa-895b-ef7864fc8e7e"}
+{"timestamp":"2023-02-22T00:20:09.581515+01:00","level":"INFO","thread":"zio-fiber-4","message":"Done"}
 ```
