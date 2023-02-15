@@ -11,6 +11,13 @@ In order to use this logging backend, we need to add the following line in our b
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 ```
 
+>**_NOTE:_** SLF4J v1 implementation is similar to [v2](slf4j2.md), 
+however there are some differences, v1 using [MDC context](https://logback.qos.ch/manual/mdc.html), working with JDK8, 
+v2 using [key-value pairs](https://www.slf4j.org/manual.html#fluent), working with JDK9+. 
+It is recommended to use v2, as it is the latest version 
+and also there may be MDC (using [ThreadLocal](https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html)) issues,
+where in the case of parallel executions it can happen that MDC will be reset by different Fiber before the message is logged.
+
 Logger layer:
 
 ```scala
@@ -23,7 +30,7 @@ Default `SLF4J` logger setup:
 * logger name (by default)  is extracted from `zio.Trace`
     * for example, trace `zio.logging.example.Slf4jSimpleApp.run(Slf4jSimpleApp.scala:17)` will have `zio.logging.example.Slf4jSimpleApp` as logger name
     * NOTE: custom logger name may be set by `zio.logging.loggerName` aspect
-* all annotations (logger name and log marker name annotations are excluded) are placed into MDC context
+* all annotations (logger name and log marker name annotations are excluded) are placed into [MDC context](https://logback.qos.ch/manual/mdc.html)
 * cause is logged as throwable
 
 See also [LogFormat and LogAppender](formatting-log-records.md#logformat-and-logappender)
