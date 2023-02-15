@@ -11,6 +11,10 @@ In order to use this logging backend, we need to add the following line in our b
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
 ```
 
+>**_NOTE:_** SLF4J v2 implementation is similar to [v1](slf4j1.md),
+however there are some differences, v1 using [MDC context](https://logback.qos.ch/manual/mdc.html), working with JDK8,
+v2 using [key-value pairs](https://www.slf4j.org/manual.html#fluent), working with JDK9+.
+
 Logger layer:
 
 ```scala

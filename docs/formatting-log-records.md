@@ -61,7 +61,7 @@ essential `LogAppender` functions, which are used in predefined log formats:
 * `def appendKeyValue(key: String, value: String)` - appends a key/value string pair to the log
 
 then it depends on the specific logging backend how these functions are implemented with respect to the backend output, for example:
-* slf4j logging backend - key/value is appended to slf4j MDC context, Cause is transformed to Throwable and placed to slf4j throwable section, all other text and numeric parts are added to slf4j log message
+* [slf4j v1](slf4j1.md) logging backend - key/value is appended to slf4j [MDC context](https://logback.qos.ch/manual/mdc.html), Cause is transformed to Throwable and placed to slf4j throwable section, all other text and numeric parts are added to slf4j log message
 * console logging backend - in general all values are added to log line, `Cause.prettyPrint` is used to log cause details
 
 
