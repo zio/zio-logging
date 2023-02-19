@@ -1,13 +1,90 @@
 package zio.logging
 
 import zio._
+import zio.logging.internal.LogPattern
 import zio.metrics.{ Metric, MetricLabel }
 
 import java.io.PrintStream
+import java.net.URI
 import java.nio.charset.{ Charset, StandardCharsets }
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
+import scala.util.{ Failure, Success, Try }
 
 object Logger {
+
+  final case class ConsoleLoggerConfig(format: LogFormat, filter: LogFilter[String])
+
+  object ConsoleLoggerConfig {
+    def apply(pattern: LogPattern, filter: LogFilter[String]): ConsoleLoggerConfig =
+      ConsoleLoggerConfig(pattern.toLogFormat, filter)
+
+    val config: Config[ConsoleLoggerConfig] =
+      (LogPattern.config.nested("pattern") ++ LogFilter.LogLevelByNameConfig.config.nested("filter")).map {
+        case (pattern, filterConfig) =>
+          ConsoleLoggerConfig(pattern, LogFilter.logLevelByName(filterConfig))
+      }
+  }
+
+  final case class FileLoggerConfig(
+    destination: Path,
+    format: LogFormat,
+    filter: LogFilter[String],
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  )
+
+  object FileLoggerConfig {
+    def apply(
+      destination: Path,
+      pattern: LogPattern,
+      filter: LogFilter[String],
+      charset: Charset,
+      autoFlushBatchSize: Int,
+      bufferedIOSize: Option[Int]
+    ): FileLoggerConfig =
+      FileLoggerConfig(destination, pattern.toLogFormat, filter, charset, autoFlushBatchSize, bufferedIOSize)
+
+    val config: Config[FileLoggerConfig] = {
+
+      def pathValue(value: String): Either[Config.Error.InvalidData, Path] =
+        Try {
+          Paths.get(URI.create(value))
+        } match {
+          case Success(p)         => Right(p)
+          case Failure(exception) =>
+            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${exception.getMessage}"))
+        }
+
+      def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
+        Try {
+          Charset.forName(value)
+        } match {
+          case Success(l)         => Right(l)
+          case Failure(exception) =>
+            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Charset, but found ${exception.getMessage}"))
+        }
+
+      val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
+      val patternConfig            = LogPattern.config.nested("pattern")
+      val filterConfig             = LogFilter.LogLevelByNameConfig.config.nested("filter")
+      val charsetConfig            = Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
+      val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
+      val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
+
+      (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
+        case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
+          FileLoggerConfig(
+            path,
+            pattern,
+            LogFilter.logLevelByName(filterConfig),
+            charset,
+            autoFlushBatchSize,
+            bufferedIOSize
+          )
+      }
+    }
+  }
 
   def makeConsoleLogger(
     logger: ZLogger[String, String],
