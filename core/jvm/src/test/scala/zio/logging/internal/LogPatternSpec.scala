@@ -8,7 +8,7 @@ object LogPatternSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("LogPattern")(
     test("parse") {
 
-      val p1 = LogPattern.syntax.parseString("%timestamp %level xyz %message %cause")
+      val p1 = LogPattern.syntax.parseString("%timestamp %level xyz %message %cause %span{abc}")
 
       assertTrue(
         p1 == Right(
@@ -21,7 +21,8 @@ object LogPatternSpec extends ZIOSpecDefault {
               LogPattern.LogMessage,
               LogPattern.Text(" "),
               LogPattern.Cause,
-              LogPattern.Text("")
+              LogPattern.Text(" "),
+              LogPattern.Span("abc")
             )
           )
         )

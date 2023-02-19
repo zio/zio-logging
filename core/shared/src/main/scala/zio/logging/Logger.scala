@@ -1,10 +1,11 @@
 package zio.logging
 
+import zio._
+import zio.metrics.{ Metric, MetricLabel }
+
 import java.io.PrintStream
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.Path
-import zio._
-import zio.metrics.{ Metric, MetricLabel }
 
 object Logger {
 
@@ -88,21 +89,22 @@ object Logger {
     stringLogger
   }
 
-  def metricLogger(counter: Metric.Counter[Long], logLevelLabel: String) = new ZLogger[String, Unit] {
-    override def apply(
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => String,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ): Unit = {
-      val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
-      counter.unsafe.update(1, tags + MetricLabel(logLevelLabel, logLevel.label.toLowerCase))(Unsafe.unsafe)
-      ()
+  def metricLogger(counter: Metric.Counter[Long], logLevelLabel: String): ZLogger[String, Unit] =
+    new ZLogger[String, Unit] {
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => String,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Unit = {
+        val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
+        counter.unsafe.update(1, tags + MetricLabel(logLevelLabel, logLevel.label.toLowerCase))(Unsafe.unsafe)
+        ()
+      }
     }
-  }
 
 }

@@ -1,8 +1,8 @@
 package zio.logging.internal
 
-import zio.{ Chunk, Config }
 import zio.logging.{ LogFormat, LoggerNameExtractor }
 import zio.parser.{ Syntax, _ }
+import zio.{ Chunk, Config }
 
 sealed trait LogPattern {
   def toLogFormat: LogFormat
@@ -63,10 +63,36 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey))
   }
 
+  final case class KeyValue(key: String) extends Arg {
+    override val name = KeyValue.name
+
+    override val toLogFormat: LogFormat = LogFormat.annotation(key)
+  }
+
+  object KeyValue {
+    val name: String = "%kv"
+  }
+
   final case object Spans extends Arg {
     override val name = "%spans"
 
     override val toLogFormat: LogFormat = LogFormat.spans
+  }
+
+  final case class Span(key: String) extends Arg {
+    override val name = Span.name
+
+    override val toLogFormat: LogFormat = LogFormat.span(key)
+  }
+
+  object Span {
+    val name: String = "%span"
+  }
+
+  final case object TraceLine extends Arg {
+    override val name = "%line"
+
+    override val toLogFormat: LogFormat = LogFormat.traceLine
   }
 
   final case object Cause extends Arg {
@@ -76,7 +102,7 @@ object LogPattern {
   }
 
   private val textSyntax       =
-    Syntax.charNotIn('%').*.string.transform(LogPattern.Text.apply, (t: LogPattern.Text) => t.text)
+    Syntax.charNotIn('%').repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
   private val logLevelSyntax   = Syntax.string(LogPattern.LogLevel.name, LogPattern.LogLevel)
   private val loggerNameSyntax = Syntax.string(LogPattern.LoggerName.name, LogPattern.LoggerName)
   private val logMessageSyntax = Syntax.string(LogPattern.LogMessage.name, LogPattern.LogMessage)
@@ -85,6 +111,17 @@ object LogPattern {
   private val keyValuesSyntax  = Syntax.string(LogPattern.KeyValues.name, LogPattern.KeyValues)
   private val spansSyntax      = Syntax.string(LogPattern.Spans.name, LogPattern.Spans)
   private val causeSyntax      = Syntax.string(LogPattern.Cause.name, LogPattern.Cause)
+  private val traceLineSyntax  = Syntax.string(LogPattern.TraceLine.name, LogPattern.TraceLine)
+  private val keyValueSyntax   =
+    Syntax.string(s"${LogPattern.KeyValue.name}{", ()) ~> Syntax.alphaNumeric.repeat.string.transform(
+      LogPattern.KeyValue.apply,
+      (p: LogPattern.KeyValue) => p.key
+    ) <~ Syntax.char('}')
+  private val spanSyntax       =
+    Syntax.string(s"${LogPattern.Span.name}{", ()) ~> Syntax.alphaNumeric.repeat.string.transform(
+      LogPattern.Span.apply,
+      (p: LogPattern.Span) => p.key
+    ) <~ Syntax.char('}')
 
   val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]
@@ -93,8 +130,11 @@ object LogPattern {
       <> fiberIdSyntax.widen[LogPattern]
       <> timestampSyntax.widen[LogPattern]
       <> keyValuesSyntax.widen[LogPattern]
+      <> keyValueSyntax.widen[LogPattern]
       <> spansSyntax.widen[LogPattern]
+      <> spanSyntax.widen[LogPattern]
       <> causeSyntax.widen[LogPattern]
+      <> traceLineSyntax.widen[LogPattern]
       <> textSyntax.widen[LogPattern]).repeat
       .transform(LogPattern.Patterns.apply, (p: LogPattern.Patterns) => p.patterns)
       .widen[LogPattern]
