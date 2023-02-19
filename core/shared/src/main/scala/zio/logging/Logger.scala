@@ -18,11 +18,13 @@ object Logger {
     def apply(pattern: LogPattern, filter: LogFilter[String]): ConsoleLoggerConfig =
       ConsoleLoggerConfig(pattern.toLogFormat, filter)
 
-    val config: Config[ConsoleLoggerConfig] =
-      (LogPattern.config.nested("pattern") ++ LogFilter.LogLevelByNameConfig.config.nested("filter")).map {
-        case (pattern, filterConfig) =>
-          ConsoleLoggerConfig(pattern, LogFilter.logLevelByName(filterConfig))
+    val config: Config[ConsoleLoggerConfig] = {
+      val patternConfig = LogPattern.config.nested("pattern")
+      val filterConfig  = LogFilter.LogLevelByNameConfig.config.nested("filter")
+      (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
+        ConsoleLoggerConfig(pattern, LogFilter.logLevelByName(filterConfig))
       }
+    }
   }
 
   final case class FileLoggerConfig(
@@ -48,21 +50,17 @@ object Logger {
     val config: Config[FileLoggerConfig] = {
 
       def pathValue(value: String): Either[Config.Error.InvalidData, Path] =
-        Try {
-          Paths.get(URI.create(value))
-        } match {
-          case Success(p)         => Right(p)
-          case Failure(exception) =>
-            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${exception.getMessage}"))
+        Try(Paths.get(URI.create(value))) match {
+          case Success(v) => Right(v)
+          case Failure(_) =>
+            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${value}"))
         }
 
       def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
-        Try {
-          Charset.forName(value)
-        } match {
-          case Success(l)         => Right(l)
-          case Failure(exception) =>
-            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Charset, but found ${exception.getMessage}"))
+        Try(Charset.forName(value)) match {
+          case Success(v) => Right(v)
+          case Failure(_) =>
+            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Charset, but found ${value}"))
         }
 
       val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
@@ -86,6 +84,9 @@ object Logger {
     }
   }
 
+  def makeConsoleLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toLogger, java.lang.System.out, config.filter)
+
   def makeConsoleLogger(
     logger: ZLogger[String, String],
     stream: PrintStream,
@@ -101,6 +102,16 @@ object Logger {
     })
     stringLogger
   }
+
+  def makeFileStringLogger(config: FileLoggerConfig): ZLogger[String, Any] =
+    makeFileStringLogger(
+      config.destination,
+      config.format.toLogger,
+      config.filter,
+      config.charset,
+      config.autoFlushBatchSize,
+      config.bufferedIOSize
+    )
 
   def makeFileStringLogger(
     destination: Path,

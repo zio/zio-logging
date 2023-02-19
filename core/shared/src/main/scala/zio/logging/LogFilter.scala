@@ -157,7 +157,7 @@ object LogFilter {
    * @param rootLevel Minimum log level for the root node
    * @param mappings  List of mappings, nesting defined by dot-separated strings
    */
-  case class LogLevelByNameConfig(rootLevel: LogLevel, mappings: Map[String, LogLevel])
+  final case class LogLevelByNameConfig(rootLevel: LogLevel, mappings: Map[String, LogLevel])
 
   object LogLevelByNameConfig {
 
@@ -174,7 +174,7 @@ object LogFilter {
 
     private[logging] def logLevelValue(value: String): Either[Config.Error.InvalidData, LogLevel] =
       logLevelMapping.get(value.toUpperCase) match {
-        case Some(l) => Right(l)
+        case Some(v) => Right(v)
         case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogLevel, but found ${value}"))
       }
 
