@@ -84,6 +84,14 @@ object Logger {
     }
   }
 
+  def consoleLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleLogger(config))
+      } yield ()
+    }
+
   def makeConsoleLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
     makeConsoleLogger(config.format.toLogger, java.lang.System.out, config.filter)
 
@@ -102,6 +110,14 @@ object Logger {
     })
     stringLogger
   }
+
+  def fileStringLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeFileStringLogger(config))
+      } yield ()
+    }
 
   def makeFileStringLogger(config: FileLoggerConfig): ZLogger[String, Any] =
     makeFileStringLogger(
@@ -177,7 +193,7 @@ object Logger {
     stringLogger
   }
 
-  def metricLogger(counter: Metric.Counter[Long], logLevelLabel: String): ZLogger[String, Unit] =
+  def makeMetricLogger(counter: Metric.Counter[Long], logLevelLabel: String): ZLogger[String, Unit] =
     new ZLogger[String, Unit] {
       override def apply(
         trace: Trace,
