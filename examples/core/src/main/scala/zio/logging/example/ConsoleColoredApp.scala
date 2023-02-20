@@ -15,25 +15,23 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogFilter, LogFormat, console }
-import zio.{ Cause, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
+import zio.logging.Logger
+import zio.{ Cause, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
+import zio.{ Config, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  val loggerConfigProvider: ConfigProvider = ConfigProvider.fromMap(
+  val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "logger/mappings"                                     -> LogLevel.Info.label,
-      "logger/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
+      "logger/pattern"                                             -> "%timestamp %level [%fiberId] %name %message %cause",
+      "logger/filter/mappings"                                     -> LogLevel.Info.label,
+      "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
     ),
     "/"
   )
 
-  val logger = for {
-    config <- ZLayer.fromZIO(loggerConfigProvider.load(LogFilter.LogLevelByNameConfig.config.nested("logger")))
-    logger <- console(LogFormat.colored, LogFilter.logLevelByName(config.get).cached)
-  } yield logger
-
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> logger
+  override val bootstrap: ZLayer[Any, Config.Error, Unit] =
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> Logger.consoleLogger()
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
