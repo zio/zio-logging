@@ -4,6 +4,9 @@ import zio.logging.{ LogFormat, LoggerNameExtractor }
 import zio.parser.{ Syntax, _ }
 import zio.{ Chunk, Config }
 
+import java.time.format.DateTimeFormatter
+import scala.util.Try
+
 sealed trait LogPattern {
   def toLogFormat: LogFormat
 }
@@ -23,15 +26,16 @@ object LogPattern {
     override def toLogFormat: LogFormat = LogFormat.text(text)
   }
 
+  object Text {
+    val empty: Text = Text("")
+  }
+
   sealed trait Arg extends LogPattern {
     def name: String
   }
 
-  sealed trait KeyArg extends LogPattern {
-
-    def name: String
-
-    def key: String
+  sealed trait KeyArg[K] extends Arg {
+    def key: K
   }
 
   final case object LogLevel extends Arg {
@@ -58,10 +62,16 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.fiberId
   }
 
-  final case object Timestamp extends Arg {
-    override val name = "timestamp"
+  final case class Timestamp(key: DateTimeFormatter) extends KeyArg[DateTimeFormatter] {
+    override val name = Timestamp.name
 
-    override val toLogFormat: LogFormat = LogFormat.timestamp
+    override val toLogFormat: LogFormat = LogFormat.timestamp(key)
+  }
+
+  object Timestamp {
+    val name = "timestamp"
+
+    def default: Timestamp = Timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
 
   final case object KeyValues extends Arg {
@@ -70,7 +80,7 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey))
   }
 
-  final case class KeyValue(key: String) extends KeyArg {
+  final case class KeyValue(key: String) extends KeyArg[String] {
     override val name = KeyValue.name
 
     override val toLogFormat: LogFormat = LogFormat.annotation(key)
@@ -86,7 +96,7 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.spans
   }
 
-  final case class Span(key: String) extends KeyArg {
+  final case class Span(key: String) extends KeyArg[String] {
     override val name = Span.name
 
     override val toLogFormat: LogFormat = LogFormat.span(key)
@@ -110,13 +120,32 @@ object LogPattern {
 
   private val argPrefix = '%'
 
-  private def keyArgSyntax[P <: KeyArg](name: String, make: String => P) =
-    Syntax.string(s"${argPrefix}${name}{", ()) ~> Syntax.alphaNumeric.repeat.string.transform(
-      make,
-      (p: P) => p.key
-    ) <~ Syntax.char('}')
+  private def keyArgEitherSyntax[P <: KeyArg[_]](
+    name: String,
+    make: String => Either[String, P]
+  ): Syntax[String, Char, Char, P] = {
 
-  private def argSyntax[P <: Arg](name: String, value: P) = Syntax.string(s"${argPrefix}${name}", value)
+    val begin = Syntax.string(s"${argPrefix}${name}{", ())
+
+    val middle = Syntax
+      .charNotIn(argPrefix, '{', '}')
+      .repeat
+      .string
+      .transformEither(
+        make,
+        (p: P) => Right(p.key.toString)
+      )
+
+    val end = Syntax.char('}')
+
+    begin ~> middle <~ end
+  }
+
+  private def keyArgSyntax[P <: KeyArg[_]](name: String, make: String => P): Syntax[String, Char, Char, P] =
+    keyArgEitherSyntax[P](name, s => Right(make(s)))
+
+  private def argSyntax[P <: Arg](name: String, value: P): Syntax[String, Char, Char, P] =
+    Syntax.string(s"${argPrefix}${name}", value)
 
   private val textSyntax       =
     Syntax.charNotIn(argPrefix).repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
@@ -124,7 +153,11 @@ object LogPattern {
   private val loggerNameSyntax = argSyntax(LogPattern.LoggerName.name, LogPattern.LoggerName)
   private val logMessageSyntax = argSyntax(LogPattern.LogMessage.name, LogPattern.LogMessage)
   private val fiberIdSyntax    = argSyntax(LogPattern.FiberId.name, LogPattern.FiberId)
-  private val timestampSyntax  = argSyntax(LogPattern.Timestamp.name, LogPattern.Timestamp)
+  private val timestampSyntax  =
+    keyArgEitherSyntax(
+      LogPattern.Timestamp.name,
+      p => Try(DateTimeFormatter.ofPattern(p)).toEither.left.map(_.getMessage).map(dtf => LogPattern.Timestamp(dtf))
+    ) <> argSyntax(LogPattern.Timestamp.name, LogPattern.Timestamp.default)
   private val keyValuesSyntax  = argSyntax(LogPattern.KeyValues.name, LogPattern.KeyValues)
   private val spansSyntax      = argSyntax(LogPattern.Spans.name, LogPattern.Spans)
   private val causeSyntax      = argSyntax(LogPattern.Cause.name, LogPattern.Cause)

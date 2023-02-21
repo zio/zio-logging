@@ -16,8 +16,7 @@
 package zio.logging.example
 
 import zio.logging.Logger
-import zio.{ Cause, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault }
-import zio.{ Config, ZLayer }
+import zio.{ Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
@@ -33,7 +32,7 @@ object ConsoleColoredApp extends ZIOAppDefault {
 //        | }
 //        |""".stripMargin
 
-  val logPattern = "%timestamp %level [%fiberId] %name:%line %message %cause"
+  val logPattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause"
 
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
