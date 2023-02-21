@@ -101,7 +101,7 @@ lazy val coreJS  = core.js.settings(
 lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-slf4j"))
+  .settings(stdSettings("zio-logging-slf4j"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -118,7 +118,7 @@ lazy val slf4j = project
 lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-slf4j2"))
+  .settings(stdSettings("zio-logging-slf4j2"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -135,7 +135,7 @@ lazy val slf4j2 = project
 lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-slf4j-bridge"))
+  .settings(stdSettings("zio-logging-slf4j-bridge"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -150,7 +150,7 @@ lazy val slf4jBridge = project
 lazy val slf4j2Bridge = project
   .in(file("slf4j2-bridge"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-slf4j2-bridge", "9"))
+  .settings(stdSettings("zio-logging-slf4j2-bridge", javaPlatform = "9"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     compileOrder            := CompileOrder.JavaThenScala,
@@ -171,7 +171,7 @@ lazy val slf4j2Bridge = project
 lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-jpl", "9"))
+  .settings(stdSettings("zio-logging-jpl", javaPlatform = "9"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -183,7 +183,7 @@ lazy val jpl = project
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
-  .settings(oldStdSettings("zio-logging-benchmarks"))
+  .settings(stdSettings("zio-logging-benchmarks"))
   .settings(
     publish / skip := true,
     scalacOptions -= "-Yno-imports",
@@ -195,7 +195,7 @@ lazy val benchmarks = project
 lazy val examplesCore = project
   .in(file("examples/core"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-examples-core"))
+  .settings(stdSettings("zio-logging-examples-core"))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
@@ -208,7 +208,7 @@ lazy val examplesCore = project
 lazy val examplesSlf4jLogback = project
   .in(file("examples/slf4j-logback"))
   .dependsOn(slf4j)
-  .settings(oldStdSettings("zio-logging-examples-slf4j-logback"))
+  .settings(stdSettings("zio-logging-examples-slf4j-logback"))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
@@ -220,7 +220,7 @@ lazy val examplesSlf4jLogback = project
 lazy val examplesSlf4j2Logback = project
   .in(file("examples/slf4j2-logback"))
   .dependsOn(slf4j2)
-  .settings(oldStdSettings("zio-logging-examples-slf4j2-logback"))
+  .settings(stdSettings("zio-logging-examples-slf4j2-logback"))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
@@ -232,7 +232,7 @@ lazy val examplesSlf4j2Logback = project
 lazy val examplesSlf4j2Log4j = project
   .in(file("examples/slf4j2-log4j"))
   .dependsOn(slf4j2)
-  .settings(oldStdSettings("zio-logging-examples-slf4j2-log4j"))
+  .settings(stdSettings("zio-logging-examples-slf4j2-log4j"))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
@@ -244,7 +244,7 @@ lazy val examplesSlf4j2Log4j = project
 lazy val examplesJpl = project
   .in(file("examples/jpl"))
   .dependsOn(jpl)
-  .settings(oldStdSettings("zio-logging-examples-jpl"))
+  .settings(stdSettings("zio-logging-examples-jpl"))
   .settings(
     publish / skip := true
   )
@@ -252,7 +252,7 @@ lazy val examplesJpl = project
 lazy val examplesSlf4j2Bridge = project
   .in(file("examples/slf4j2-bridge"))
   .dependsOn(slf4j2Bridge)
-  .settings(oldStdSettings("zio-logging-examples-slf4j2-bridge"))
+  .settings(stdSettings("zio-logging-examples-slf4j2-bridge"))
   .settings(
     publish / skip := true
   )
