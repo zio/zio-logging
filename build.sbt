@@ -94,6 +94,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
 
 lazy val coreJVM = core.jvm
 lazy val coreJS  = core.js.settings(
+  crossScalaVersions -= scala211.value,
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test
 )
 
