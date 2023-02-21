@@ -76,7 +76,7 @@ lazy val root = project
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
-  .settings(stdSettings("zio-logging"))
+  .settings(oldStdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio"          % ZioVersion,
