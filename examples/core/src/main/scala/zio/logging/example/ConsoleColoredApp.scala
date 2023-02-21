@@ -21,9 +21,24 @@ import zio.{ Config, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
+//  val logPattern =
+//    s"""| {
+//        |   "timestamp": "%timestamp",
+//        |   "level": "%level",
+//        |   "fiberId": "%fiberId",
+//        |   "name": "%name",
+//        |   "line": "%line",
+//        |   "message": "%message",
+//        |   "cause":  "%cause"
+//        | }
+//        |""".stripMargin
+
+  val logPattern = "%timestamp %level [%fiberId] %name:%line %message %cause"
+
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "logger/pattern"                                             -> "%timestamp %level [%fiberId] %name %message %cause",
+      "logger/pattern"                                             -> logPattern,
+      "logger/path"                                                -> "file:///tmp/console_app.log",
       "logger/filter/mappings"                                     -> LogLevel.Info.label,
       "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
     ),
@@ -31,7 +46,8 @@ object ConsoleColoredApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
-    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> Logger.consoleLogger()
+    Runtime.removeDefaultLoggers >>> Runtime
+      .setConfigProvider(configProvider) >>> (Logger.consoleLogger() ++ Logger.fileStringLogger())
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService

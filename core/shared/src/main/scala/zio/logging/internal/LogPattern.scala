@@ -27,101 +27,110 @@ object LogPattern {
     def name: String
   }
 
+  sealed trait KeyArg extends LogPattern {
+
+    def name: String
+
+    def key: String
+  }
+
   final case object LogLevel extends Arg {
-    override val name = "%level"
+    override val name = "level"
 
     override val toLogFormat: LogFormat = LogFormat.level
   }
 
   final case object LoggerName extends Arg {
-    override val name = "%name"
+    override val name = "name"
 
     override val toLogFormat: LogFormat = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
   }
 
   final case object LogMessage extends Arg {
-    override val name = "%message"
+    override val name = "message"
 
     override val toLogFormat: LogFormat = LogFormat.line
   }
 
   final case object FiberId extends Arg {
-    override val name = "%fiberId"
+    override val name = "fiberId"
 
     override val toLogFormat: LogFormat = LogFormat.fiberId
   }
 
   final case object Timestamp extends Arg {
-    override val name = "%timestamp"
+    override val name = "timestamp"
 
     override val toLogFormat: LogFormat = LogFormat.timestamp
   }
 
   final case object KeyValues extends Arg {
-    override val name = "%kvs"
+    override val name = "kvs"
 
     override val toLogFormat: LogFormat = LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey))
   }
 
-  final case class KeyValue(key: String) extends Arg {
+  final case class KeyValue(key: String) extends KeyArg {
     override val name = KeyValue.name
 
     override val toLogFormat: LogFormat = LogFormat.annotation(key)
   }
 
   object KeyValue {
-    val name: String = "%kv"
+    val name: String = "kv"
   }
 
   final case object Spans extends Arg {
-    override val name = "%spans"
+    override val name = "spans"
 
     override val toLogFormat: LogFormat = LogFormat.spans
   }
 
-  final case class Span(key: String) extends Arg {
+  final case class Span(key: String) extends KeyArg {
     override val name = Span.name
 
     override val toLogFormat: LogFormat = LogFormat.span(key)
   }
 
   object Span {
-    val name: String = "%span"
+    val name: String = "span"
   }
 
   final case object TraceLine extends Arg {
-    override val name = "%line"
+    override val name = "line"
 
     override val toLogFormat: LogFormat = LogFormat.traceLine
   }
 
   final case object Cause extends Arg {
-    override val name = "%cause"
+    override val name = "cause"
 
     override val toLogFormat: LogFormat = LogFormat.cause
   }
 
+  private val argPrefix = '%'
+
+  private def keyArgSyntax[P <: KeyArg](name: String, make: String => P) =
+    Syntax.string(s"${argPrefix}${name}{", ()) ~> Syntax.alphaNumeric.repeat.string.transform(
+      make,
+      (p: P) => p.key
+    ) <~ Syntax.char('}')
+
+  private def argSyntax[P <: Arg](name: String, value: P) = Syntax.string(s"${argPrefix}${name}", value)
+
   private val textSyntax       =
-    Syntax.charNotIn('%').repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
-  private val logLevelSyntax   = Syntax.string(LogPattern.LogLevel.name, LogPattern.LogLevel)
-  private val loggerNameSyntax = Syntax.string(LogPattern.LoggerName.name, LogPattern.LoggerName)
-  private val logMessageSyntax = Syntax.string(LogPattern.LogMessage.name, LogPattern.LogMessage)
-  private val fiberIdSyntax    = Syntax.string(LogPattern.FiberId.name, LogPattern.FiberId)
-  private val timestampSyntax  = Syntax.string(LogPattern.Timestamp.name, LogPattern.Timestamp)
-  private val keyValuesSyntax  = Syntax.string(LogPattern.KeyValues.name, LogPattern.KeyValues)
-  private val spansSyntax      = Syntax.string(LogPattern.Spans.name, LogPattern.Spans)
-  private val causeSyntax      = Syntax.string(LogPattern.Cause.name, LogPattern.Cause)
-  private val traceLineSyntax  = Syntax.string(LogPattern.TraceLine.name, LogPattern.TraceLine)
-  private val keyValueSyntax   =
-    Syntax.string(s"${LogPattern.KeyValue.name}{", ()) ~> Syntax.alphaNumeric.repeat.string.transform(
-      LogPattern.KeyValue.apply,
-      (p: LogPattern.KeyValue) => p.key
-    ) <~ Syntax.char('}')
-  private val spanSyntax       =
-    Syntax.string(s"${LogPattern.Span.name}{", ()) ~> Syntax.alphaNumeric.repeat.string.transform(
-      LogPattern.Span.apply,
-      (p: LogPattern.Span) => p.key
-    ) <~ Syntax.char('}')
+    Syntax.charNotIn(argPrefix).repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
+  private val logLevelSyntax   = argSyntax(LogPattern.LogLevel.name, LogPattern.LogLevel)
+  private val loggerNameSyntax = argSyntax(LogPattern.LoggerName.name, LogPattern.LoggerName)
+  private val logMessageSyntax = argSyntax(LogPattern.LogMessage.name, LogPattern.LogMessage)
+  private val fiberIdSyntax    = argSyntax(LogPattern.FiberId.name, LogPattern.FiberId)
+  private val timestampSyntax  = argSyntax(LogPattern.Timestamp.name, LogPattern.Timestamp)
+  private val keyValuesSyntax  = argSyntax(LogPattern.KeyValues.name, LogPattern.KeyValues)
+  private val spansSyntax      = argSyntax(LogPattern.Spans.name, LogPattern.Spans)
+  private val causeSyntax      = argSyntax(LogPattern.Cause.name, LogPattern.Cause)
+  private val traceLineSyntax  = argSyntax(LogPattern.TraceLine.name, LogPattern.TraceLine)
+  private val keyValueSyntax   = keyArgSyntax(LogPattern.KeyValue.name, LogPattern.KeyValue.apply)
+  private val spanSyntax       = keyArgSyntax(LogPattern.Span.name, LogPattern.Span.apply)
 
   val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]
