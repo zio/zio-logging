@@ -207,7 +207,7 @@ object BuildHelper {
     }
   )
 
-  def stdSettings(prjName: String, javaPlatform: String = "8") =
+  def oldStdSettings(prjName: String, javaPlatform: String = "8") =
     Seq(
       name                                   := s"$prjName",
       crossScalaVersions                     := Seq(Scala211, Scala212, Scala213, Scala3),
@@ -261,19 +261,6 @@ object BuildHelper {
             Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
           case _                       => Seq.empty
         }
-      }
-    )
-
-  def macroDefinitionSettings =
-    Seq(
-      scalacOptions += "-language:experimental.macros",
-      libraryDependencies ++= {
-        if (scalaVersion.value == Scala3) Seq()
-        else
-          Seq(
-            "org.scala-lang" % "scala-reflect"  % scalaVersion.value % "provided",
-            "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
-          )
       }
     )
 
@@ -337,6 +324,6 @@ object BuildHelper {
     }
 
   implicit class ModuleHelper(p: Project) {
-    def module: Project = p.in(file(p.id)).settings(stdSettings(p.id))
+    def module: Project = p.in(file(p.id)).settings(oldStdSettings(p.id))
   }
 }
