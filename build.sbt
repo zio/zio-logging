@@ -4,10 +4,9 @@ import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
-
 inThisBuild(
   List(
-    name := "zio-logging",
+    name              := "zio-logging",
     ciEnabledBranches := Seq("master"),
     developers        := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
