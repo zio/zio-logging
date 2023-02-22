@@ -261,8 +261,6 @@ lazy val docs = project
   .in(file("zio-logging-docs"))
   .settings(
     moduleName                                 := "zio-logging-docs",
-    scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings",
     crossScalaVersions                         := Seq(scala213.value),
     projectName                                := (ThisBuild / name).value,
     mainModuleName                             := (coreJVM / name).value,
