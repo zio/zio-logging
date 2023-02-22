@@ -22,26 +22,30 @@ import java.util.UUID
 
 object ConsoleJsonApp extends ZIOAppDefault {
 
-  private val userLogAnnotation = LogAnnotation[UUID]("user", (_, i) => i, _.toString)
+  case class User(firstName: String, lastName: String) {
+    def toJson: String = s"""{"first_name":"$firstName","last_name":"$lastName"}""".stripMargin
+  }
+
+  private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
+  private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) + LogFormat.annotation(
-        userLogAnnotation
-      )
+      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) +
+        LogFormat.annotation(userLogAnnotation) + LogFormat.annotation(uuid)
     )
 
-  private val users = List.fill(2)(UUID.randomUUID())
+  private val uuids = List.fill(2)(UUID.randomUUID())
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {
       traceId <- ZIO.succeed(UUID.randomUUID())
-      _       <- ZIO.foreachPar(users) { uId =>
+      _       <- ZIO.foreachPar(uuids) { uId =>
                    {
                      ZIO.logInfo("Starting operation") *>
                        ZIO.sleep(500.millis) *>
                        ZIO.logInfo("Stopping operation")
-                   } @@ userLogAnnotation(uId)
+                   } @@ userLogAnnotation(User("John", "Doe")) @@ uuid(uId)
                  } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
     } yield ExitCode.success)
