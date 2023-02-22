@@ -1,4 +1,4 @@
-val zioSbtVersion = "0.3.10+27-6fff2aa2-SNAPSHOT"
+val zioSbtVersion = "0.3.10+28-3aa9955a-SNAPSHOT"
 
 addSbtPlugin("dev.zio"      % "zio-sbt-ecosystem" % zioSbtVersion)
 addSbtPlugin("dev.zio"      % "zio-sbt-website"   % zioSbtVersion)
