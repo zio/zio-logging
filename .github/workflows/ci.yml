@@ -70,7 +70,7 @@ jobs:
         run: ./sbt ++${{ matrix.scala }}! mimaChecks
       - name: Run tests
         if: ${{ endsWith(matrix.java, '.11') }}
-        run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
+        run: sbt ++${{ matrix.scala }} test${{ matrix.platform }}
       - name: Run tests JVM8
         if: ${{ endsWith(matrix.java, '.8') && matrix.platform == 'JVM' }}
         run: sbt ++${{ matrix.scala }}! testJVM8
