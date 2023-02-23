@@ -293,8 +293,4 @@ object BuildHelper {
           |${item("docs/docusaurusCreateSite")} - Generates the ZIO microsite
       """.stripMargin
     }
-
-  implicit class ModuleHelper(p: Project) {
-    def module: Project = p.in(file(p.id)).settings(oldStdSettings(p.id))
-  }
 }
