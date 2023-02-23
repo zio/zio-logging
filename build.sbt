@@ -118,7 +118,7 @@ lazy val slf4j = project
 lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-slf4j2"))
+  .settings(stdSettings("zio-logging-slf4j2"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
