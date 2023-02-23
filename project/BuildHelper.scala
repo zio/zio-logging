@@ -247,6 +247,17 @@ object BuildHelper {
       unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")
     )
 
+  def skipScala3Docs = Seq(
+    Compile / doc / sources := {
+      val old = (Compile / doc / sources).value
+      if (scalaVersion.value == Scala3) {
+        Nil
+      } else {
+        old
+      }
+    }
+  )
+
   def macroExpansionSettings =
     Seq(
       scalacOptions ++= {
