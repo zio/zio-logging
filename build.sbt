@@ -156,6 +156,7 @@ lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-jpl", javaPlatform = "9", turnCompilerWarningIntoErrors = false))
+  .settings(enableZIO(enableTesting = true))
   .settings(mimaSettings(failOnProblem = true))
 
 lazy val benchmarks = project
