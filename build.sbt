@@ -179,7 +179,6 @@ lazy val jpl = project
   .settings(
     oldStdSettings("zio-logging-jpl", javaPlatform = "9")
   )
-  .settings(skipScala3Docs)
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
