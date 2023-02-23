@@ -76,7 +76,7 @@ lazy val root = project
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
-  .settings(oldStdSettings("zio-logging"))
+  .settings(stdSettings("zio-logging", turnCompilerWarningIntoErrors = false))
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio"          % ZioVersion,
@@ -101,7 +101,7 @@ lazy val coreJS  = core.js.settings(
 lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-slf4j"))
+  .settings(stdSettings("zio-logging-slf4j", turnCompilerWarningIntoErrors = false))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -118,7 +118,7 @@ lazy val slf4j = project
 lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-slf4j2"))
+  .settings(stdSettings("zio-logging-slf4j2", turnCompilerWarningIntoErrors = false))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -135,7 +135,7 @@ lazy val slf4j2 = project
 lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-slf4j-bridge"))
+  .settings(stdSettings("zio-logging-slf4j-bridge", turnCompilerWarningIntoErrors = false))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
