@@ -101,7 +101,7 @@ lazy val coreJS  = core.js.settings(
 lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
-  .settings(oldStdSettings("zio-logging-slf4j"))
+  .settings(stdSettings("zio-logging-slf4j"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
