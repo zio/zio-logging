@@ -260,7 +260,7 @@ lazy val examplesJpl = project
 lazy val examplesSlf4j2Bridge = project
   .in(file("examples/slf4j2-bridge"))
   .dependsOn(slf4j2Bridge)
-  .settings(oldStdSettings("zio-logging-examples-slf4j2-bridge"))
+  .settings(stdSettings("zio-logging-examples-slf4j2-bridge", turnCompilerWarningIntoErrors = false))
   .settings(
     publish / skip := true
   )
