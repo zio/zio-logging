@@ -157,8 +157,9 @@ lazy val slf4j2Bridge = project
   .dependsOn(coreJVM)
   .settings(
     stdSettings(
-      "zio-logging-slf4j2-bridge",
-      javaPlatform = "9"
+     name = "zio-logging-slf4j2-bridge",
+      javaPlatform = "9",
+      turnCompilerWarningIntoErrors = false
     )
   )
   .settings(mimaSettings(failOnProblem = true))
