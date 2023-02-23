@@ -178,7 +178,7 @@ lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
   .settings(
-    oldStdSettings("zio-logging-jpl", javaPlatform = "9")
+    stdSettings("zio-logging-jpl", javaPlatform = "9", turnCompilerWarningIntoErrors = false)
   )
   .settings(mimaSettings(failOnProblem = true))
   .settings(
