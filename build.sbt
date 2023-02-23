@@ -7,9 +7,19 @@ enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
 inThisBuild(
   List(
-    name              := "zio-logging",
-    ciEnabledBranches := Seq("master"),
-    developers        := List(
+    name                   := "zio-logging",
+    ciEnabledBranches      := Seq("master"),
+    supportedScalaVersions :=
+      Map(
+        (coreJS / thisProject).value.id       -> (coreJS / crossScalaVersions).value,
+        (coreJVM / thisProject).value.id      -> (coreJVM / crossScalaVersions).value,
+        (jpl / thisProject).value.id          -> (jpl / crossScalaVersions).value,
+        (slf4j / thisProject).value.id        -> (slf4j / crossScalaVersions).value,
+        (slf4j2 / thisProject).value.id       -> (slf4j2 / crossScalaVersions).value,
+        (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value,
+        (slf4jBridge / thisProject).value.id  -> (slf4jBridge / crossScalaVersions).value
+      ),
+    developers             := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
         "pshemass",
