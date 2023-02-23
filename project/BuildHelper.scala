@@ -207,46 +207,6 @@ object BuildHelper {
     }
   )
 
-  def oldStdSettings(prjName: String, javaPlatform: String = "8") =
-    Seq(
-      name                                   := s"$prjName",
-      crossScalaVersions                     := Seq(Scala211, Scala212, Scala213, Scala3),
-      ThisBuild / scalaVersion               := Scala213,
-      scalacOptions                          := stdOptions ++ extraOptions(scalaVersion.value, javaPlatform, optimize = !isSnapshot.value),
-      javacOptions                           := Seq("-source", javaPlatform, "-target", javaPlatform),
-      libraryDependencies ++= {
-        if (scalaVersion.value == Scala3)
-          Seq(
-            "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
-          )
-        else
-          Seq(
-            "com.github.ghik" % "silencer-lib"            % SilencerVersion % Provided cross CrossVersion.full,
-            compilerPlugin("com.github.ghik" % "silencer-plugin" % SilencerVersion cross CrossVersion.full)
-          )
-      },
-      semanticdbEnabled                      := scalaVersion.value != Scala3, // enable SemanticDB
-      semanticdbOptions += "-P:semanticdb:synthetics:on",
-      semanticdbVersion                      := scalafixSemanticdb.revision,  // use Scalafix compatible version
-      ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
-      ThisBuild / scalafixDependencies ++= List(
-        "com.github.liancheng" %% "organize-imports" % "0.5.0",
-        "com.github.vovapolu"  %% "scaluzzi"         % "0.1.18"
-      ),
-      Compile / doc / sources                := {
-        val old = (Compile / doc / sources).value
-        if (scalaVersion.value == Scala3) {
-          Nil
-        } else {
-          old
-        }
-      },
-      Test / parallelExecution               := scalaVersion.value != Scala3,
-      incOptions ~= (_.withLogRecompileOnMacro(false)),
-      autoAPIMappings                        := true,
-      unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")
-    )
-
   def skipScala3Docs = Seq(
     Compile / doc / sources := {
       val old = (Compile / doc / sources).value

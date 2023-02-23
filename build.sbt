@@ -21,7 +21,7 @@ inThisBuild(
   )
 )
 
-val ZioVersion      = "2.0.9"
+val zioVersion      = "2.0.9"
 val slf4jVersion    = "1.7.36"
 val slf4j2Version   = "2.0.6"
 val logbackVersion  = "1.2.11"
@@ -77,15 +77,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
   .settings(stdSettings("zio-logging", turnCompilerWarningIntoErrors = false))
-  .settings(
-    libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio"          % ZioVersion,
-      "dev.zio" %%% "zio-streams"  % ZioVersion,
-      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
-      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
+  .settings(enableZIO(zioVersion, enableStreaming = true, enableTesting = true))
   .jvmSettings(
     Test / fork := true,
     run / fork  := true,
@@ -102,34 +94,30 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j", turnCompilerWarningIntoErrors = false))
+  .settings(enableZIO(zioVersion, enableTesting = true))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4jVersion,
-      "dev.zio"               %%% "zio-test"                 % ZioVersion     % Test,
-      "dev.zio"               %%% "zio-test-sbt"             % ZioVersion     % Test,
       "ch.qos.logback"          % "logback-classic"          % logbackVersion % Test,
       "net.logstash.logback"    % "logstash-logback-encoder" % "6.6"          % Test,
       "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"        % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+    )
   )
 
 lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j2", turnCompilerWarningIntoErrors = false))
+  .settings(enableZIO(zioVersion, enableTesting = true))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4j2Version,
-      "dev.zio"               %%% "zio-test"                 % ZioVersion      % Test,
-      "dev.zio"               %%% "zio-test-sbt"             % ZioVersion      % Test,
       "ch.qos.logback"          % "logback-classic"          % logback2Version % Test,
       "net.logstash.logback"    % "logstash-logback-encoder" % "7.3"           % Test,
       "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"         % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+    )
   )
 
 lazy val slf4jBridge = project
@@ -141,8 +129,8 @@ lazy val slf4jBridge = project
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4jVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
-      "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
-      "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio"               %%% "zio-test"                % zioVersion % Test,
+      "dev.zio"               %%% "zio-test-sbt"            % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -168,8 +156,8 @@ lazy val slf4j2Bridge = project
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4j2Version,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1",
-      "dev.zio"               %%% "zio-test"                % ZioVersion % Test,
-      "dev.zio"               %%% "zio-test-sbt"            % ZioVersion % Test
+      "dev.zio"               %%% "zio-test"                % zioVersion % Test,
+      "dev.zio"               %%% "zio-test-sbt"            % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -183,8 +171,8 @@ lazy val jpl = project
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-test"     % ZioVersion % Test,
-      "dev.zio" %%% "zio-test-sbt" % ZioVersion % Test
+      "dev.zio" %%% "zio-test"     % zioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -208,8 +196,8 @@ lazy val examplesCore = project
     publish / skip := true,
     libraryDependencies ++= Seq(
       "dev.zio"  %% "zio-metrics-connectors" % "2.0.4",
-      "dev.zio" %%% "zio-test"               % ZioVersion % Test,
-      "dev.zio" %%% "zio-test-sbt"           % ZioVersion % Test
+      "dev.zio" %%% "zio-test"               % zioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt"           % zioVersion % Test
     )
   )
 
