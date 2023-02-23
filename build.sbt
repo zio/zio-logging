@@ -228,7 +228,7 @@ lazy val examplesSlf4jLogback = project
 lazy val examplesSlf4j2Logback = project
   .in(file("examples/slf4j2-logback"))
   .dependsOn(slf4j2)
-  .settings(oldStdSettings("zio-logging-examples-slf4j2-logback"))
+  .settings(stdSettings("zio-logging-examples-slf4j2-logback", turnCompilerWarningIntoErrors = false))
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
