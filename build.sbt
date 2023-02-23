@@ -191,7 +191,7 @@ lazy val jpl = project
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
-  .settings(oldStdSettings("zio-logging-benchmarks"))
+  .settings(stdSettings("zio-logging-benchmarks", turnCompilerWarningIntoErrors = false))
   .settings(
     publish / skip := true,
     scalacOptions -= "-Yno-imports",
