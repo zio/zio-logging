@@ -76,8 +76,7 @@ lazy val root = project
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
-  .settings(stdSettings("zio-logging"))
-  .settings(skipScala3Docs)
+  .settings(oldStdSettings("zio-logging"))
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio"          % ZioVersion,
@@ -102,8 +101,7 @@ lazy val coreJS  = core.js.settings(
 lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
-  .settings(stdSettings(name = "zio-logging-slf4j", turnCompilerWarningIntoErrors = false))
-  .settings(skipScala3Docs)
+  .settings(oldStdSettings("zio-logging-slf4j"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -120,8 +118,7 @@ lazy val slf4j = project
 lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-slf4j2", turnCompilerWarningIntoErrors = false))
-  .settings(skipScala3Docs)
+  .settings(oldStdSettings("zio-logging-slf4j2"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -138,8 +135,7 @@ lazy val slf4j2 = project
 lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM)
-  .settings(stdSettings(name = "zio-logging-slf4j-bridge", turnCompilerWarningIntoErrors = false))
-  .settings(skipScala3Docs)
+  .settings(oldStdSettings("zio-logging-slf4j-bridge"))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -155,13 +151,11 @@ lazy val slf4j2Bridge = project
   .in(file("slf4j2-bridge"))
   .dependsOn(coreJVM)
   .settings(
-    stdSettings(
-      name = "zio-logging-slf4j2-bridge",
-      javaPlatform = "9",
-      turnCompilerWarningIntoErrors = false
+    oldStdSettings(
+      "zio-logging-slf4j2-bridge",
+      javaPlatform = "9"
     )
   )
-  .settings(skipScala3Docs)
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     compileOrder            := CompileOrder.JavaThenScala,
@@ -183,10 +177,7 @@ lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
   .settings(
-    stdSettings(
-      name = "zio-logging-jpl",
-      javaPlatform = "9"
-    )
+    oldStdSettings("zio-logging-jpl", javaPlatform = "9")
   )
   .settings(skipScala3Docs)
   .settings(mimaSettings(failOnProblem = true))
