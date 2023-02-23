@@ -21,7 +21,6 @@ inThisBuild(
   )
 )
 
-val zioVersion      = "2.0.9"
 val slf4jVersion    = "1.7.36"
 val slf4j2Version   = "2.0.6"
 val logbackVersion  = "1.2.11"
@@ -77,7 +76,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
   .settings(stdSettings("zio-logging", turnCompilerWarningIntoErrors = false))
-  .settings(enableZIO(zioVersion, enableStreaming = true))
+  .settings(enableZIO(enableStreaming = true))
   .jvmSettings(
     Test / fork := true,
     run / fork  := true,
@@ -94,7 +93,7 @@ lazy val slf4j = project
   .in(file("slf4j"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j", turnCompilerWarningIntoErrors = false))
-  .settings(enableZIO(zioVersion))
+  .settings(enableZIO())
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -109,7 +108,7 @@ lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j2", turnCompilerWarningIntoErrors = false))
-  .settings(enableZIO(zioVersion))
+  .settings(enableZIO())
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -124,7 +123,7 @@ lazy val slf4jBridge = project
   .in(file("slf4j-bridge"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j-bridge", turnCompilerWarningIntoErrors = false))
-  .settings(enableZIO(zioVersion))
+  .settings(enableZIO())
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
@@ -137,7 +136,7 @@ lazy val slf4j2Bridge = project
   .in(file("slf4j2-bridge"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-slf4j2-bridge", javaPlatform = "9", turnCompilerWarningIntoErrors = false))
-  .settings(enableZIO(zioVersion))
+  .settings(enableZIO())
   .settings(mimaSettings(failOnProblem = true))
   .settings(
     compileOrder            := CompileOrder.JavaThenScala,
@@ -151,14 +150,13 @@ lazy val slf4j2Bridge = project
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1"
     )
   )
-  .settings(enableZIO(zioVersion))
+  .settings(enableZIO())
 
 lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-jpl", javaPlatform = "9", turnCompilerWarningIntoErrors = false))
   .settings(mimaSettings(failOnProblem = true))
-  
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
@@ -175,11 +173,11 @@ lazy val examplesCore = project
   .in(file("examples/core"))
   .dependsOn(coreJVM)
   .settings(stdSettings("zio-logging-examples-core", turnCompilerWarningIntoErrors = false))
-  .settings(enableZIO(zioVersion))
+  .settings(enableZIO())
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio"  %% "zio-metrics-connectors" % "2.0.4"
+      "dev.zio" %% "zio-metrics-connectors" % "2.0.4"
     )
   )
 
