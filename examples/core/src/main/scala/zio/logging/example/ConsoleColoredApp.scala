@@ -38,11 +38,13 @@ object ConsoleColoredApp extends ZIOAppDefault {
     Map(
       "logger/pattern"                                             -> logPattern,
       "logger/path"                                                -> "file:///tmp/console_app.log",
-      "logger/filter/mappings"                                     -> LogLevel.Info.label,
+      "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
       "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
     ),
     "/"
   )
+
+//  val configProvider: ConfigProvider = zio.config.typesafe.TypesafeConfigProvider.fromResourcePath
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
     Runtime.removeDefaultLoggers >>> Runtime
