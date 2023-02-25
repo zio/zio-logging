@@ -118,6 +118,16 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.cause
   }
 
+  final case class Highlight(key: LogPattern) extends KeyArg[LogPattern] {
+    override val name = Highlight.name
+
+    override val toLogFormat: LogFormat = key.toLogFormat.highlight
+  }
+
+  object Highlight {
+    val name: String = "highlight"
+  }
+
   private val argPrefix = '%'
 
   private def keyArgEitherSyntax[P <: KeyArg[_]](
@@ -128,7 +138,7 @@ object LogPattern {
     val begin = Syntax.string(s"${argPrefix}${name}{", ())
 
     val middle = Syntax
-      .charNotIn(argPrefix, '{', '}')
+      .charNotIn('{', '}')
       .repeat
       .string
       .transformEither(
@@ -144,28 +154,60 @@ object LogPattern {
   private def keyArgSyntax[P <: KeyArg[_]](name: String, make: String => P): Syntax[String, Char, Char, P] =
     keyArgEitherSyntax[P](name, s => Right(make(s)))
 
+  private def keyArgSyntax[K, P <: KeyArg[K]](
+    name: String,
+    middle: Syntax[String, Char, Char, K],
+    make: K => P
+  ): Syntax[String, Char, Char, P] = {
+
+    val begin = Syntax.string(s"${argPrefix}${name}{", ())
+
+    val m = middle.transform[P](make, _.key)
+
+    val end = Syntax.char('}')
+
+    begin ~> m <~ end
+  }
+
   private def argSyntax[P <: Arg](name: String, value: P): Syntax[String, Char, Char, P] =
     Syntax.string(s"${argPrefix}${name}", value)
 
-  private val textSyntax       =
+  private val textSyntax =
     Syntax.charNotIn(argPrefix).repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
-  private val logLevelSyntax   = argSyntax(LogPattern.LogLevel.name, LogPattern.LogLevel)
+
+  private val logLevelSyntax = argSyntax(LogPattern.LogLevel.name, LogPattern.LogLevel)
+
   private val loggerNameSyntax = argSyntax(LogPattern.LoggerName.name, LogPattern.LoggerName)
+
   private val logMessageSyntax = argSyntax(LogPattern.LogMessage.name, LogPattern.LogMessage)
-  private val fiberIdSyntax    = argSyntax(LogPattern.FiberId.name, LogPattern.FiberId)
-  private val timestampSyntax  =
+
+  private val fiberIdSyntax = argSyntax(LogPattern.FiberId.name, LogPattern.FiberId)
+
+  private val timestampSyntax =
     keyArgEitherSyntax(
       LogPattern.Timestamp.name,
       p => Try(DateTimeFormatter.ofPattern(p)).toEither.left.map(_.getMessage).map(dtf => LogPattern.Timestamp(dtf))
     ) <> argSyntax(LogPattern.Timestamp.name, LogPattern.Timestamp.default)
-  private val keyValuesSyntax  = argSyntax(LogPattern.KeyValues.name, LogPattern.KeyValues)
-  private val spansSyntax      = argSyntax(LogPattern.Spans.name, LogPattern.Spans)
-  private val causeSyntax      = argSyntax(LogPattern.Cause.name, LogPattern.Cause)
-  private val traceLineSyntax  = argSyntax(LogPattern.TraceLine.name, LogPattern.TraceLine)
-  private val keyValueSyntax   = keyArgSyntax(LogPattern.KeyValue.name, LogPattern.KeyValue.apply)
-  private val spanSyntax       = keyArgSyntax(LogPattern.Span.name, LogPattern.Span.apply)
 
-  val syntax: Syntax[String, Char, Char, LogPattern] =
+  private val keyValuesSyntax = argSyntax(LogPattern.KeyValues.name, LogPattern.KeyValues)
+
+  private val spansSyntax = argSyntax(LogPattern.Spans.name, LogPattern.Spans)
+
+  private val causeSyntax = argSyntax(LogPattern.Cause.name, LogPattern.Cause)
+
+  private val traceLineSyntax = argSyntax(LogPattern.TraceLine.name, LogPattern.TraceLine)
+
+  private val keyValueSyntax = keyArgSyntax(LogPattern.KeyValue.name, LogPattern.KeyValue.apply)
+
+  private val spanSyntax = keyArgSyntax(LogPattern.Span.name, LogPattern.Span.apply)
+
+  private lazy val highlightSyntax = keyArgEitherSyntax(
+    LogPattern.Highlight.name,
+    p => syntax.parseString(p).left.map(_.toString).map(p => LogPattern.Highlight(p))
+  )
+//  keyArgSyntax(LogPattern.Highlight.name, syntax, Highlight.apply)
+
+  private lazy val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]
       <> loggerNameSyntax.widen[LogPattern]
       <> logMessageSyntax.widen[LogPattern]
@@ -177,12 +219,16 @@ object LogPattern {
       <> spanSyntax.widen[LogPattern]
       <> causeSyntax.widen[LogPattern]
       <> traceLineSyntax.widen[LogPattern]
-      <> textSyntax.widen[LogPattern]).repeat
+      <> textSyntax.widen[LogPattern]
+      <> highlightSyntax.widen[LogPattern]).repeat
       .transform(LogPattern.Patterns.apply, (p: LogPattern.Patterns) => p.patterns)
       .widen[LogPattern]
 
+  def parse(pattern: String): Either[Parser.ParserError[String], LogPattern] =
+    syntax.parseString(pattern)
+
   val config: Config[LogPattern] = Config.string.mapOrFail { value =>
-    syntax.parseString(value) match {
+    parse(value) match {
       case Right(p) => Right(p)
       case Left(l)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogPattern, but found ${l}"))
     }
