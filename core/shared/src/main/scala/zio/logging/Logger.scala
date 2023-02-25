@@ -92,8 +92,19 @@ object Logger {
       } yield ()
     }
 
+  def consoleErrLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleErrLogger(config))
+      } yield ()
+    }
+
   def makeConsoleLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
     makeConsoleLogger(config.format.toLogger, java.lang.System.out, config.filter)
+
+  def makeConsoleErrLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toLogger, java.lang.System.err, config.filter)
 
   def makeConsoleLogger(
     logger: ZLogger[String, String],
@@ -150,23 +161,40 @@ object Logger {
     stringLogger
   }
 
-  def makeFileAsync(
+  def fileAsyncStringLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
+        _      <- makeFileAsyncStringLogger(config)
+      } yield ()
+    }
+
+  def makeFileAsyncStringLogger(
+    config: FileLoggerConfig
+  ): ZIO[Scope, Nothing, Unit] = makeFileAsyncStringLogger(
+    config.destination,
+    config.format.toLogger,
+    config.filter,
+    config.charset,
+    config.autoFlushBatchSize,
+    config.bufferedIOSize
+  )
+
+  def makeFileAsyncStringLogger(
     destination: Path,
     logger: ZLogger[String, String],
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
-  ): ZLayer[Any, Nothing, Unit] =
-    ZLayer.scoped {
-      for {
-        queue       <- Queue.bounded[UIO[Any]](1000)
-        stringLogger =
-          makeFileAsyncStringLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue)
-        _           <- ZIO.withLoggerScoped(stringLogger)
-        _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
-      } yield ()
-    }
+  ): ZIO[Scope, Nothing, Unit] =
+    for {
+      queue       <- Queue.bounded[UIO[Any]](1000)
+      stringLogger =
+        makeFileAsyncStringLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue)
+      _           <- ZIO.withLoggerScoped(stringLogger)
+      _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
+    } yield ()
 
   def makeFileAsyncStringLogger(
     destination: Path,
@@ -192,6 +220,9 @@ object Logger {
     })
     stringLogger
   }
+
+  val logMetrics: ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeMetricLogger(loggedTotalMetric, logLevelMetricLabel))
 
   def makeMetricLogger(counter: Metric.Counter[Long], logLevelLabel: String): ZLogger[String, Unit] =
     new ZLogger[String, Unit] {

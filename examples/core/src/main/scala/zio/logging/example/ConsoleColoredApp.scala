@@ -17,21 +17,9 @@ package zio.logging.example
 
 import com.typesafe.config.ConfigFactory
 import zio.logging.Logger
-import zio.{Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer}
+import zio.{ Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
-
-//  val logPattern =
-//    s"""| {
-//        |   "timestamp": "%timestamp",
-//        |   "level": "%level",
-//        |   "fiberId": "%fiberId",
-//        |   "name": "%name",
-//        |   "line": "%line",
-//        |   "message": "%message",
-//        |   "cause":  "%cause"
-//        | }
-//        |""".stripMargin
 
   val logPattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %highlight{%level [%fiberId] %name:%line %message %cause}"
 
@@ -49,7 +37,7 @@ object ConsoleColoredApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
     Runtime.removeDefaultLoggers >>> Runtime
-      .setConfigProvider(configProvider) >>> (Logger.consoleLogger() ++ Logger.fileStringLogger())
+      .setConfigProvider(configProvider) >>> (Logger.consoleLogger() ++ Logger.fileAsyncStringLogger())
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
