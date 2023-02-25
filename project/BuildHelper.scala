@@ -144,7 +144,7 @@ object BuildHelper {
 
   def extraOptions(scalaVersion: String, optimize: Boolean) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((3, 0))  =>
+      case Some((3, _))  =>
         Seq(
           "-language:implicitConversions",
           "-Xignore-scala2-macros"
@@ -205,7 +205,7 @@ object BuildHelper {
         List("2.12", "2.11+", "2.12+", "2.11-2.12", "2.12-2.13", "2.x")
       case Some((2, 13)) =>
         List("2.13", "2.11+", "2.12+", "2.13+", "2.12-2.13", "2.x")
-      case Some((3, 0))  =>
+      case Some((3, _))  =>
         List("dotty", "2.11+", "2.12+", "2.13+", "3.x")
       case _             =>
         List()
