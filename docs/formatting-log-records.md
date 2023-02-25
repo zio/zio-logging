@@ -24,6 +24,32 @@ import zio.logging.LogFilter
 LogFormat.label("cause", LogFormat.cause).filter(LogFilter.causeNonEmpty)
 ```
 
+## LogPattern
+
+Log pattern is string representation of LogFormat
+
+| pattern                                 | description                                                                                          |
+|-----------------------------------------|------------------------------------------------------------------------------------------------------|
+| %timestamp{date-format}</br> %timestamp | Timestamp, where date format is `java.time.format.DateTimeFormatter`                                 |
+| %fiberId                                | Fiber Id                                                                                             |
+| %level                                  | Log level                                                                                            |
+| %name                                   | Logger name (from logger name annotation or Trace)                                                   |
+| %line                                   | Log/trace line (from Trace)                                                                          |
+| %message                                | Log message                                                                                          |
+| %cause                                  | Cause                                                                                                |
+| %kvs                                    | Key-values - all annotations                                                                         |
+| %kv{key}                                | Key-value - annotation with given key                                                                |
+| %spans                                  | All log spans                                                                                        |
+| %span{span}                             | Log spans with key                                                                                   |
+| %highlight{pattern}                     | Highlight given pattern with colors based on Log Level (nested {} in pattern, are not supported now) |
+
+examples:
+
+```
+%timestamp %level [%fiberId] %name:%line %message %cause
+%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %highlight{%level [%fiberId] %name:%line %message %cause}
+```
+
 ## LogFormat and LogAppender
 
 A `LogFormat` represents a DSL to describe the format of text log messages.
