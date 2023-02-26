@@ -19,6 +19,10 @@ inThisBuild(
         (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value,
         (slf4jBridge / thisProject).value.id  -> (slf4jBridge / crossScalaVersions).value
       ),
+    supportedJavaPlatform  := Map(
+      (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / javaPlatform).value,
+      (jpl / thisProject).value.id          -> (jpl / javaPlatform).value
+    ),
     developers             := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
