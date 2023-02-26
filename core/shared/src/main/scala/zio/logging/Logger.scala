@@ -30,16 +30,8 @@ object Logger {
   final case class ConsoleJsonLoggerConfig(format: LogFormat, filter: LogFilter[String])
 
   object ConsoleJsonLoggerConfig {
-    def apply(pattern: Map[String, LogPattern], filter: LogFilter[String]): ConsoleJsonLoggerConfig = {
-      val format = pattern.map { case (k, p) =>
-        p.isDefinedFilter match {
-          case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
-          case None    => LogFormat.label(k, p.toLogFormat)
-        }
-      }.foldLeft(LogFormat.empty)(_ + _)
-
-      ConsoleJsonLoggerConfig(format, filter)
-    }
+    def apply(pattern: Map[String, LogPattern], filter: LogFilter[String]): ConsoleJsonLoggerConfig =
+      ConsoleJsonLoggerConfig(LogPattern.toLabeledLogFormat(pattern), filter)
 
     val config: Config[ConsoleJsonLoggerConfig] = {
       val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
@@ -117,6 +109,7 @@ object Logger {
   )
 
   object FileJsonLoggerConfig {
+
     def apply(
       destination: Path,
       pattern: Map[String, LogPattern],
@@ -124,16 +117,15 @@ object Logger {
       charset: Charset,
       autoFlushBatchSize: Int,
       bufferedIOSize: Option[Int]
-    ): FileJsonLoggerConfig = {
-      val format = pattern.map { case (k, p) =>
-        p.isDefinedFilter match {
-          case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
-          case None    => LogFormat.label(k, p.toLogFormat)
-        }
-      }.foldLeft(LogFormat.empty)(_ + _)
-
-      FileJsonLoggerConfig(destination, format, filter, charset, autoFlushBatchSize, bufferedIOSize)
-    }
+    ): FileJsonLoggerConfig =
+      FileJsonLoggerConfig(
+        destination,
+        LogPattern.toLabeledLogFormat(pattern),
+        filter,
+        charset,
+        autoFlushBatchSize,
+        bufferedIOSize
+      )
 
     val config: Config[FileJsonLoggerConfig] = {
 

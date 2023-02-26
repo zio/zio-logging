@@ -159,21 +159,6 @@ object LogPattern {
   private def keyArgSyntax[P <: KeyArg[_]](name: String, make: String => P): Syntax[String, Char, Char, P] =
     keyArgEitherSyntax[P](name, s => Right(make(s)))
 
-  private def keyArgSyntax[K, P <: KeyArg[K]](
-    name: String,
-    middle: Syntax[String, Char, Char, K],
-    make: K => P
-  ): Syntax[String, Char, Char, P] = {
-
-    val begin = Syntax.string(s"${argPrefix}${name}{", ())
-
-    val m = middle.transform[P](make, _.key)
-
-    val end = Syntax.char('}')
-
-    begin ~> m <~ end
-  }
-
   private def argSyntax[P <: Arg](name: String, value: P): Syntax[String, Char, Char, P] =
     Syntax.string(s"${argPrefix}${name}", value)
 
@@ -210,7 +195,6 @@ object LogPattern {
     LogPattern.Highlight.name,
     p => syntax.parseString(p).left.map(_.toString).map(p => LogPattern.Highlight(p))
   )
-//  keyArgSyntax(LogPattern.Highlight.name, syntax, Highlight.apply)
 
   private lazy val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]
@@ -238,13 +222,21 @@ object LogPattern {
       )
       .widen[LogPattern]
 
-  def parse(pattern: String): Either[Parser.ParserError[String], LogPattern] =
-    syntax.parseString(pattern)
-
   val config: Config[LogPattern] = Config.string.mapOrFail { value =>
     parse(value) match {
       case Right(p) => Right(p)
       case Left(l)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogPattern, but found ${l}"))
     }
   }
+
+  def parse(pattern: String): Either[Parser.ParserError[String], LogPattern] =
+    syntax.parseString(pattern)
+
+  def toLabeledLogFormat(pattern: Map[String, LogPattern]): LogFormat =
+    pattern.map { case (k, p) =>
+      p.isDefinedFilter match {
+        case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
+        case None    => LogFormat.label(k, p.toLogFormat)
+      }
+    }.foldLeft(LogFormat.empty)(_ + _)
 }
