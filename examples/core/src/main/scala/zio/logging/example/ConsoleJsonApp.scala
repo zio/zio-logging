@@ -15,14 +15,14 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogAnnotation, LogFormat, Logger, consoleJson }
+import zio.logging.{ LogAnnotation, Logger }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object ConsoleJsonApp extends ZIOAppDefault {
 
-  case class User(firstName: String, lastName: String) {
+  final case class User(firstName: String, lastName: String) {
     def toJson: String = s"""{"first_name":"$firstName","last_name":"$lastName"}""".stripMargin
   }
 
@@ -31,34 +31,25 @@ object ConsoleJsonApp extends ZIOAppDefault {
 
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "logger/pattern/timestamp"                                   -> "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}",
-      "logger/pattern/level"                                       -> "%level",
-      "logger/pattern/fiberId"                                     -> "%fiberId",
-      "logger/pattern/kvs"                                         -> "%kvs",
-      "logger/pattern/message"                                     -> "%message",
-      "logger/pattern/cause"                                       -> "%cause",
-      "logger/pattern/name"                                        -> "%name",
-      "logger/path"                                                -> "file:///tmp/console_app_json.log",
-      "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
-      "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
+      "logger/pattern/timestamp" -> "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}",
+      "logger/pattern/level"     -> "%level",
+      "logger/pattern/fiberId"   -> "%fiberId",
+      "logger/pattern/kvs"       -> "%kvs",
+      "logger/pattern/message"   -> "%message",
+      "logger/pattern/cause"     -> "%cause",
+      "logger/pattern/name"      -> "%name",
+      "logger/filter/rootLevel"  -> LogLevel.Info.label
     ),
     "/"
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> Runtime
-      .setConfigProvider(configProvider) >>> (Logger.consoleJsonLogger() ++ Logger.fileAsyncJsonStringLogger())
-
-//  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-//    Runtime.removeDefaultLoggers >>> consoleJson(
-//      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) +
-//        LogFormat.annotation(userLogAnnotation) + LogFormat.annotation(uuid)
-//    )
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> Logger.consoleJsonLogger()
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
   override def run: ZIO[Scope, Any, ExitCode] =
-    (for {
+    for {
       traceId <- ZIO.succeed(UUID.randomUUID())
       _       <- ZIO.foreachPar(uuids) { uId =>
                    {
@@ -68,6 +59,6 @@ object ConsoleJsonApp extends ZIOAppDefault {
                    } @@ userLogAnnotation(User("John", "Doe")) @@ uuid(uId)
                  } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
-    } yield ExitCode.success)
+    } yield ExitCode.success
 
 }
