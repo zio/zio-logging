@@ -88,6 +88,11 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("core"))
   .settings(stdSettings("zio-logging", turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableStreaming = true))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio" %%% "zio-parser"   % "0.1.8"
+    )
+  )
   .jvmSettings(
     Test / fork := true,
     run / fork  := true,
