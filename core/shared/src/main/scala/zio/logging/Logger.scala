@@ -32,7 +32,10 @@ object Logger {
   object ConsoleJsonLoggerConfig {
     def apply(pattern: Map[String, LogPattern], filter: LogFilter[String]): ConsoleJsonLoggerConfig = {
       val format = pattern.map { case (k, p) =>
-        LogFormat.label(k, p.toLogFormat)
+        p.isDefinedFilter match {
+          case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
+          case None    => LogFormat.label(k, p.toLogFormat)
+        }
       }.foldLeft(LogFormat.empty)(_ + _)
 
       ConsoleJsonLoggerConfig(format, filter)
@@ -123,7 +126,10 @@ object Logger {
       bufferedIOSize: Option[Int]
     ): FileJsonLoggerConfig = {
       val format = pattern.map { case (k, p) =>
-        LogFormat.label(k, p.toLogFormat)
+        p.isDefinedFilter match {
+          case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
+          case None    => LogFormat.label(k, p.toLogFormat)
+        }
       }.foldLeft(LogFormat.empty)(_ + _)
 
       FileJsonLoggerConfig(destination, format, filter, charset, autoFlushBatchSize, bufferedIOSize)

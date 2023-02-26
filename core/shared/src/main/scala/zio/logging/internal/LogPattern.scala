@@ -1,6 +1,6 @@
 package zio.logging.internal
 
-import zio.logging.{ LogFormat, LoggerNameExtractor }
+import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor }
 import zio.parser.{ Syntax, _ }
 import zio.{ Chunk, Config }
 
@@ -9,6 +9,8 @@ import scala.util.Try
 
 sealed trait LogPattern {
   def toLogFormat: LogFormat
+
+  def isDefinedFilter: Option[LogFilter[Any]] = None
 }
 
 object LogPattern {
@@ -17,6 +19,9 @@ object LogPattern {
 
     override def toLogFormat: LogFormat =
       patterns.map(_.toLogFormat).foldLeft(LogFormat.empty)(_ + _)
+
+    override def isDefinedFilter: Option[LogFilter[Any]] =
+      patterns.map(_.isDefinedFilter).collect { case Some(f) => f }.reduceOption(_ or _)
 
   }
 
@@ -69,7 +74,7 @@ object LogPattern {
   object Timestamp {
     val name = "timestamp"
 
-    def default: Timestamp = Timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    val default: Timestamp = Timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   }
 
   final case object KeyValues extends Arg {
@@ -114,6 +119,8 @@ object LogPattern {
     override val name = "cause"
 
     override val toLogFormat: LogFormat = LogFormat.cause
+
+    override val isDefinedFilter: Option[LogFilter[Any]] = Some(LogFilter.causeNonEmpty)
   }
 
   final case class Highlight(key: LogPattern) extends KeyArg[LogPattern] {
@@ -219,7 +226,16 @@ object LogPattern {
       <> traceLineSyntax.widen[LogPattern]
       <> textSyntax.widen[LogPattern]
       <> highlightSyntax.widen[LogPattern]).repeat
-      .transform(LogPattern.Patterns.apply, (p: LogPattern.Patterns) => p.patterns)
+      .transform[LogPattern](
+        ps =>
+          if (ps.size == 1) {
+            ps.head
+          } else LogPattern.Patterns(ps),
+        _ match {
+          case LogPattern.Patterns(ps) => ps
+          case p: LogPattern           => Chunk(p)
+        }
+      )
       .widen[LogPattern]
 
   def parse(pattern: String): Either[Parser.ParserError[String], LogPattern] =
