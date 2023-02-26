@@ -27,6 +27,26 @@ object Logger {
     }
   }
 
+  final case class ConsoleJsonLoggerConfig(format: LogFormat, filter: LogFilter[String])
+
+  object ConsoleJsonLoggerConfig {
+    def apply(pattern: Map[String, LogPattern], filter: LogFilter[String]): ConsoleJsonLoggerConfig = {
+      val format = pattern.map { case (k, p) =>
+        LogFormat.label(k, p.toLogFormat)
+      }.foldLeft(LogFormat.empty)(_ + _)
+
+      ConsoleJsonLoggerConfig(format, filter)
+    }
+
+    val config: Config[ConsoleJsonLoggerConfig] = {
+      val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
+      val filterConfig  = LogFilter.LogLevelByNameConfig.config.nested("filter")
+      (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
+        ConsoleJsonLoggerConfig(pattern, LogFilter.logLevelByName(filterConfig))
+      }
+    }
+  }
+
   final case class FileLoggerConfig(
     destination: Path,
     format: LogFormat,
@@ -84,6 +104,68 @@ object Logger {
     }
   }
 
+  final case class FileJsonLoggerConfig(
+    destination: Path,
+    format: LogFormat,
+    filter: LogFilter[String],
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  )
+
+  object FileJsonLoggerConfig {
+    def apply(
+      destination: Path,
+      pattern: Map[String, LogPattern],
+      filter: LogFilter[String],
+      charset: Charset,
+      autoFlushBatchSize: Int,
+      bufferedIOSize: Option[Int]
+    ): FileJsonLoggerConfig = {
+      val format = pattern.map { case (k, p) =>
+        LogFormat.label(k, p.toLogFormat)
+      }.foldLeft(LogFormat.empty)(_ + _)
+
+      FileJsonLoggerConfig(destination, format, filter, charset, autoFlushBatchSize, bufferedIOSize)
+    }
+
+    val config: Config[FileJsonLoggerConfig] = {
+
+      def pathValue(value: String): Either[Config.Error.InvalidData, Path] =
+        Try(Paths.get(URI.create(value))) match {
+          case Success(v) => Right(v)
+          case Failure(_) =>
+            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${value}"))
+        }
+
+      def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
+        Try(Charset.forName(value)) match {
+          case Success(v) => Right(v)
+          case Failure(_) =>
+            Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Charset, but found ${value}"))
+        }
+
+      val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
+      val patternConfig            = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
+      val filterConfig             = LogFilter.LogLevelByNameConfig.config.nested("filter")
+      val charsetConfig            = Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
+      val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
+      val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
+
+      (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
+        case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
+          FileJsonLoggerConfig(
+            path,
+            pattern,
+            LogFilter.logLevelByName(filterConfig),
+            charset,
+            autoFlushBatchSize,
+            bufferedIOSize
+          )
+      }
+    }
+  }
+
   def consoleLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
@@ -100,11 +182,33 @@ object Logger {
       } yield ()
     }
 
+  def consoleJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleJsonLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleJsonLogger(config))
+      } yield ()
+    }
+
+  def consoleJsonErrLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleJsonLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleErrJsonLogger(config))
+      } yield ()
+    }
+
   def makeConsoleLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
     makeConsoleLogger(config.format.toLogger, java.lang.System.out, config.filter)
 
   def makeConsoleErrLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
     makeConsoleLogger(config.format.toLogger, java.lang.System.err, config.filter)
+
+  def makeConsoleJsonLogger(config: ConsoleJsonLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toJsonLogger, java.lang.System.out, config.filter)
+
+  def makeConsoleErrJsonLogger(config: ConsoleJsonLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toJsonLogger, java.lang.System.err, config.filter)
 
   def makeConsoleLogger(
     logger: ZLogger[String, String],
@@ -130,10 +234,28 @@ object Logger {
       } yield ()
     }
 
+  def fileJsonStringLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileJsonLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeFileJsonStringLogger(config))
+      } yield ()
+    }
+
   def makeFileStringLogger(config: FileLoggerConfig): ZLogger[String, Any] =
     makeFileStringLogger(
       config.destination,
       config.format.toLogger,
+      config.filter,
+      config.charset,
+      config.autoFlushBatchSize,
+      config.bufferedIOSize
+    )
+
+  def makeFileJsonStringLogger(config: FileJsonLoggerConfig): ZLogger[String, Any] =
+    makeFileStringLogger(
+      config.destination,
+      config.format.toJsonLogger,
       config.filter,
       config.charset,
       config.autoFlushBatchSize,
@@ -169,11 +291,30 @@ object Logger {
       } yield ()
     }
 
+  def fileAsyncJsonStringLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileJsonLoggerConfig.config.nested(configPath))
+        _      <- makeFileAsyncJsonStringLogger(config)
+      } yield ()
+    }
+
   def makeFileAsyncStringLogger(
     config: FileLoggerConfig
   ): ZIO[Scope, Nothing, Unit] = makeFileAsyncStringLogger(
     config.destination,
     config.format.toLogger,
+    config.filter,
+    config.charset,
+    config.autoFlushBatchSize,
+    config.bufferedIOSize
+  )
+
+  def makeFileAsyncJsonStringLogger(
+    config: FileJsonLoggerConfig
+  ): ZIO[Scope, Nothing, Unit] = makeFileAsyncStringLogger(
+    config.destination,
+    config.format.toJsonLogger,
     config.filter,
     config.charset,
     config.autoFlushBatchSize,

@@ -14,12 +14,10 @@ sealed trait LogPattern {
 object LogPattern {
 
   final case class Patterns(patterns: Chunk[LogPattern]) extends LogPattern {
+
     override def toLogFormat: LogFormat =
-      if (patterns.isEmpty) {
-        LogFormat.text("")
-      } else {
-        patterns.map(_.toLogFormat).reduce(_ + _)
-      }
+      patterns.map(_.toLogFormat).foldLeft(LogFormat.empty)(_ + _)
+
   }
 
   final case class Text(text: String) extends LogPattern {

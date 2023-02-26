@@ -308,6 +308,10 @@ object LogFormat {
       }
     }
 
+  val empty: LogFormat = LogFormat.make { (_, _, _, _, _, _, _, _, _) =>
+    ()
+  }
+
   val fiberId: LogFormat =
     LogFormat.make { (builder, _, fiberId, _, _, _, _, _, _) =>
       builder.appendText(fiberId.threadName)

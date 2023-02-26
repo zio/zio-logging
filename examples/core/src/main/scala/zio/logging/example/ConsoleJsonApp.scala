@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogAnnotation, LogFormat, consoleJson }
+import zio.logging.{ LogAnnotation, LogFormat, Logger, consoleJson }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
@@ -29,11 +29,31 @@ object ConsoleJsonApp extends ZIOAppDefault {
   private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
   private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
+  val configProvider: ConfigProvider = ConfigProvider.fromMap(
+    Map(
+      "logger/pattern/timestamp"                                   -> "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}",
+      "logger/pattern/level"                                       -> "%level",
+      "logger/pattern/fiberId"                                     -> "%fiberId",
+      "logger/pattern/kvs"                                         -> "%kvs",
+      "logger/pattern/message"                                     -> "%message",
+      "logger/pattern/cause"                                       -> "%cause",
+      "logger/pattern/name"                                        -> "%name",
+      "logger/path"                                                -> "file:///tmp/console_app_json.log",
+      "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
+      "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
+    ),
+    "/"
+  )
+
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) +
-        LogFormat.annotation(userLogAnnotation) + LogFormat.annotation(uuid)
-    )
+    Runtime.removeDefaultLoggers >>> Runtime
+      .setConfigProvider(configProvider) >>> (Logger.consoleJsonLogger() ++ Logger.fileAsyncJsonStringLogger())
+
+//  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+//    Runtime.removeDefaultLoggers >>> consoleJson(
+//      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) +
+//        LogFormat.annotation(userLogAnnotation) + LogFormat.annotation(uuid)
+//    )
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
