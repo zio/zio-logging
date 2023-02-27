@@ -28,20 +28,20 @@ LogFormat.label("cause", LogFormat.cause).filter(LogFilter.causeNonEmpty)
 
 Log pattern is string representation of LogFormat
 
-| pattern                                 | description                                                                                          |
-|-----------------------------------------|------------------------------------------------------------------------------------------------------|
-| %timestamp{date-format}</br> %timestamp | Timestamp, where date format is `java.time.format.DateTimeFormatter`                                 |
-| %fiberId                                | Fiber Id                                                                                             |
-| %level                                  | Log level                                                                                            |
-| %name                                   | Logger name (from logger name annotation or Trace)                                                   |
-| %line                                   | Log/trace line (from Trace)                                                                          |
-| %message                                | Log message                                                                                          |
-| %cause                                  | Cause                                                                                                |
-| %kvs                                    | Key-values - all annotations                                                                         |
-| %kv{key}                                | Key-value - annotation with given key                                                                |
-| %spans                                  | All log spans                                                                                        |
-| %span{span}                             | Log spans with key                                                                                   |
-| %highlight{pattern}                     | Highlight given pattern with colors based on Log Level (nested {} in pattern, are not supported now) |
+| pattern                                | description                                                                                          |
+|----------------------------------------|------------------------------------------------------------------------------------------------------|
+| %timestamp{date-format}<br/>%timestamp | Timestamp, where date format is `java.time.format.DateTimeFormatter`                                 |
+| %fiberId                               | Fiber Id                                                                                             |
+| %level                                 | Log level                                                                                            |
+| %name                                  | Logger name (from logger name annotation or Trace)                                                   |
+| %line                                  | Log/trace line (from Trace)                                                                          |
+| %message                               | Log message                                                                                          |
+| %cause                                 | Cause                                                                                                |
+| %kvs                                   | Key-values - all annotations                                                                         |
+| %kv{key}                               | Key-value - annotation with given key                                                                |
+| %spans                                 | All log spans                                                                                        |
+| %span{span}                            | Log spans with key                                                                                   |
+| %highlight{pattern}                    | Highlight given pattern with colors based on Log Level (nested {} in pattern, are not supported now) |
 
 examples:
 

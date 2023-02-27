@@ -232,11 +232,4 @@ object LogPattern {
   def parse(pattern: String): Either[Parser.ParserError[String], LogPattern] =
     syntax.parseString(pattern)
 
-  def toLabeledLogFormat(pattern: Map[String, LogPattern]): LogFormat =
-    pattern.map { case (k, p) =>
-      p.isDefinedFilter match {
-        case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
-        case None    => LogFormat.label(k, p.toLogFormat)
-      }
-    }.foldLeft(LogFormat.empty)(_ + _)
 }

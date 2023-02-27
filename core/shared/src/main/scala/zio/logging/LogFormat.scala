@@ -233,6 +233,14 @@ object LogFormat {
     }
   }
 
+  def makeLabeled(labelPatterns: Map[String, LogPattern]): LogFormat =
+    labelPatterns.map { case (k, p) =>
+      p.isDefinedFilter match {
+        case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
+        case None    => LogFormat.label(k, p.toLogFormat)
+      }
+    }.foldLeft(LogFormat.empty)(_ + _)
+
   def loggerName(loggerNameExtractor: LoggerNameExtractor, loggerNameDefault: String = "zio-logger"): LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, context, _, annotations) =>
       val loggerName = loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
@@ -300,6 +308,10 @@ object LogFormat {
 
   val bracketEnd: LogFormat = text("]")
 
+  val empty: LogFormat = LogFormat.make { (_, _, _, _, _, _, _, _, _) =>
+    ()
+  }
+
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
       trace match {
@@ -307,10 +319,6 @@ object LogFormat {
         case _                 => builder.appendText("not-available")
       }
     }
-
-  val empty: LogFormat = LogFormat.make { (_, _, _, _, _, _, _, _, _) =>
-    ()
-  }
 
   val fiberId: LogFormat =
     LogFormat.make { (builder, _, fiberId, _, _, _, _, _, _) =>
