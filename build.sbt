@@ -23,6 +23,7 @@ inThisBuild(
       (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / javaPlatform).value,
       (jpl / thisProject).value.id          -> (jpl / javaPlatform).value
     ),
+    parallelTestExecution := false,
     developers             := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
