@@ -67,11 +67,82 @@ jobs:
         - '8'
         - '11'
         - '17'
-        scala:
-        - 2.11.12
-        - 2.12.17
-        - 2.13.10
-        - 3.2.2
+        scala-project-java8:
+        - ++2.12.17 coreJS
+        - ++2.13.10 coreJS
+        - ++3.2.2 coreJS
+        - ++2.11.12 slf4jBridge
+        - ++2.12.17 slf4jBridge
+        - ++2.13.10 slf4jBridge
+        - ++3.2.2 slf4jBridge
+        - ++2.11.12 coreJVM
+        - ++2.12.17 coreJVM
+        - ++2.13.10 coreJVM
+        - ++3.2.2 coreJVM
+        - ++2.11.12 slf4j2
+        - ++2.12.17 slf4j2
+        - ++2.13.10 slf4j2
+        - ++3.2.2 slf4j2
+        - ++2.11.12 slf4j
+        - ++2.12.17 slf4j
+        - ++2.13.10 slf4j
+        - ++3.2.2 slf4j
+        scala-project-java11:
+        - ++2.11.12 jpl
+        - ++2.12.17 jpl
+        - ++2.13.10 jpl
+        - ++3.2.2 jpl
+        - ++2.12.17 coreJS
+        - ++2.13.10 coreJS
+        - ++3.2.2 coreJS
+        - ++2.11.12 slf4jBridge
+        - ++2.12.17 slf4jBridge
+        - ++2.13.10 slf4jBridge
+        - ++3.2.2 slf4jBridge
+        - ++2.11.12 coreJVM
+        - ++2.12.17 coreJVM
+        - ++2.13.10 coreJVM
+        - ++3.2.2 coreJVM
+        - ++2.11.12 slf4j2Bridge
+        - ++2.12.17 slf4j2Bridge
+        - ++2.13.10 slf4j2Bridge
+        - ++3.2.2 slf4j2Bridge
+        - ++2.11.12 slf4j2
+        - ++2.12.17 slf4j2
+        - ++2.13.10 slf4j2
+        - ++3.2.2 slf4j2
+        - ++2.11.12 slf4j
+        - ++2.12.17 slf4j
+        - ++2.13.10 slf4j
+        - ++3.2.2 slf4j
+        scala-project-java17:
+        - ++2.11.12 jpl
+        - ++2.12.17 jpl
+        - ++2.13.10 jpl
+        - ++3.2.2 jpl
+        - ++2.12.17 coreJS
+        - ++2.13.10 coreJS
+        - ++3.2.2 coreJS
+        - ++2.11.12 slf4jBridge
+        - ++2.12.17 slf4jBridge
+        - ++2.13.10 slf4jBridge
+        - ++3.2.2 slf4jBridge
+        - ++2.11.12 coreJVM
+        - ++2.12.17 coreJVM
+        - ++2.13.10 coreJVM
+        - ++3.2.2 coreJVM
+        - ++2.11.12 slf4j2Bridge
+        - ++2.12.17 slf4j2Bridge
+        - ++2.13.10 slf4j2Bridge
+        - ++3.2.2 slf4j2Bridge
+        - ++2.11.12 slf4j2
+        - ++2.12.17 slf4j2
+        - ++2.13.10 slf4j2
+        - ++3.2.2 slf4j2
+        - ++2.11.12 slf4j
+        - ++2.12.17 slf4j
+        - ++2.13.10 slf4j
+        - ++3.2.2 slf4j
     steps:
     - name: Setup Scala
       uses: actions/setup-java@v3.10.0
@@ -83,42 +154,15 @@ jobs:
       uses: actions/checkout@v3.3.0
       with:
         fetch-depth: '0'
-    - name: Test
-      if: ${{ (matrix.java == '17') && (matrix.scala == '2.11.12') }}
-      run: sbt ++${{ matrix.scala }} jpl/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '8') && (matrix.scala == '2.12.17') }}
-      run: sbt ++${{ matrix.scala }} coreJS/test slf4jBridge/test coreJVM/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '11') && (matrix.scala == '3.2.2') }}
-      run: sbt ++${{ matrix.scala }} jpl/test coreJS/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '8') && (matrix.scala == '3.2.2') }}
-      run: sbt ++${{ matrix.scala }} coreJS/test slf4jBridge/test coreJVM/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '17') && (matrix.scala == '3.2.2') }}
-      run: sbt ++${{ matrix.scala }} jpl/test coreJS/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '8') && (matrix.scala == '2.13.10') }}
-      run: sbt ++${{ matrix.scala }} coreJS/test slf4jBridge/test coreJVM/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '8') && (matrix.scala == '2.11.12') }}
-      run: sbt ++${{ matrix.scala }} slf4jBridge/test coreJVM/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '11') && (matrix.scala == '2.13.10') }}
-      run: sbt ++${{ matrix.scala }} jpl/test coreJS/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '17') && (matrix.scala == '2.13.10') }}
-      run: sbt ++${{ matrix.scala }} jpl/test coreJS/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '11') && (matrix.scala == '2.12.17') }}
-      run: sbt ++${{ matrix.scala }} jpl/test coreJS/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '17') && (matrix.scala == '2.12.17') }}
-      run: sbt ++${{ matrix.scala }} jpl/test coreJS/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
-    - name: Test
-      if: ${{ (matrix.java == '11') && (matrix.scala == '2.11.12') }}
-      run: sbt ++${{ matrix.scala }} jpl/test slf4jBridge/test coreJVM/test slf4j2Bridge/test slf4j2/test slf4j
+    - name: Java 8 Tests
+      if: ${{ endsWith(matrix.java, '.8') }}
+      run: sbt ${{ matrix.scala-project-java8 }}/test
+    - name: Java 11 Tests
+      if: ${{ endsWith(matrix.java, '.11') }}
+      run: sbt ${{ matrix.scala-project-java11 }}/test
+    - name: Java 17 Tests
+      if: ${{ endsWith(matrix.java, '.17') }}
+      run: sbt ${{ matrix.scala-project-java17 }}/test
   release:
     name: Release
     runs-on: ubuntu-latest
