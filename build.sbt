@@ -17,6 +17,7 @@ inThisBuild(
         (jpl / thisProject).value.id          -> (jpl / crossScalaVersions).value,
         (slf4j / thisProject).value.id        -> (slf4j / crossScalaVersions).value,
         (slf4j2 / thisProject).value.id       -> (slf4j2 / crossScalaVersions).value,
+        (slf4jBridge / thisProject).value.id  -> (slf4jBridge / crossScalaVersions).value,
         (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value
       ),
     supportedJavaPlatform  := Map(
