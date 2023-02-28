@@ -39,24 +39,6 @@ inThisBuild(
   )
 )
 
-addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
-addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
-
-addCommandAlias(
-  "testJVM8",
-  ";coreJVM/test;slf4j/test;slf4jBridge/test"
-)
-
-addCommandAlias(
-  "testJVM",
-  ";coreJVM/test;slf4j/test;slf4j2/test;jpl/test;slf4jBridge/test;slf4j2Bridge/test"
-)
-
-addCommandAlias(
-  "testJS",
-  ";coreJS/test"
-)
-
 addCommandAlias(
   "mimaChecks",
   "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
