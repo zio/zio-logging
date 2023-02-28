@@ -9,6 +9,7 @@ inThisBuild(
   List(
     name                   := "zio-logging",
     ciEnabledBranches      := Seq("master"),
+    crossScalaVersions -= scala211.value,
     supportedScalaVersions :=
       Map(
         (coreJS / thisProject).value.id       -> (coreJS / crossScalaVersions).value,
@@ -23,7 +24,7 @@ inThisBuild(
       (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / javaPlatform).value,
       (jpl / thisProject).value.id          -> (jpl / javaPlatform).value
     ),
-    parallelTestExecution := true,
+    parallelTestExecution  := false,
     developers             := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
