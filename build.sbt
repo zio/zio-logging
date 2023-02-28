@@ -21,6 +21,7 @@ inThisBuild(
         (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value
       ),
     supportedJavaPlatform  := Map(
+      (slf4j2 / thisProject).value.id       -> (slf4j2 / javaPlatform).value,
       (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / javaPlatform).value,
       (jpl / thisProject).value.id          -> (jpl / javaPlatform).value
     ),
@@ -119,7 +120,7 @@ lazy val slf4j = project
 lazy val slf4j2 = project
   .in(file("slf4j2"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-slf4j2", turnCompilerWarningIntoErrors = false))
+  .settings(stdSettings("zio-logging-slf4j2", javaPlatform = "11", turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
   .settings(mimaSettings(failOnProblem = true))
   .settings(
