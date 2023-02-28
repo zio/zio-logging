@@ -1,4 +1,5 @@
 import BuildHelper._
+import Versions._
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 
@@ -20,11 +21,6 @@ inThisBuild(
     )
   )
 )
-
-val slf4jVersion    = "1.7.36"
-val slf4j2Version   = "2.0.6"
-val logbackVersion  = "1.2.11"
-val logback2Version = "1.4.5"
 
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
@@ -86,7 +82,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
 lazy val coreJVM = core.jvm
 lazy val coreJS  = core.js.settings(
   crossScalaVersions -= scala211.value,
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test
 )
 
 lazy val slf4j = project
@@ -98,9 +94,9 @@ lazy val slf4j = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4jVersion,
-      "ch.qos.logback"          % "logback-classic"          % logbackVersion % Test,
-      "net.logstash.logback"    % "logstash-logback-encoder" % "6.6"          % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"        % Test
+      "ch.qos.logback"          % "logback-classic"          % logbackVersion                % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % logstashLogbackEncoderVersion % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat"  % scalaCollectionCompatVersion  % Test
     )
   )
 
@@ -113,9 +109,9 @@ lazy val slf4j2 = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4j2Version,
-      "ch.qos.logback"          % "logback-classic"          % logback2Version % Test,
-      "net.logstash.logback"    % "logstash-logback-encoder" % "7.3"           % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat"  % "2.9.0"         % Test
+      "ch.qos.logback"          % "logback-classic"          % logback2Version              % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % "7.3"                        % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat"  % scalaCollectionCompatVersion % Test
     )
   )
 
@@ -128,7 +124,7 @@ lazy val slf4jBridge = project
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4jVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
 
@@ -178,7 +174,7 @@ lazy val examplesCore = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-metrics-connectors" % "2.0.4"
+      "dev.zio" %% "zio-metrics-connectors" % zioMetricsConnectorsVersion
     )
   )
 
@@ -190,7 +186,7 @@ lazy val examplesSlf4jLogback = project
     publish / skip := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % logbackVersion,
-      "net.logstash.logback" % "logstash-logback-encoder" % "6.6"
+      "net.logstash.logback" % "logstash-logback-encoder" % logstashLogbackEncoderVersion
     )
   )
 
