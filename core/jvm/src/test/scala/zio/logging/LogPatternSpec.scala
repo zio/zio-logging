@@ -1,4 +1,4 @@
-package zio.logging.internal
+package zio.logging
 
 import zio.test._
 import zio.{ Chunk, Config, ConfigProvider }

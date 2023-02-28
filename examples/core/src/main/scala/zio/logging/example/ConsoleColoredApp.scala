@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.Logger
+import zio.logging.consoleLogger
 import zio.{ Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
@@ -32,7 +32,7 @@ object ConsoleColoredApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
-    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> Logger.consoleLogger()
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleLogger()
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService

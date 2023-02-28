@@ -15,13 +15,13 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogFormat, console }
+import zio.logging.{ ConsoleLoggerConfig, consoleLogger }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object ConsoleSimpleApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default)
+    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig.default)
 
   override def run: ZIO[Scope, Any, ExitCode] =
     ZIO.logInfo("Hello from ZIO logger").as(ExitCode.success)

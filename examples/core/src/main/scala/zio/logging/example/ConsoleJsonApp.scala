@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.{ LogAnnotation, Logger }
+import zio.logging.{ LogAnnotation, consoleJsonLogger }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
@@ -44,7 +44,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> Logger.consoleJsonLogger()
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleJsonLogger()
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 

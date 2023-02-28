@@ -14,7 +14,7 @@ class FilterBenchmarks {
   val runtime = Runtime.default
 
   val unfilteredLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default, LogFilter.acceptAll)
+    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig(LogFormat.default, LogFilter.acceptAll))
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
     val loggerNameGroup: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
@@ -37,27 +37,14 @@ class FilterBenchmarks {
         }
       }
     )
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default, filter)
+    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig(LogFormat.default, filter))
   }
 
   val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> console(
-      LogFormat.default,
-      LogFilter.logLevelByName(
-        LogLevel.Debug,
-        "a.b.c" -> LogLevel.Info,
-        "a.b.d" -> LogLevel.Warning,
-        "e"     -> LogLevel.Info,
-        "f.g"   -> LogLevel.Error,
-        "f"     -> LogLevel.Info
-      )
-    )
-
-  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> console(
-      LogFormat.default,
-      LogFilter
-        .logLevelByName(
+    Runtime.removeDefaultLoggers >>> consoleLogger(
+      ConsoleLoggerConfig(
+        LogFormat.default,
+        LogFilter.logLevelByName(
           LogLevel.Debug,
           "a.b.c" -> LogLevel.Info,
           "a.b.d" -> LogLevel.Warning,
@@ -65,7 +52,24 @@ class FilterBenchmarks {
           "f.g"   -> LogLevel.Error,
           "f"     -> LogLevel.Info
         )
-        .cached
+      )
+    )
+
+  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> consoleLogger(
+      ConsoleLoggerConfig(
+        LogFormat.default,
+        LogFilter
+          .logLevelByName(
+            LogLevel.Debug,
+            "a.b.c" -> LogLevel.Info,
+            "a.b.d" -> LogLevel.Warning,
+            "e"     -> LogLevel.Info,
+            "f.g"   -> LogLevel.Error,
+            "f"     -> LogLevel.Info
+          )
+          .cached
+      )
     )
 
   val names: List[String] = List(

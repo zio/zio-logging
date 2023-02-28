@@ -63,54 +63,283 @@ package object logging {
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
+  def consoleLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleLogger(config))
+      } yield ()
+    }
+
+  def consoleLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeConsoleLogger(config))
+
+  def consoleErrLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleErrLogger(config))
+      } yield ()
+    }
+
+  def consoleErrLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeConsoleErrLogger(config))
+
+  def consoleJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleJsonLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleJsonLogger(config))
+      } yield ()
+    }
+
+  def consoleJsonLogger(config: ConsoleJsonLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeConsoleJsonLogger(config))
+
+  def consoleErrJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(ConsoleJsonLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeConsoleErrJsonLogger(config))
+      } yield ()
+    }
+
+  def consoleErrJsonLogger(config: ConsoleJsonLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeConsoleErrJsonLogger(config))
+
+  def makeConsoleLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toLogger, java.lang.System.out, config.filter)
+
+  def makeConsoleErrLogger(config: ConsoleLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toLogger, java.lang.System.err, config.filter)
+
+  def makeConsoleJsonLogger(config: ConsoleJsonLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toJsonLogger, java.lang.System.out, config.filter)
+
+  def makeConsoleErrJsonLogger(config: ConsoleJsonLoggerConfig): ZLogger[String, Any] =
+    makeConsoleLogger(config.format.toJsonLogger, java.lang.System.err, config.filter)
+
+  def makeConsoleLogger(
+    logger: ZLogger[String, String],
+    stream: PrintStream,
+    logFilter: LogFilter[String]
+  ): ZLogger[String, Any] = {
+
+    val stringLogger = logFilter.filter(logger.map { line =>
+      try stream.println(line)
+      catch {
+        case t: VirtualMachineError => throw t
+        case _: Throwable           => ()
+      }
+    })
+    stringLogger
+  }
+
+  def fileLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeFileLogger(config))
+      } yield ()
+    }
+
+  def fileLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeFileLogger(config))
+
+  def fileJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileJsonLoggerConfig.config.nested(configPath))
+        _      <- ZIO.withLoggerScoped(makeFileJsonLogger(config))
+      } yield ()
+    }
+
+  def fileJsonLogger(config: FileJsonLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    Runtime.addLogger(makeFileJsonLogger(config))
+
+  def makeFileLogger(config: FileLoggerConfig): ZLogger[String, Any] =
+    makeFileLogger(
+      config.destination,
+      config.format.toLogger,
+      config.filter,
+      config.charset,
+      config.autoFlushBatchSize,
+      config.bufferedIOSize
+    )
+
+  def makeFileJsonLogger(config: FileJsonLoggerConfig): ZLogger[String, Any] =
+    makeFileLogger(
+      config.destination,
+      config.format.toJsonLogger,
+      config.filter,
+      config.charset,
+      config.autoFlushBatchSize,
+      config.bufferedIOSize
+    )
+
+  def makeFileLogger(
+    destination: Path,
+    logger: ZLogger[String, String],
+    logFilter: LogFilter[String],
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZLogger[String, Any] = {
+    val logWriter = new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
+
+    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
+      try logWriter.writeln(line)
+      catch {
+        case t: VirtualMachineError => throw t
+        case _: Throwable           => ()
+      }
+    })
+
+    stringLogger
+  }
+
+  def fileAsyncLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
+        _      <- makeFileAsyncLogger(config)
+      } yield ()
+    }
+
+  def fileAsyncLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    ZLayer.scoped(makeFileAsyncLogger(config))
+
+  def fileAsyncJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
+      for {
+        config <- ZIO.config(FileJsonLoggerConfig.config.nested(configPath))
+        _      <- makeFileAsyncJsonLogger(config)
+      } yield ()
+    }
+
+  def fileAsyncJsonLogger(config: FileJsonLoggerConfig): ZLayer[Any, Nothing, Unit] =
+    ZLayer.scoped(makeFileAsyncJsonLogger(config))
+
+  def makeFileAsyncLogger(
+    config: FileLoggerConfig
+  ): ZIO[Scope, Nothing, Unit] = makeFileAsyncLogger(
+    config.destination,
+    config.format.toLogger,
+    config.filter,
+    config.charset,
+    config.autoFlushBatchSize,
+    config.bufferedIOSize
+  )
+
+  def makeFileAsyncJsonLogger(
+    config: FileJsonLoggerConfig
+  ): ZIO[Scope, Nothing, Unit] = makeFileAsyncLogger(
+    config.destination,
+    config.format.toJsonLogger,
+    config.filter,
+    config.charset,
+    config.autoFlushBatchSize,
+    config.bufferedIOSize
+  )
+
+  def makeFileAsyncLogger(
+    destination: Path,
+    logger: ZLogger[String, String],
+    logFilter: LogFilter[String],
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int]
+  ): ZIO[Scope, Nothing, Unit] =
+    for {
+      queue       <- Queue.bounded[UIO[Any]](1000)
+      stringLogger =
+        makeFileAsyncLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue)
+      _           <- ZIO.withLoggerScoped(stringLogger)
+      _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
+    } yield ()
+
+  def makeFileAsyncLogger(
+    destination: Path,
+    logger: ZLogger[String, String],
+    logFilter: LogFilter[String],
+    charset: Charset,
+    autoFlushBatchSize: Int,
+    bufferedIOSize: Option[Int],
+    queue: Queue[UIO[Any]]
+  ): ZLogger[String, Any] = {
+    val logWriter = new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
+
+    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
+      zio.Unsafe.unsafe { implicit u =>
+        Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
+          try logWriter.writeln(line)
+          catch {
+            case t: VirtualMachineError => throw t
+            case _: Throwable           => ()
+          }
+        }))
+      }
+    })
+    stringLogger
+  }
+
+  @deprecated("use zio.logging.consoleLogger", "2.1.10")
   def console(
     format: LogFormat = LogFormat.colored,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
     console(format, LogFilter.logLevel(logLevel))
 
+  @deprecated("use zio.logging.consoleLogger", "2.1.10")
   def console(
     format: LogFormat,
     logFilter: LogFilter[String]
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toLogger, java.lang.System.out, logFilter)
+    consoleLogger(ConsoleLoggerConfig(format, logFilter))
 
+  @deprecated("use zio.logging.consoleJsonLogger", "2.1.10")
   def consoleJson(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
     consoleJson(format, LogFilter.logLevel(logLevel))
 
+  @deprecated("use zio.logging.consoleJsonLogger", "2.1.10")
   def consoleJson(
     format: LogFormat,
     logFilter: LogFilter[String]
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toJsonLogger, java.lang.System.out, logFilter)
+    consoleJsonLogger(ConsoleJsonLoggerConfig(format, logFilter))
 
+  @deprecated("use zio.logging.consoleErrLogger", "2.1.10")
   def consoleErr(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
     consoleErr(format, LogFilter.logLevel(logLevel))
 
+  @deprecated("use zio.logging.consoleErrLogger", "2.1.10")
   def consoleErr(
     format: LogFormat,
     logFilter: LogFilter[String]
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toLogger, java.lang.System.err, logFilter)
+    consoleErrLogger(ConsoleLoggerConfig(format, logFilter))
 
+  @deprecated("use zio.logging.consoleErrJsonLogger", "2.1.10")
   def consoleErrJson(
     format: LogFormat = LogFormat.default,
     logLevel: LogLevel = LogLevel.Info
   ): ZLayer[Any, Nothing, Unit] =
     consoleErrJson(format, LogFilter.logLevel(logLevel))
 
+  @deprecated("use zio.logging.consoleErrJsonLogger", "2.1.10")
   def consoleErrJson(
     format: LogFormat,
     logFilter: LogFilter[String]
   ): ZLayer[Any, Nothing, Unit] =
-    makeConsole(format.toJsonLogger, java.lang.System.err, logFilter)
+    consoleErrJsonLogger(ConsoleJsonLoggerConfig(format, logFilter))
 
+  @deprecated("use zio.logging.fileLogger", "2.1.10")
   def file(
     destination: Path,
     format: LogFormat = LogFormat.default,
@@ -121,6 +350,7 @@ package object logging {
   ): ZLayer[Any, Nothing, Unit] =
     file(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
 
+  @deprecated("use zio.logging.fileLogger", "2.1.10")
   def file(
     destination: Path,
     format: LogFormat,
@@ -129,17 +359,9 @@ package object logging {
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
   ): ZLayer[Any, Nothing, Unit] =
-    Runtime.addLogger(
-      makeStringLogger(
-        destination,
-        format.toLogger,
-        logFilter,
-        charset,
-        autoFlushBatchSize,
-        bufferedIOSize
-      )
-    )
+    fileLogger(FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize))
 
+  @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
   def fileJson(
     destination: Path,
     format: LogFormat = LogFormat.default,
@@ -150,6 +372,7 @@ package object logging {
   ): ZLayer[Any, Nothing, Unit] =
     fileJson(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
 
+  @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
   def fileJson(
     destination: Path,
     format: LogFormat,
@@ -158,17 +381,11 @@ package object logging {
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
   ): ZLayer[Any, Nothing, Unit] =
-    Runtime.addLogger(
-      makeStringLogger(
-        destination,
-        format.toJsonLogger,
-        logFilter,
-        charset,
-        autoFlushBatchSize,
-        bufferedIOSize
-      )
+    fileJsonLogger(
+      FileJsonLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize)
     )
 
+  @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
   def fileAsync(
     destination: Path,
     format: LogFormat = LogFormat.default,
@@ -186,6 +403,7 @@ package object logging {
       bufferedIOSize
     )
 
+  @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
   def fileAsync(
     destination: Path,
     format: LogFormat,
@@ -194,15 +412,9 @@ package object logging {
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
   ): ZLayer[Any, Nothing, Unit] =
-    makeFileAsync(
-      destination,
-      format.toLogger,
-      logFilter,
-      charset,
-      autoFlushBatchSize,
-      bufferedIOSize
-    )
+    fileAsyncLogger(FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize))
 
+  @deprecated("use zio.logging.fileAsyncJsonLogger", "2.1.10")
   def fileAsyncJson(
     destination: Path,
     format: LogFormat = LogFormat.default,
@@ -220,6 +432,7 @@ package object logging {
       bufferedIOSize
     )
 
+  @deprecated("use zio.logging.fileAsyncJsonLogger", "2.1.10")
   def fileAsyncJson(
     destination: Path,
     format: LogFormat,
@@ -228,118 +441,33 @@ package object logging {
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int]
   ): ZLayer[Any, Nothing, Unit] =
-    makeFileAsync(
-      destination,
-      format.toJsonLogger,
-      logFilter,
-      charset,
-      autoFlushBatchSize,
-      bufferedIOSize
+    fileAsyncJsonLogger(
+      FileJsonLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize)
     )
 
   val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers
 
-  private def makeConsole(
-    logger: ZLogger[String, String],
-    stream: PrintStream,
-    logFilter: LogFilter[String]
-  ): ZLayer[Any, Nothing, Unit] = {
-
-    val stringLogger = logFilter.filter(logger.map { line =>
-      try stream.println(line)
-      catch {
-        case t: VirtualMachineError => throw t
-        case _: Throwable           => ()
+  def makeMetricLogger(counter: Metric.Counter[Long], logLevelLabel: String): ZLogger[String, Unit] =
+    new ZLogger[String, Unit] {
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => String,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Unit = {
+        val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
+        counter.unsafe.update(1, tags + MetricLabel(logLevelLabel, logLevel.label.toLowerCase))(Unsafe.unsafe)
+        ()
       }
-    })
-
-    Runtime.addLogger(stringLogger)
-  }
-
-  private def makeStringLogger(
-    destination: Path,
-    logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
-  ): ZLogger[String, Any] = {
-    val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
-
-    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
-      try logWriter.writeln(line)
-      catch {
-        case t: VirtualMachineError => throw t
-        case _: Throwable           => ()
-      }
-    })
-
-    stringLogger
-  }
-
-  private def makeFileAsync(
-    destination: Path,
-    logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
-  ): ZLayer[Any, Nothing, Unit] =
-    ZLayer.scoped {
-      for {
-        queue       <- Queue.bounded[UIO[Any]](1000)
-        stringLogger =
-          makeAsyncStringLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue)
-        _           <- FiberRef.currentLoggers.locallyScopedWith(_ + stringLogger)
-        _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
-      } yield ()
     }
-
-  private def makeAsyncStringLogger(
-    destination: Path,
-    logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int],
-    queue: Queue[UIO[Any]]
-  ): ZLogger[String, Any] = {
-    val logWriter = new internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
-
-    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
-      zio.Unsafe.unsafe { implicit u =>
-        Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
-          try logWriter.writeln(line)
-          catch {
-            case t: VirtualMachineError => throw t
-            case _: Throwable           => ()
-          }
-        }))
-      }
-    })
-    stringLogger
-  }
-
-  private def metricLogger(counter: Metric.Counter[Long], logLevelLabel: String) = new ZLogger[String, Unit] {
-    override def apply(
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => String,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ): Unit = {
-      val tags = context.get(FiberRef.currentTags).getOrElse(Set.empty)
-      counter.unsafe.update(1, tags + MetricLabel(logLevelLabel, logLevel.label.toLowerCase))(Unsafe.unsafe)
-      ()
-    }
-  }
 
   val logMetrics: ZLayer[Any, Nothing, Unit] =
-    Runtime.addLogger(metricLogger(loggedTotalMetric, logLevelMetricLabel))
+    Runtime.addLogger(makeMetricLogger(loggedTotalMetric, logLevelMetricLabel))
 
   def logMetricsWith(name: String, logLevelLabel: String): ZLayer[Any, Nothing, Unit] =
-    Runtime.addLogger(metricLogger(Metric.counter(name), logLevelLabel))
+    Runtime.addLogger(makeMetricLogger(Metric.counter(name), logLevelLabel))
 }
