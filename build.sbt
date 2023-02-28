@@ -17,12 +17,11 @@ inThisBuild(
         (jpl / thisProject).value.id          -> (jpl / crossScalaVersions).value,
         (slf4j / thisProject).value.id        -> (slf4j / crossScalaVersions).value,
         (slf4j2 / thisProject).value.id       -> (slf4j2 / crossScalaVersions).value,
-        (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value,
-        (slf4j2 / thisProject).value.id       -> (slf4j2 / crossScalaVersions).value
+        (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value
       ),
     supportedJavaPlatform  := Map(
+      (slf4j2 / thisProject).value.id       -> (slf4j2 / javaPlatform).value,
       (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / javaPlatform).value,
-      (jpl / thisProject).value.id          -> (jpl / javaPlatform).value,
       (jpl / thisProject).value.id          -> (jpl / javaPlatform).value
     ),
     parallelTestExecution  := false,
