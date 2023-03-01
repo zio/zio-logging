@@ -233,13 +233,17 @@ object LogFormat {
     }
   }
 
-  def makeLabeled(labelPatterns: Map[String, LogPattern]): LogFormat =
-    labelPatterns.map { case (k, p) =>
+  def makeLabeled(labelPatterns: Map[String, LogPattern]): LogFormat = {
+    val formats = labelPatterns.map { case (k, p) =>
       p.isDefinedFilter match {
         case Some(f) => LogFormat.label(k, p.toLogFormat).filter(f)
         case None    => LogFormat.label(k, p.toLogFormat)
       }
-    }.foldLeft(LogFormat.empty)(_ + _)
+    }
+    if (formats.isEmpty) {
+      LogFormat.empty
+    } else formats.reduce(_ + _)
+  }
 
   def loggerName(loggerNameExtractor: LoggerNameExtractor, loggerNameDefault: String = "zio-logger"): LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, context, _, annotations) =>

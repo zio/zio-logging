@@ -52,8 +52,7 @@ package object logging {
 
   private[logging] val logLevelMetricLabel = "level"
 
-  private[logging] val loggedTotalMetric =
-    Metric.counter(name = "zio_log_total")
+  private[logging] val loggedTotalMetric = Metric.counter(name = "zio_log_total")
 
   /**
    * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted from [[Trace]])

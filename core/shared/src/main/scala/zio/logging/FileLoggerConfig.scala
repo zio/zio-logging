@@ -26,9 +26,9 @@ final case class FileLoggerConfig(
   destination: Path,
   format: LogFormat,
   filter: LogFilter[String],
-  charset: Charset,
-  autoFlushBatchSize: Int,
-  bufferedIOSize: Option[Int]
+  charset: Charset = StandardCharsets.UTF_8,
+  autoFlushBatchSize: Int = 1,
+  bufferedIOSize: Option[Int] = None
 )
 
 object FileLoggerConfig {

@@ -8,10 +8,10 @@ object LogPatternSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("LogPattern")(
     test("parse pattern from string") {
 
-      val p1 = LogPattern.parse("%timestamp %level xyz %message %cause %span{abc}")
+      val pattern = LogPattern.parse("%timestamp %level xyz %message %cause %span{abc}")
 
       assertTrue(
-        p1 == Right(
+        pattern == Right(
           LogPattern.Patterns(
             Chunk(
               LogPattern.Timestamp.default,
@@ -23,6 +23,32 @@ object LogPatternSpec extends ZIOSpecDefault {
               LogPattern.Cause,
               LogPattern.Text(" "),
               LogPattern.Span("abc")
+            )
+          )
+        )
+      )
+    },
+    test("parse pattern with highlight from string") {
+
+      val pattern = LogPattern.parse("%timestamp %highlight{%level xyz %message %cause}")
+
+      assertTrue(
+        pattern == Right(
+          LogPattern.Patterns(
+            Chunk(
+              LogPattern.Timestamp.default,
+              LogPattern.Text(" "),
+              LogPattern.Highlight(
+                LogPattern.Patterns(
+                  Chunk(
+                    LogPattern.LogLevel,
+                    LogPattern.Text(" xyz "),
+                    LogPattern.LogMessage,
+                    LogPattern.Text(" "),
+                    LogPattern.Cause
+                  )
+                )
+              )
             )
           )
         )
