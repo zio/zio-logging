@@ -30,7 +30,7 @@ object LogPatternSpec extends ZIOSpecDefault {
     },
     test("parse pattern with highlight from string") {
 
-      val pattern = LogPattern.parse("%timestamp %highlight{%level xyz %message %cause}")
+      val pattern = LogPattern.parse("%timestamp %highlight{%level xyz %message %cause %span{abc}}")
 
       assertTrue(
         pattern == Right(
@@ -45,7 +45,9 @@ object LogPatternSpec extends ZIOSpecDefault {
                     LogPattern.Text(" xyz "),
                     LogPattern.LogMessage,
                     LogPattern.Text(" "),
-                    LogPattern.Cause
+                    LogPattern.Cause,
+                    LogPattern.Text(" "),
+                    LogPattern.Span("abc")
                   )
                 )
               )

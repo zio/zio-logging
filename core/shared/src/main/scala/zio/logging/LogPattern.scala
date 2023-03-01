@@ -190,26 +190,26 @@ object LogPattern {
   private def keyArgSyntax[P <: KeyArg[_]](name: String, make: String => P): Syntax[String, Char, Char, P] =
     keyArgEitherSyntax[P](name, s => Right(make(s)))
 
-//  private def keyArgSyntax[K, P <: KeyArg[K]](
-//    name: String,
-//    middle: Syntax[String, Char, Char, K],
-//    make: K => P
-//  ): Syntax[String, Char, Char, P] = {
-//
-//    val begin = Syntax.string(s"${argPrefix}${name}{", ())
-//
-//    val m = middle.transform[P](make, _.key)
-//
-//    val end = Syntax.char('}')
-//
-//    begin ~> m <~ end
-//  }
+  private def keyArgSyntax[K, P <: KeyArg[K]](
+    name: String,
+    middle: Syntax[String, Char, Char, K],
+    make: K => P
+  ): Syntax[String, Char, Char, P] = {
+
+    val begin = Syntax.string(s"${argPrefix}${name}{", ())
+
+    val m = middle.transform[P](make, _.key)
+
+    val end = Syntax.char('}')
+
+    begin ~> m <~ end
+  }
 
   private def argSyntax[P <: Arg](name: String, value: P): Syntax[String, Char, Char, P] =
     Syntax.string(s"${argPrefix}${name}", value)
 
   private val textSyntax =
-    Syntax.charNotIn(argPrefix).repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
+    Syntax.charNotIn(argPrefix, '{', '}').repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
 
   private val logLevelSyntax = argSyntax(LogPattern.LogLevel.name, LogPattern.LogLevel)
 
@@ -237,37 +237,7 @@ object LogPattern {
 
   private val spanSyntax = keyArgSyntax(LogPattern.Span.name, LogPattern.Span.apply)
 
-  private lazy val highlightSyntax =
-    keyArgEitherSyntax(
-      LogPattern.Highlight.name,
-      p => syntax.parseString(p).left.map(_.toString).map(p => LogPattern.Highlight(p))
-    )
-
-  //    keyArgSyntax(LogPattern.Highlight.name, syntax2, Highlight.apply)
-  //  private lazy val syntax2: Syntax[String, Char, Char, LogPattern] =
-  //    (logLevelSyntax.widen[LogPattern]
-  //      <> loggerNameSyntax.widen[LogPattern]
-  //      <> logMessageSyntax.widen[LogPattern]
-  //      <> fiberIdSyntax.widen[LogPattern]
-  //      <> timestampSyntax.widen[LogPattern]
-  //      <> keyValuesSyntax.widen[LogPattern]
-  //      <> keyValueSyntax.widen[LogPattern]
-  //      <> spansSyntax.widen[LogPattern]
-  //      <> spanSyntax.widen[LogPattern]
-  //      <> causeSyntax.widen[LogPattern]
-  //      <> traceLineSyntax.widen[LogPattern]
-  //      <> textSyntax.widen[LogPattern]).repeat.manualBacktracking
-  //      .transform[LogPattern](
-  //        ps =>
-  //          if (ps.size == 1) {
-  //            ps.head
-  //          } else LogPattern.Patterns(ps),
-  //        _ match {
-  //          case LogPattern.Patterns(ps) => ps
-  //          case p: LogPattern => Chunk(p)
-  //        }
-  //      )
-  //      .widen[LogPattern]
+  private lazy val highlightSyntax = keyArgSyntax(LogPattern.Highlight.name, syntax, Highlight.apply)
 
   private lazy val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]

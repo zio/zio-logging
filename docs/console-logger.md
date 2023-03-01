@@ -15,7 +15,7 @@ import zio.{ Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, 
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  val logPattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %highlight{%level [%fiberId] %name:%line %message %cause}"
+  val logPattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause}"
 
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
