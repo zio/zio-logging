@@ -32,6 +32,8 @@ Log pattern is string representation of LogFormat
 |----------------------------------------|----------------------------------------------------------------------|
 | %timestamp{date-format}<br/>%timestamp | Timestamp, where date format is `java.time.format.DateTimeFormatter` |
 | %fiberId                               | Fiber Id                                                             |
+| %fixed{size}{pattern}                  | Fixed size for pattern                                               |
+| %label{name}{pattern}                  | Labeled pattern                                                      |
 | %level                                 | Log level                                                            |
 | %name                                  | Logger name (from logger name annotation or Trace)                   |
 | %line                                  | Log/trace line (from Trace)                                          |
@@ -42,14 +44,15 @@ Log pattern is string representation of LogFormat
 | %spans                                 | All log spans                                                        |
 | %span{span}                            | Log spans with key                                                   |
 | %highlight{pattern}                    | Highlight given pattern with colors based on Log Level               |
-
-NOTE: `%`, `{`, `}` are reserved characters
+| %%                                     | % character                                                          |
+| %{                                     | { character                                                          |
+| %}                                     | } character                                                          |
 
 examples:
 
 ```
 %timestamp %level [%fiberId] %name:%line %message %cause
-%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause}
+%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}
 ```
 
 ## LogFormat and LogAppender

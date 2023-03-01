@@ -36,8 +36,12 @@ object LogPattern {
     def name: String
   }
 
-  sealed trait KeyArg[K] extends Arg {
-    def key: K
+  sealed trait Arg1[A1] extends Arg {
+    def arg1: A1
+  }
+
+  sealed trait Arg2[A1, A2] extends Arg1[A1] {
+    def arg2: A2
   }
 
   final case class Patterns(patterns: Chunk[LogPattern]) extends LogPattern {
@@ -86,10 +90,10 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.fiberId
   }
 
-  final case class Timestamp(key: DateTimeFormatter) extends KeyArg[DateTimeFormatter] {
+  final case class Timestamp(arg1: DateTimeFormatter) extends Arg1[DateTimeFormatter] {
     override val name = Timestamp.name
 
-    override val toLogFormat: LogFormat = LogFormat.timestamp(key)
+    override val toLogFormat: LogFormat = LogFormat.timestamp(arg1)
   }
 
   object Timestamp {
@@ -104,14 +108,32 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey))
   }
 
-  final case class KeyValue(key: String) extends KeyArg[String] {
+  final case class KeyValue(arg1: String) extends Arg1[String] {
     override val name = KeyValue.name
 
-    override val toLogFormat: LogFormat = LogFormat.annotation(key)
+    override val toLogFormat: LogFormat = LogFormat.annotation(arg1)
   }
 
   object KeyValue {
     val name: String = "kv"
+  }
+
+  final case object EscapedArgPrefix extends Arg {
+    override val name = "%"
+
+    override val toLogFormat: LogFormat = LogFormat.text("%")
+  }
+
+  final case object EscapedOpenBracket extends Arg {
+    override val name = "{"
+
+    override val toLogFormat: LogFormat = LogFormat.text("{")
+  }
+
+  final case object EscapedCloseBracket extends Arg {
+    override val name = "}"
+
+    override val toLogFormat: LogFormat = LogFormat.text("}")
   }
 
   final case object Spans extends Arg {
@@ -120,10 +142,10 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.spans
   }
 
-  final case class Span(key: String) extends KeyArg[String] {
+  final case class Span(arg1: String) extends Arg1[String] {
     override val name = Span.name
 
-    override val toLogFormat: LogFormat = LogFormat.span(key)
+    override val toLogFormat: LogFormat = LogFormat.span(arg1)
   }
 
   object Span {
@@ -136,24 +158,34 @@ object LogPattern {
     override val toLogFormat: LogFormat = LogFormat.traceLine
   }
 
-  final case class Highlight(key: LogPattern) extends KeyArg[LogPattern] {
+  final case class Highlight(arg1: LogPattern) extends Arg1[LogPattern] {
     override val name = Highlight.name
 
-    override val toLogFormat: LogFormat = key.toLogFormat.highlight
+    override val toLogFormat: LogFormat = arg1.toLogFormat.highlight
   }
 
   object Highlight {
     val name: String = "highlight"
   }
 
-  final case class Labeled(label: String, key: LogPattern) extends KeyArg[LogPattern] {
-    override val name = Labeled.name
+  final case class Label(arg1: String, arg2: LogPattern) extends Arg2[String, LogPattern] {
+    override val name = Label.name
 
-    override val toLogFormat: LogFormat = LogFormat.label(label, key.toLogFormat)
+    override val toLogFormat: LogFormat = LogFormat.label(arg1, arg2.toLogFormat)
   }
 
-  object Labeled {
-    val name: String = "labeled"
+  object Label {
+    val name: String = "label"
+  }
+
+  final case class Fixed(arg1: Int, arg2: LogPattern) extends Arg2[Int, LogPattern] {
+    override val name = Fixed.name
+
+    override val toLogFormat: LogFormat = arg2.toLogFormat.fixed(arg1)
+  }
+
+  object Fixed {
+    val name: String = "fixed"
   }
 
   final case class Text(text: String) extends LogPattern {
@@ -166,10 +198,10 @@ object LogPattern {
 
   private val argPrefix = '%'
 
-  private def keyArgEitherSyntax[P <: KeyArg[_]](
+  private def arg1EitherSyntax[A <: Arg1[_]](
     name: String,
-    make: String => Either[String, P]
-  ): Syntax[String, Char, Char, P] = {
+    make: String => Either[String, A]
+  ): Syntax[String, Char, Char, A] = {
 
     val begin = Syntax.string(s"${argPrefix}${name}{", ())
 
@@ -179,7 +211,7 @@ object LogPattern {
       .string
       .transformEither(
         make,
-        (p: P) => Right(p.key.toString)
+        (p: A) => Right(p.arg1.toString)
       )
 
     val end = Syntax.char('}')
@@ -187,29 +219,43 @@ object LogPattern {
     begin ~> middle <~ end
   }
 
-  private def keyArgSyntax[P <: KeyArg[_]](name: String, make: String => P): Syntax[String, Char, Char, P] =
-    keyArgEitherSyntax[P](name, s => Right(make(s)))
+  private def arg1Syntax[A <: Arg1[_]](name: String, make: String => A): Syntax[String, Char, Char, A] =
+    arg1EitherSyntax[A](name, s => Right(make(s)))
 
-  private def keyArgSyntax[K, P <: KeyArg[K]](
+  private def arg1Syntax[A1, A <: Arg1[A1]](
     name: String,
-    middle: Syntax[String, Char, Char, K],
-    make: K => P
-  ): Syntax[String, Char, Char, P] = {
+    syntax: Syntax[String, Char, Char, A1],
+    make: A1 => A
+  ): Syntax[String, Char, Char, A] = {
+    val begin  = Syntax.string(s"${argPrefix}${name}{", ())
+    val middle = syntax.transform[A](make, _.arg1)
+    val end    = Syntax.char('}')
 
-    val begin = Syntax.string(s"${argPrefix}${name}{", ())
-
-    val m = middle.transform[P](make, _.key)
-
-    val end = Syntax.char('}')
-
-    begin ~> m <~ end
+    begin ~> middle <~ end
   }
 
-  private def argSyntax[P <: Arg](name: String, value: P): Syntax[String, Char, Char, P] =
+  private def arg2Syntax[A1, A2, A <: Arg2[A1, A2]](
+    name: String,
+    a1Syntax: Syntax[String, Char, Char, A1],
+    a2Syntax: Syntax[String, Char, Char, A2],
+    make: (A1, A2) => A
+  ): Syntax[String, Char, Char, A] = {
+    val begin1 = Syntax.string(s"${argPrefix}${name}{", ())
+    val begin2 = Syntax.char('{')
+    val end    = Syntax.char('}')
+
+    (begin1 ~> a1Syntax <~ end).zip(begin2 ~> a2Syntax <~ end).transform((v) => make(v._1, v._2), v => (v.arg1, v.arg2))
+  }
+
+  private def argSyntax[A <: Arg](name: String, value: A): Syntax[String, Char, Char, A] =
     Syntax.string(s"${argPrefix}${name}", value)
 
-  private val textSyntax =
-    Syntax.charNotIn(argPrefix, '{', '}').repeat.string.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
+  private val intSyntax = Syntax.digit.string
+    .transformEither(v => Try(v.toInt).toEither.left.map(_.getMessage), (v: Int) => Right(v.toString))
+
+  private val stringSyntax = Syntax.charNotIn(argPrefix, '{', '}').repeat.string
+
+  private val textSyntax = stringSyntax.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
 
   private val logLevelSyntax = argSyntax(LogPattern.LogLevel.name, LogPattern.LogLevel)
 
@@ -220,7 +266,7 @@ object LogPattern {
   private val fiberIdSyntax = argSyntax(LogPattern.FiberId.name, LogPattern.FiberId)
 
   private val timestampSyntax =
-    keyArgEitherSyntax(
+    arg1EitherSyntax(
       LogPattern.Timestamp.name,
       p => Try(DateTimeFormatter.ofPattern(p)).toEither.left.map(_.getMessage).map(dtf => LogPattern.Timestamp(dtf))
     ) <> argSyntax(LogPattern.Timestamp.name, LogPattern.Timestamp.default)
@@ -233,11 +279,23 @@ object LogPattern {
 
   private val traceLineSyntax = argSyntax(LogPattern.TraceLine.name, LogPattern.TraceLine)
 
-  private val keyValueSyntax = keyArgSyntax(LogPattern.KeyValue.name, LogPattern.KeyValue.apply)
+  private val keyValueSyntax = arg1Syntax(LogPattern.KeyValue.name, LogPattern.KeyValue.apply)
 
-  private val spanSyntax = keyArgSyntax(LogPattern.Span.name, LogPattern.Span.apply)
+  private val spanSyntax = arg1Syntax(LogPattern.Span.name, LogPattern.Span.apply)
 
-  private lazy val highlightSyntax = keyArgSyntax(LogPattern.Highlight.name, syntax, Highlight.apply)
+  private val escapedArgPrefixSyntax = argSyntax(LogPattern.EscapedArgPrefix.name, LogPattern.EscapedArgPrefix)
+
+  private val escapedEscapedOpenBracketSyntax =
+    argSyntax(LogPattern.EscapedOpenBracket.name, LogPattern.EscapedOpenBracket)
+
+  private val escapedEscapedCloseBracketSyntax =
+    argSyntax(LogPattern.EscapedCloseBracket.name, LogPattern.EscapedCloseBracket)
+
+  private lazy val highlightSyntax = arg1Syntax(LogPattern.Highlight.name, syntax, LogPattern.Highlight.apply)
+
+  private lazy val fixedSyntax = arg2Syntax(LogPattern.Fixed.name, intSyntax, syntax, LogPattern.Fixed.apply)
+
+  private lazy val labelSyntax = arg2Syntax(LogPattern.Label.name, stringSyntax, syntax, LogPattern.Label.apply)
 
   private lazy val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]
@@ -251,8 +309,13 @@ object LogPattern {
       <> spanSyntax.widen[LogPattern]
       <> causeSyntax.widen[LogPattern]
       <> traceLineSyntax.widen[LogPattern]
-      <> textSyntax.widen[LogPattern]
-      <> highlightSyntax.widen[LogPattern]).repeat
+      <> escapedArgPrefixSyntax.widen[LogPattern]
+      <> escapedEscapedOpenBracketSyntax.widen[LogPattern]
+      <> escapedEscapedCloseBracketSyntax.widen[LogPattern]
+      <> highlightSyntax.widen[LogPattern]
+      <> fixedSyntax.widen[LogPattern]
+      <> labelSyntax.widen[LogPattern]
+      <> textSyntax.widen[LogPattern]).repeat
       .transform[LogPattern](
         ps =>
           if (ps.size == 1) {

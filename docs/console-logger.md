@@ -15,7 +15,7 @@ import zio.{ Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, 
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  val logPattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause}"
+  val logPattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
 
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
@@ -49,9 +49,9 @@ object ConsoleColoredApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-2023-02-28T23:30:30+0100 DEBUG [zio-fiber-4] zio.logging.example.LivePingService:37 ping: /127.0.0.1 
-2023-02-28T23:30:30+0100 INFO [zio-fiber-4] zio.logging.example.ConsoleColoredApp:42 ping: 127.0.0.1 - result: true 
-2023-02-28T23:30:30+0100 ERROR [zio-fiber-4] zio.logging.example.LivePingService:36 ping: x8.8.8.8 - invalid address error Exception in thread "zio-fiber-4" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+2023-03-01T22:59:49+0100 DEBUG   [zio-fiber-4] zio.logging.example.LivePingService:37 ping: /127.0.0.1 
+2023-03-01T22:59:49+0100 INFO    [zio-fiber-4] zio.logging.example.ConsoleColoredApp:43 ping: 127.0.0.1 - result: true 
+2023-03-01T22:59:49+0100 ERROR   [zio-fiber-4] zio.logging.example.LivePingService:36 ping: x8.8.8.8 - invalid address error Exception in thread "zio-fiber-4" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
 	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
 	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
 	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
@@ -73,10 +73,10 @@ Expected console output:
 	at zio.logging.example.LivePingService.ping(PingService.scala:35)
 	at zio.logging.example.LivePingService.ping(PingService.scala:36)
 	at zio.logging.example.LivePingService.ping(PingService.scala:33)
-	at zio.logging.example.ConsoleColoredApp.ping(ConsoleColoredApp.scala:40)
-	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:48)
+	at zio.logging.example.ConsoleColoredApp.ping(ConsoleColoredApp.scala:41)
 	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:49)
-2023-02-28T23:30:30+0100 ERROR [zio-fiber-4] zio.logging.example.ConsoleColoredApp:41 ping: x8.8.8.8 - error Exception in thread "zio-fiber-" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:50)
+2023-03-01T22:59:49+0100 ERROR   [zio-fiber-4] zio.logging.example.ConsoleColoredApp:42 ping: x8.8.8.8 - error Exception in thread "zio-fiber-" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
 	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
 	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
 	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
