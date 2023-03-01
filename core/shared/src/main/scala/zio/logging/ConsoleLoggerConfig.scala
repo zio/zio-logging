@@ -21,16 +21,22 @@ final case class ConsoleLoggerConfig(format: LogFormat, filter: LogFilter[String
 
 object ConsoleLoggerConfig {
 
-  def apply(pattern: LogPattern, filter: LogFilter[String]): ConsoleLoggerConfig =
-    ConsoleLoggerConfig(pattern.toLogFormat, filter)
+  val default: ConsoleLoggerConfig = ConsoleLoggerConfig(LogFormat.default, LogFilter.logLevel(LogLevel.Info))
 
-  val config: Config[ConsoleLoggerConfig] = {
-    val patternConfig = LogPattern.config.nested("pattern")
-    val filterConfig  = LogFilter.LogLevelByNameConfig.config.nested("filter")
+  private val filterConfig = LogFilter.LogLevelByNameConfig.config.nested("filter")
+
+  val jsonLoggerConfig: Config[ConsoleLoggerConfig] = {
+    val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
     (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
-      ConsoleLoggerConfig(pattern, LogFilter.logLevelByName(filterConfig))
+      ConsoleLoggerConfig(LogFormat.makeLabeled(pattern), LogFilter.logLevelByName(filterConfig))
     }
   }
 
-  val default: ConsoleLoggerConfig = ConsoleLoggerConfig(LogFormat.default, LogFilter.logLevel(LogLevel.Info))
+  val stringLoggerConfig: Config[ConsoleLoggerConfig] = {
+    val patternConfig = LogPattern.config.nested("pattern")
+    (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
+      ConsoleLoggerConfig(pattern.toLogFormat, LogFilter.logLevelByName(filterConfig))
+    }
+  }
+
 }

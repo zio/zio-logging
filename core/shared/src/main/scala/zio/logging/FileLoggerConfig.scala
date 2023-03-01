@@ -33,44 +33,34 @@ final case class FileLoggerConfig(
 
 object FileLoggerConfig {
 
-  def apply(
-    destination: Path,
-    pattern: LogPattern,
-    filter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
-  ): FileLoggerConfig =
-    FileLoggerConfig(destination, pattern.toLogFormat, filter, charset, autoFlushBatchSize, bufferedIOSize)
+  private def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
+    Try(Charset.forName(value)) match {
+      case Success(v) => Right(v)
+      case Failure(_) =>
+        Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Charset, but found ${value}"))
+    }
 
-  val config: Config[FileLoggerConfig] = {
+  private def pathValue(value: String): Either[Config.Error.InvalidData, Path] =
+    Try(Paths.get(URI.create(value))) match {
+      case Success(v) => Right(v)
+      case Failure(_) =>
+        Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${value}"))
+    }
 
-    def pathValue(value: String): Either[Config.Error.InvalidData, Path] =
-      Try(Paths.get(URI.create(value))) match {
-        case Success(v) => Right(v)
-        case Failure(_) =>
-          Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${value}"))
-      }
+  private val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
+  private val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
+  private val filterConfig             = LogFilter.LogLevelByNameConfig.config.nested("filter")
+  private val charsetConfig            =
+    Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
+  private val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
 
-    def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
-      Try(Charset.forName(value)) match {
-        case Success(v) => Right(v)
-        case Failure(_) =>
-          Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Charset, but found ${value}"))
-      }
-
-    val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
-    val patternConfig            = LogPattern.config.nested("pattern")
-    val filterConfig             = LogFilter.LogLevelByNameConfig.config.nested("filter")
-    val charsetConfig            = Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
-    val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
-    val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
-
+  val jsonLoggerConfig: Config[FileLoggerConfig] = {
+    val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
     (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
       case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
         FileLoggerConfig(
           path,
-          pattern,
+          LogFormat.makeLabeled(pattern),
           LogFilter.logLevelByName(filterConfig),
           charset,
           autoFlushBatchSize,
@@ -78,4 +68,20 @@ object FileLoggerConfig {
         )
     }
   }
+
+  val stringLoggerConfig: Config[FileLoggerConfig] = {
+    val patternConfig = LogPattern.config.nested("pattern")
+    (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
+      case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
+        FileLoggerConfig(
+          path,
+          pattern.toLogFormat,
+          LogFilter.logLevelByName(filterConfig),
+          charset,
+          autoFlushBatchSize,
+          bufferedIOSize
+        )
+    }
+  }
+
 }

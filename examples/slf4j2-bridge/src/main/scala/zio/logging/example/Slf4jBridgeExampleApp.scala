@@ -16,7 +16,7 @@
 package zio.logging.example
 
 import zio.logging.slf4j.bridge.Slf4jBridge
-import zio.logging.{ ConsoleJsonLoggerConfig, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
+import zio.logging.{ ConsoleLoggerConfig, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
@@ -31,7 +31,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJsonLogger(
-      ConsoleJsonLoggerConfig(
+      ConsoleLoggerConfig(
         LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
         logFilter
       )
