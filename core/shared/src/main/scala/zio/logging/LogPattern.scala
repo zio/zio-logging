@@ -173,9 +173,10 @@ object LogPattern {
 
     val begin = Syntax.string(s"${argPrefix}${name}{", ())
 
-    val middle = Syntax.anyChar
-//      .charNotIn('{', '}')
-      .repeat.string
+    val middle = Syntax
+      .charNotIn('{', '}')
+      .repeat
+      .string
       .transformEither(
         make,
         (p: P) => Right(p.key.toString)
