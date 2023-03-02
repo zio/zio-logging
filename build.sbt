@@ -3,7 +3,7 @@ import Versions._
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 import zio.sbt.githubactions.Condition
-import zio.sbt.githubactions.Step.{ SingleStep, StepSequence }
+import zio.sbt.githubactions.Step.SingleStep
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
@@ -90,7 +90,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(enableZIO(enableStreaming = true))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-parser"   % "0.1.8"
+      "dev.zio" %%% "zio-parser" % "0.1.8"
     )
   )
   .jvmSettings(
