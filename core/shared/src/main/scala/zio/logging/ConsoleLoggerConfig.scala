@@ -25,14 +25,7 @@ object ConsoleLoggerConfig {
 
   private val filterConfig = LogFilter.LogLevelByNameConfig.config.nested("filter")
 
-  val jsonLoggerConfig: Config[ConsoleLoggerConfig] = {
-    val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
-    (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
-      ConsoleLoggerConfig(LogFormat.makeLabeled(pattern), LogFilter.logLevelByName(filterConfig))
-    }
-  }
-
-  val stringLoggerConfig: Config[ConsoleLoggerConfig] = {
+  val config: Config[ConsoleLoggerConfig] = {
     val patternConfig = LogPattern.config.nested("pattern")
     (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
       ConsoleLoggerConfig(pattern.toLogFormat, LogFilter.logLevelByName(filterConfig))

@@ -29,16 +29,13 @@ object ConsoleJsonApp extends ZIOAppDefault {
   private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
   private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
+  val logPattern =
+    "%label{timestamp}{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}} %label{level}{%level} %label{fiberId}{%fiberId} %label{message}{%message} %label{cause}{%cause} %label{name}{%name} %kvs"
+
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "logger/pattern/timestamp" -> "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}",
-      "logger/pattern/level"     -> "%level",
-      "logger/pattern/fiberId"   -> "%fiberId",
-      "logger/pattern/kvs"       -> "%kvs",
-      "logger/pattern/message"   -> "%message",
-      "logger/pattern/cause"     -> "%cause",
-      "logger/pattern/name"      -> "%name",
-      "logger/filter/rootLevel"  -> LogLevel.Info.label
+      "logger/pattern"          -> logPattern,
+      "logger/filter/rootLevel" -> LogLevel.Info.label
     ),
     "/"
   )

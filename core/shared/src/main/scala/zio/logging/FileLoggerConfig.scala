@@ -54,22 +54,7 @@ object FileLoggerConfig {
     Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
   private val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
 
-  val jsonLoggerConfig: Config[FileLoggerConfig] = {
-    val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
-    (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
-      case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
-        FileLoggerConfig(
-          path,
-          LogFormat.makeLabeled(pattern),
-          LogFilter.logLevelByName(filterConfig),
-          charset,
-          autoFlushBatchSize,
-          bufferedIOSize
-        )
-    }
-  }
-
-  val stringLoggerConfig: Config[FileLoggerConfig] = {
+  val config: Config[FileLoggerConfig] = {
     val patternConfig = LogPattern.config.nested("pattern")
     (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
       case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>

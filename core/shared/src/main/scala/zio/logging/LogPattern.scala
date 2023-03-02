@@ -121,19 +121,19 @@ object LogPattern {
   final case object EscapedArgPrefix extends Arg {
     override val name = "%"
 
-    override val toLogFormat: LogFormat = LogFormat.text("%")
+    override val toLogFormat: LogFormat = LogFormat.text(name)
   }
 
   final case object EscapedOpenBracket extends Arg {
     override val name = "{"
 
-    override val toLogFormat: LogFormat = LogFormat.text("{")
+    override val toLogFormat: LogFormat = LogFormat.text(name)
   }
 
   final case object EscapedCloseBracket extends Arg {
     override val name = "}"
 
-    override val toLogFormat: LogFormat = LogFormat.text("}")
+    override val toLogFormat: LogFormat = LogFormat.text(name)
   }
 
   final case object Spans extends Arg {
@@ -189,7 +189,7 @@ object LogPattern {
   }
 
   final case class Text(text: String) extends LogPattern {
-    override def toLogFormat: LogFormat = LogFormat.text(text)
+    override val toLogFormat: LogFormat = LogFormat.text(text)
   }
 
   object Text {
@@ -211,7 +211,7 @@ object LogPattern {
       .string
       .transformEither(
         make,
-        (p: A) => Right(p.arg1.toString)
+        (v: A) => Right(v.arg1.toString)
       )
 
     val end = Syntax.char('}')
@@ -220,7 +220,7 @@ object LogPattern {
   }
 
   private def arg1Syntax[A <: Arg1[_]](name: String, make: String => A): Syntax[String, Char, Char, A] =
-    arg1EitherSyntax[A](name, s => Right(make(s)))
+    arg1EitherSyntax[A](name, v => Right(make(v)))
 
   private def arg1Syntax[A1, A <: Arg1[A1]](
     name: String,
@@ -244,7 +244,7 @@ object LogPattern {
     val begin2 = Syntax.char('{')
     val end    = Syntax.char('}')
 
-    (begin1 ~> a1Syntax <~ end).zip(begin2 ~> a2Syntax <~ end).transform((v) => make(v._1, v._2), v => (v.arg1, v.arg2))
+    (begin1 ~> a1Syntax <~ end).zip(begin2 ~> a2Syntax <~ end).transform(v => make(v._1, v._2), v => (v.arg1, v.arg2))
   }
 
   private def argSyntax[A <: Arg](name: String, value: A): Syntax[String, Char, Char, A] =

@@ -86,37 +86,6 @@ object LogPatternSpec extends ZIOSpecDefault {
           )
         )
       )
-    },
-    test("parse labeled pattern from config") {
-      val configProvider: ConfigProvider = ConfigProvider.fromMap(
-        Map(
-          "pattern/timestamp" -> "%timestamp",
-          "pattern/level"     -> "%level",
-          "pattern/fiberId"   -> "%fiberId",
-          "pattern/kvs"       -> "%kvs",
-          "pattern/message"   -> "%message",
-          "pattern/cause"     -> "%cause",
-          "pattern/name"      -> "%name"
-        ),
-        "/"
-      )
-
-      val patternConfig = Config.table("pattern", LogPattern.config).withDefault(Map.empty)
-
-      configProvider.load(patternConfig).map { labelPattern =>
-        assertTrue(
-          labelPattern ==
-            Map(
-              "timestamp" -> LogPattern.Timestamp.default,
-              "level"     -> LogPattern.LogLevel,
-              "fiberId"   -> LogPattern.FiberId,
-              "kvs"       -> LogPattern.KeyValues,
-              "message"   -> LogPattern.LogMessage,
-              "cause"     -> LogPattern.Cause,
-              "name"      -> LogPattern.LoggerName
-            )
-        )
-      }
     }
   )
 }

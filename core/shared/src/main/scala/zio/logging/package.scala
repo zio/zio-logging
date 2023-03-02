@@ -65,7 +65,7 @@ package object logging {
   def consoleLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(ConsoleLoggerConfig.stringLoggerConfig.nested(configPath))
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
         _      <- ZIO.withLoggerScoped(makeConsoleLogger(config))
       } yield ()
     }
@@ -76,7 +76,7 @@ package object logging {
   def consoleErrLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(ConsoleLoggerConfig.stringLoggerConfig.nested(configPath))
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
         _      <- ZIO.withLoggerScoped(makeConsoleErrLogger(config))
       } yield ()
     }
@@ -87,7 +87,7 @@ package object logging {
   def consoleJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(ConsoleLoggerConfig.jsonLoggerConfig.nested(configPath))
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
         _      <- ZIO.withLoggerScoped(makeConsoleJsonLogger(config))
       } yield ()
     }
@@ -98,7 +98,7 @@ package object logging {
   def consoleErrJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(ConsoleLoggerConfig.jsonLoggerConfig.nested(configPath))
+        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
         _      <- ZIO.withLoggerScoped(makeConsoleErrJsonLogger(config))
       } yield ()
     }
@@ -137,7 +137,7 @@ package object logging {
   def fileLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(FileLoggerConfig.stringLoggerConfig.nested(configPath))
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
         _      <- ZIO.withLoggerScoped(makeFileLogger(config))
       } yield ()
     }
@@ -148,7 +148,7 @@ package object logging {
   def fileJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(FileLoggerConfig.jsonLoggerConfig.nested(configPath))
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
         _      <- ZIO.withLoggerScoped(makeFileJsonLogger(config))
       } yield ()
     }
@@ -200,7 +200,7 @@ package object logging {
   def fileAsyncLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(FileLoggerConfig.stringLoggerConfig.nested(configPath))
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
         _      <- makeFileAsyncLogger(config)
       } yield ()
     }
@@ -211,7 +211,7 @@ package object logging {
   def fileAsyncJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(FileLoggerConfig.jsonLoggerConfig.nested(configPath))
+        config <- ZIO.config(FileLoggerConfig.config.nested(configPath))
         _      <- makeFileAsyncJsonLogger(config)
       } yield ()
     }
