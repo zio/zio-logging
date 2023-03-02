@@ -271,6 +271,20 @@ object LogFormat {
 
   def annotation[A](ann: LogAnnotation[A]): LogFormat = logAnnotation(ann)
 
+  def anyAnnotation(name: String): LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
+      annotations
+        .get(name)
+        .orElse(
+          fiberRefs
+            .get(logContext)
+            .flatMap(_.get(name))
+        )
+        .foreach { value =>
+          builder.appendKeyValue(name, value)
+        }
+    }
+
   /**
    * Returns a new log format that appends all annotations to the log output.
    */

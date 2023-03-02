@@ -25,6 +25,10 @@ import scala.util.Try
  * A `LogPattern` is string representation of `LogFormat`
  */
 sealed trait LogPattern {
+
+  /**
+   * Converts this log pattern into a log format.
+   */
   def toLogFormat: LogFormat
 
   def isDefinedFilter: Option[LogFilter[Any]] = None
@@ -111,7 +115,7 @@ object LogPattern {
   final case class KeyValue(arg1: String) extends Arg1[String] {
     override val name = KeyValue.name
 
-    override val toLogFormat: LogFormat = LogFormat.annotation(arg1)
+    override val toLogFormat: LogFormat = LogFormat.anyAnnotation(arg1)
   }
 
   object KeyValue {
@@ -266,7 +270,10 @@ object LogPattern {
   private val stringSyntax = Syntax.charNotIn(argPrefix, '{', '}').repeat.string
 
   private val logColorSyntax = stringSyntax
-    .transformEither(v => LogColor.logColorMapping.get(v).toRight(s"Unknown value: $v"), (v: LogColor) => Right(v.getClass.getSimpleName))
+    .transformEither(
+      v => LogColor.logColorMapping.get(v).toRight(s"Unknown value: $v"),
+      (v: LogColor) => Right(v.getClass.getSimpleName)
+    )
 
   private val textSyntax = stringSyntax.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
 

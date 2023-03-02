@@ -48,6 +48,15 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
     map.get(annotation).map(_.asInstanceOf[A])
 
   /**
+   * Retrieves the specified annotation by name from the context, return rendered value.
+   */
+  def get(name: String): Option[String] =
+    map.collectFirst {
+      case (annotation: LogAnnotation[Any], value: Any) if (annotation.name == name) =>
+        annotation.render(value)
+    }
+
+  /**
    * Merges this context with the specified context.
    */
   def merge(that: LogContext): LogContext = {
