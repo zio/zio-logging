@@ -151,38 +151,40 @@ object SLF4J {
             previous
           } else None
 
-        try logLevel match {
-          case LogLevel.All     =>
-            slf4jMarker.fold(slf4jLogger.trace(message.toString, throwable))(m =>
-              slf4jLogger.trace(m, message.toString, throwable)
-            )
-          case LogLevel.Trace   =>
-            slf4jMarker.fold(slf4jLogger.trace(message.toString, throwable))(m =>
-              slf4jLogger.trace(m, message.toString, throwable)
-            )
-          case LogLevel.Debug   =>
-            slf4jMarker.fold(slf4jLogger.debug(message.toString, throwable))(m =>
-              slf4jLogger.debug(m, message.toString, throwable)
-            )
-          case LogLevel.Info    =>
-            slf4jMarker.fold(slf4jLogger.info(message.toString, throwable))(m =>
-              slf4jLogger.info(m, message.toString, throwable)
-            )
-          case LogLevel.Warning =>
-            slf4jMarker.fold(slf4jLogger.warn(message.toString, throwable))(m =>
-              slf4jLogger.warn(m, message.toString, throwable)
-            )
-          case LogLevel.Error   =>
-            slf4jMarker.fold(slf4jLogger.error(message.toString, throwable))(m =>
-              slf4jLogger.error(m, message.toString, throwable)
-            )
-          case LogLevel.Fatal   =>
-            slf4jMarker.fold(slf4jLogger.error(message.toString, throwable))(m =>
-              slf4jLogger.error(m, message.toString, throwable)
-            )
-          case LogLevel.None    => ()
-          case _                => ()
-        } finally previous.foreach(MDC.setContextMap)
+        try
+          logLevel match {
+            case LogLevel.All     =>
+              slf4jMarker.fold(slf4jLogger.trace(message.toString, throwable))(m =>
+                slf4jLogger.trace(m, message.toString, throwable)
+              )
+            case LogLevel.Trace   =>
+              slf4jMarker.fold(slf4jLogger.trace(message.toString, throwable))(m =>
+                slf4jLogger.trace(m, message.toString, throwable)
+              )
+            case LogLevel.Debug   =>
+              slf4jMarker.fold(slf4jLogger.debug(message.toString, throwable))(m =>
+                slf4jLogger.debug(m, message.toString, throwable)
+              )
+            case LogLevel.Info    =>
+              slf4jMarker.fold(slf4jLogger.info(message.toString, throwable))(m =>
+                slf4jLogger.info(m, message.toString, throwable)
+              )
+            case LogLevel.Warning =>
+              slf4jMarker.fold(slf4jLogger.warn(message.toString, throwable))(m =>
+                slf4jLogger.warn(m, message.toString, throwable)
+              )
+            case LogLevel.Error   =>
+              slf4jMarker.fold(slf4jLogger.error(message.toString, throwable))(m =>
+                slf4jLogger.error(m, message.toString, throwable)
+              )
+            case LogLevel.Fatal   =>
+              slf4jMarker.fold(slf4jLogger.error(message.toString, throwable))(m =>
+                slf4jLogger.error(m, message.toString, throwable)
+              )
+            case LogLevel.None    => ()
+            case _                => ()
+          }
+        finally previous.foreach(MDC.setContextMap)
 
         ()
       }
