@@ -2,6 +2,8 @@ import BuildHelper._
 import Versions._
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
+import zio.sbt.githubactions.Condition
+import zio.sbt.githubactions.Step.{ SingleStep, StepSequence }
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
@@ -24,6 +26,20 @@ inThisBuild(
       (slf4j2 / thisProject).value.id       -> (slf4j2 / javaPlatform).value,
       (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / javaPlatform).value,
       (jpl / thisProject).value.id          -> (jpl / javaPlatform).value
+    ),
+    ciExtraTestSteps       := Seq(
+      SingleStep(
+        name = "Compile additional subprojects",
+        condition = Some(
+          (Condition.Expression("startsWith(matrix.scala, '2.12.')") || Condition.Expression(
+            "startsWith(matrix.scala, '2.13.')"
+          )) && Condition.Expression("matrix.java == '11'")
+        ),
+        run = Some(
+          "sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile " +
+            "examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile"
+        )
+      )
     ),
     parallelTestExecution  := false,
     developers             := List(

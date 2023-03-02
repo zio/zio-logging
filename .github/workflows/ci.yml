@@ -31,8 +31,6 @@ jobs:
         distribution: temurin
         java-version: '17'
         check-latest: true
-    - name: Check if the README file is up to date
-      run: sbt  docs/checkReadme
     - name: Check if the site workflow is up to date
       run: sbt  checkGithubWorkflow
     - name: Check artifacts build process
@@ -109,6 +107,9 @@ jobs:
     - name: Test
       if: ${{ (matrix.java == '17') && (matrix.scala == '2.13.10') }}
       run: 'sbt ++${{ matrix.scala }} slf4j/test  slf4jBridge/test  jpl/test  slf4j2/test  slf4j2Bridge/test  coreJS/test  coreJVM/test '
+    - name: Compile additional subprojects
+      if: ${{ ((startsWith(matrix.scala, '2.12.')) || (startsWith(matrix.scala, '2.13.'))) && (matrix.java == '11') }}
+      run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
   release:
     name: Release
     runs-on: ubuntu-latest
