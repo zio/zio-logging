@@ -188,6 +188,16 @@ object LogPattern {
     val name: String = "fixed"
   }
 
+  final case class Color(arg1: LogColor, arg2: LogPattern) extends Arg2[LogColor, LogPattern] {
+    override val name = Color.name
+
+    override val toLogFormat: LogFormat = arg2.toLogFormat.color(arg1)
+  }
+
+  object Color {
+    val name: String = "color"
+  }
+
   final case class Text(text: String) extends LogPattern {
     override val toLogFormat: LogFormat = LogFormat.text(text)
   }
@@ -255,6 +265,9 @@ object LogPattern {
 
   private val stringSyntax = Syntax.charNotIn(argPrefix, '{', '}').repeat.string
 
+  private val logColorSyntax = stringSyntax
+    .transformEither(v => LogColor.logColorMapping.get(v).toRight(s"Unknown value: $v"), (v: LogColor) => Right(v.getClass.getSimpleName))
+
   private val textSyntax = stringSyntax.transform(LogPattern.Text.apply, (p: LogPattern.Text) => p.text)
 
   private val logLevelSyntax = argSyntax(LogPattern.LogLevel.name, LogPattern.LogLevel)
@@ -297,6 +310,8 @@ object LogPattern {
 
   private lazy val labelSyntax = arg2Syntax(LogPattern.Label.name, stringSyntax, syntax, LogPattern.Label.apply)
 
+  private lazy val colorSyntax = arg2Syntax(LogPattern.Color.name, logColorSyntax, syntax, LogPattern.Color.apply)
+
   private lazy val syntax: Syntax[String, Char, Char, LogPattern] =
     (logLevelSyntax.widen[LogPattern]
       <> loggerNameSyntax.widen[LogPattern]
@@ -315,6 +330,7 @@ object LogPattern {
       <> highlightSyntax.widen[LogPattern]
       <> fixedSyntax.widen[LogPattern]
       <> labelSyntax.widen[LogPattern]
+      <> colorSyntax.widen[LogPattern]
       <> textSyntax.widen[LogPattern]).repeat
       .transform[LogPattern](
         ps =>

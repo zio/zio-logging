@@ -34,6 +34,7 @@ Log pattern is string representation of LogFormat
 | %fiberId                               | Fiber Id                                                             |
 | %fixed{size}{pattern}                  | Fixed size for pattern                                               |
 | %label{name}{pattern}                  | Labeled pattern                                                      |
+| %color{LogColor}{pattern}              | Colored pattern                                                      |
 | %level                                 | Log level                                                            |
 | %name                                  | Logger name (from logger name annotation or Trace)                   |
 | %line                                  | Log/trace line (from Trace)                                          |

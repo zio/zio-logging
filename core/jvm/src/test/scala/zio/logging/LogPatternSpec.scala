@@ -1,7 +1,7 @@
 package zio.logging
 
+import zio.Chunk
 import zio.test._
-import zio.{ Chunk, Config, ConfigProvider }
 
 object LogPatternSpec extends ZIOSpecDefault {
 
@@ -31,13 +31,15 @@ object LogPatternSpec extends ZIOSpecDefault {
     test("parse pattern with escaped reserved chars from string") {
 
       val pattern =
-        LogPattern.parse("%timestamp %fixed{7}{%level} %% %} xyz %message %cause %label{abcSpan}{%span{abc}}")
+        LogPattern.parse(
+          "%color{CYAN}{%timestamp} %fixed{7}{%level} %% %} xyz %message %cause %label{abcSpan}{%span{abc}}"
+        )
 
       assertTrue(
         pattern == Right(
           LogPattern.Patterns(
             Chunk(
-              LogPattern.Timestamp.default,
+              LogPattern.Color(LogColor.CYAN, LogPattern.Timestamp.default),
               LogPattern.Text(" "),
               LogPattern.Fixed(7, LogPattern.LogLevel),
               LogPattern.Text(" "),
