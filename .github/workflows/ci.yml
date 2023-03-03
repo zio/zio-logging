@@ -110,6 +110,17 @@ jobs:
     - name: Compile additional subprojects
       if: ${{ ((startsWith(matrix.scala, '2.12.')) || (startsWith(matrix.scala, '2.13.'))) && (matrix.java == '11') }}
       run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    needs:
+    - lint
+    - test
+    - build
+    steps:
+    - name: Report Successful CI
+      run: echo "ci passed"
   release:
     name: Release
     runs-on: ubuntu-latest
