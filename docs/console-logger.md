@@ -5,7 +5,7 @@ title: "Console Logger"
 
 ## Configuration
 
-configuration for console logger: `ConsoleLoggerConfig`
+the configuration for console logger (`ConsoleLoggerConfig`) has the following structure:
 
 ```
 logger {
@@ -20,6 +20,29 @@ logger {
 ```
 
 see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
+
+
+logger layer with configuration from config provider:
+
+```scala
+import zio.logging.consoleLogger
+import zio.{ ConfigProvider, Runtime }
+
+val configProvider: ConfigProvider = ???
+
+val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> fileLogger()
+```
+
+logger layer with given configuration:
+
+```scala
+import zio.logging.{ consoleLogger, ConsoleLoggerConfig }
+import zio.Runtime
+
+val config: ConsoleLoggerConfig = ???
+
+val logger = Runtime.removeDefaultLoggers >>> consoleLogger(config)
+```
 
 ## Examples
 

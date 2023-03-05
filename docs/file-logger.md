@@ -5,7 +5,7 @@ title: "File Logger"
 
 ## Configuration
 
-configuration for file logger: `FileLoggerConfig`
+the configuration for file logger (`FileLoggerConfig`) has the following structure:
 
 ```
 logger {
@@ -33,11 +33,34 @@ logger {
 
 see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
 
+
+logger layer with configuration from config provider:
+
+```scala
+import zio.logging.fileLogger
+import zio.{ ConfigProvider, Runtime }
+
+val configProvider: ConfigProvider = ???
+
+val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> fileLogger()
+```
+
+logger layer with given configuration:
+
+```scala
+import zio.logging.{ fileLogger, FileLoggerConfig }
+import zio.Runtime
+
+val config: FileLoggerConfig = ???
+
+val logger = Runtime.removeDefaultLoggers >>> fileLogger(config)
+```
+
 ## Examples
 
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
 
-### JSON Console Logger 
+### File Logger 
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 

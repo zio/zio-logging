@@ -29,7 +29,7 @@ Logger name is extracted from log annotation or `zio.Trace`.
 
 ## Configuration
 
-configuration for log filter: `LogLevelByNameConfig`
+the configuration for filter (`LogLevelByNameConfig`) has the following structure:
 
 ```
 {
