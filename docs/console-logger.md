@@ -5,12 +5,25 @@ title: "Console Logger"
 
 ## Configuration
 
-ConsoleLoggerConfig
+configuration for console logger: `ConsoleLoggerConfig`
+
+```
+logger {
+  # log pattern
+  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause"
+  
+  filter {
+    # see filter configuration
+    rootLevel = INFO
+  }
+}
+```
+
+see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
 
 ## Examples
 
 You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
-
 
 
 ### Colorful Console Logger With Log Filtering

@@ -25,3 +25,23 @@ prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
 Logger name is extracted from log annotation or `zio.Trace`.
 
 `LogFilter.filter` returns a version of `zio.ZLogger` that only logs messages when this filter is satisfied.
+
+
+## Configuration
+
+configuration for log filter: `LogLevelByNameConfig`
+
+```
+{
+    # LogLevel values: ALL, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, OFF
+    
+    # root LogLevel, default value: INFO
+    rootLevel = DEBUG 
+    
+    # LogLevel configurations for specific logger names, or prefixes, default value: empty
+    mappings {
+      "logger.name.prefix" = "DEBUG"
+      "logger.name" = "WARN"
+    }
+}
+```
