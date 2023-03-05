@@ -6,6 +6,8 @@ object Versions {
   val scalaCollectionCompatVersion  = "2.9.0"
   val logstashLogbackEncoderVersion = "6.6"
   val scalaJavaTimeVersion          = "2.4.0"
-  val zioMetricsConnectorsVersion   = "2.0.4"
+  val zioMetricsConnectorsVersion   = "2.0.7"
+  val zioConfig                     = "4.0.0-RC10"
+  val zioParser                     = "0.1.8"
   val log4jVersion                  = "2.19.0"
 }

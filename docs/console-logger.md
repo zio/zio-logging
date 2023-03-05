@@ -3,7 +3,17 @@ id: console-logger
 title: "Console Logger"
 ---
 
-## Colorful Console Logger With Log Filtering
+## Configuration
+
+ConsoleLoggerConfig
+
+## Examples
+
+You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
+
+
+
+### Colorful Console Logger With Log Filtering
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 
@@ -49,9 +59,9 @@ object ConsoleColoredApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-2023-03-01T22:59:49+0100 DEBUG   [zio-fiber-4] zio.logging.example.LivePingService:37 ping: /127.0.0.1 
-2023-03-01T22:59:49+0100 INFO    [zio-fiber-4] zio.logging.example.ConsoleColoredApp:43 ping: 127.0.0.1 - result: true 
-2023-03-01T22:59:49+0100 ERROR   [zio-fiber-4] zio.logging.example.LivePingService:36 ping: x8.8.8.8 - invalid address error Exception in thread "zio-fiber-4" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+2023-03-05T12:24:05+0100 DEBUG   [zio-fiber-4] zio.logging.example.LivePingService:37 ping: /127.0.0.1 
+2023-03-05T12:24:05+0100 INFO    [zio-fiber-4] zio.logging.example.ConsoleColoredApp:43 ping: 127.0.0.1 - result: true 
+2023-03-05T12:24:05+0100 ERROR   [zio-fiber-4] zio.logging.example.LivePingService:36 ping: x8.8.8.8 - invalid address error Exception in thread "zio-fiber-4" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
 	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
 	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
 	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
@@ -76,7 +86,7 @@ Expected console output:
 	at zio.logging.example.ConsoleColoredApp.ping(ConsoleColoredApp.scala:41)
 	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:49)
 	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:50)
-2023-03-01T22:59:49+0100 ERROR   [zio-fiber-4] zio.logging.example.ConsoleColoredApp:42 ping: x8.8.8.8 - error Exception in thread "zio-fiber-" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+2023-03-05T12:24:05+0100 ERROR   [zio-fiber-4] zio.logging.example.ConsoleColoredApp:42 ping: x8.8.8.8 - error Exception in thread "zio-fiber-" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
 	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
 	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
 	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
@@ -89,7 +99,7 @@ Expected console output:
 	at zio.ZIOCompanionVersionSpecific.$anonfun$attempt$1(ZIOCompanionVersionSpecific.scala:100)
 ```
 
-## JSON Console Logger 
+### JSON Console Logger 
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 
@@ -110,16 +120,13 @@ object ConsoleJsonApp extends ZIOAppDefault {
   private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
   private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
+  val logPattern =
+    "%label{timestamp}{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}} %label{level}{%level} %label{fiberId}{%fiberId} %label{message}{%message} %label{cause}{%cause} %label{name}{%name} %kvs"
+
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "logger/pattern/timestamp" -> "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}",
-      "logger/pattern/level"     -> "%level",
-      "logger/pattern/fiberId"   -> "%fiberId",
-      "logger/pattern/kvs"       -> "%kvs",
-      "logger/pattern/message"   -> "%message",
-      "logger/pattern/cause"     -> "%cause",
-      "logger/pattern/name"      -> "%name",
-      "logger/filter/rootLevel"  -> LogLevel.Info.label
+      "logger/pattern"          -> logPattern,
+      "logger/filter/rootLevel" -> LogLevel.Info.label
     ),
     "/"
   )
@@ -148,9 +155,9 @@ object ConsoleJsonApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-{"name":"zio.logging.example.ConsoleJsonApp","timestamp":"2023-02-28T23:31:11+0100","kvs":{"trace_id":"9e86ce3a-cd1a-4478-805e-1e6c6be8373b","uuid":"7460f96c-69d0-4345-a642-0c527f38c8a4","user":{"first_name":"John","last_name":"Doe"}},"level":"INFO","message":"Starting operation","fiberId":"zio-fiber-6"}
-{"name":"zio.logging.example.ConsoleJsonApp","timestamp":"2023-02-28T23:31:11+0100","kvs":{"trace_id":"9e86ce3a-cd1a-4478-805e-1e6c6be8373b","uuid":"ae830e5b-6844-4779-85b6-2da75bc17dc6","user":{"first_name":"John","last_name":"Doe"}},"level":"INFO","message":"Starting operation","fiberId":"zio-fiber-5"}
-{"name":"zio.logging.example.ConsoleJsonApp","timestamp":"2023-02-28T23:31:11+0100","kvs":{"trace_id":"9e86ce3a-cd1a-4478-805e-1e6c6be8373b","uuid":"ae830e5b-6844-4779-85b6-2da75bc17dc6","user":{"first_name":"John","last_name":"Doe"}},"level":"INFO","message":"Stopping operation","fiberId":"zio-fiber-5"}
-{"name":"zio.logging.example.ConsoleJsonApp","timestamp":"2023-02-28T23:31:11+0100","kvs":{"trace_id":"9e86ce3a-cd1a-4478-805e-1e6c6be8373b","uuid":"7460f96c-69d0-4345-a642-0c527f38c8a4","user":{"first_name":"John","last_name":"Doe"}},"level":"INFO","message":"Stopping operation","fiberId":"zio-fiber-6"}
-{"name":"zio.logging.example.ConsoleJsonApp","timestamp":"2023-02-28T23:31:11+0100","kvs":,"level":"INFO","message":"Done","fiberId":"zio-fiber-4"}
+{"timestamp":"2023-03-05T12:30:22+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Starting operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"2519aff9-b433-474c-acca-fdccb6fb0f14","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-05T12:30:22+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Starting operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"b6663fb1-65cb-449a-8709-994700eca856","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-05T12:30:23+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Stopping operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"b6663fb1-65cb-449a-8709-994700eca856","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-05T12:30:23+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Stopping operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"2519aff9-b433-474c-acca-fdccb6fb0f14","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-05T12:30:23+0100","level":"INFO","fiberId":"zio-fiber-4","message":"Done","cause":,"name":"zio.logging.example.ConsoleJsonApp"}
 ```
