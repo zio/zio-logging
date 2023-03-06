@@ -29,7 +29,7 @@ Logger name is extracted from log annotation or `zio.Trace`.
 
 ## Configuration
 
-the configuration for filter (`LogLevelByNameConfig`) has the following structure:
+the configuration for filter (`zio.logging.LogFilter.LogLevelByNameConfig`) has the following structure:
 
 ```
 {
@@ -44,4 +44,14 @@ the configuration for filter (`LogLevelByNameConfig`) has the following structur
       "logger.name" = "WARN"
     }
 }
+```
+
+this configuration is equivalent to following:
+
+```scala
+import zio.LogLevel
+import zio.logging.LogFilter.LogLevelByNameConfig
+
+val config =
+    LogLevelByNameConfig(LogLevel.Debug, Map("logger.name.prefix" -> LogLevel.Debug, "logger.name" -> LogLevel.Warning))
 ```

@@ -3,37 +3,6 @@ id: file-logger
 title: "File Logger"
 ---
 
-## Configuration
-
-the configuration for file logger (`FileLoggerConfig`) has the following structure:
-
-```
-logger {
-  # log pattern
-  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause"
-  
-  # URI to file
-  path = "file:///tmp/console_app.log"
-    
-  # charset configuration, default value: UTF-8
-  charset = UTF-8
-
-  # auto flush batch size, default value: 1
-  autoFlushBatchSize = 1
-
-  # if defined, buffered writer is used, with given buffer size
-  # bufferedIOSize = 8192
-  
-  filter {
-    # see filter configuration
-    rootLevel = INFO
-  }
-}
-```
-
-see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
-
-
 logger layer with configuration from config provider:
 
 ```scala
@@ -55,6 +24,43 @@ val config: FileLoggerConfig = ???
 
 val logger = Runtime.removeDefaultLoggers >>> fileLogger(config)
 ```
+
+there are other version of file loggers:
+* `zio.logging.fileJsonLogger` - output in json format
+* file async:
+    * `zio.logging.fileAsynLogger` - output in string format
+    * `zio.logging.fileAsyncJsonLogger` - output in json format
+
+## Configuration
+
+the configuration for file logger (`zio.logging.FileLoggerConfig`) has the following structure:
+
+```
+logger {
+  # log pattern
+  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause"
+  
+  # URI to file
+  path = "file:///tmp/console_app.log"
+    
+  # charset configuration, default value: UTF-8
+  charset = "UTF-8"
+
+  # auto flush batch size, default value: 1
+  autoFlushBatchSize = 1
+
+  # if defined, buffered writer is used, with given buffer size
+  # bufferedIOSize = 8192
+  
+  filter {
+    # see filter configuration
+    rootLevel = INFO
+  }
+}
+```
+
+see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
+
 
 ## Examples
 
