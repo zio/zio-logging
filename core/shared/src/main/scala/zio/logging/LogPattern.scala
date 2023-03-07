@@ -175,7 +175,11 @@ object LogPattern {
   final case class Label(arg1: String, arg2: LogPattern) extends Arg2[String, LogPattern] {
     override val name = Label.name
 
-    override val toLogFormat: LogFormat = LogFormat.label(arg1, arg2.toLogFormat)
+    override val toLogFormat: LogFormat =
+      arg2.isDefinedFilter match {
+        case Some(f) => LogFormat.label(arg1, arg2.toLogFormat).filter(f)
+        case None    => LogFormat.label(arg1, arg2.toLogFormat)
+      }
   }
 
   object Label {
@@ -264,7 +268,7 @@ object LogPattern {
   private def argSyntax[A <: Arg](name: String, value: A): Syntax[String, Char, Char, A] =
     Syntax.string(s"${argPrefix}${name}", value)
 
-  private val intSyntax = Syntax.digit.string
+  private val intSyntax = Syntax.digit.repeat.string
     .transformEither(v => Try(v.toInt).toEither.left.map(_.getMessage), (v: Int) => Right(v.toString))
 
   private val stringSyntax = Syntax.charNotIn(argPrefix, '{', '}').repeat.string

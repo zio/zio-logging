@@ -25,7 +25,7 @@ val config: ConsoleLoggerConfig = ???
 val logger = Runtime.removeDefaultLoggers >>> consoleLogger(config)
 ```
 
-there are other version of console loggers:
+there are other versions of console loggers:
 * `zio.logging.consoleJsonLogger` - output in json format
 * error console:
   * `zio.logging.consoleErrLogger` - output in string format
@@ -37,7 +37,7 @@ the configuration for console logger (`zio.logging.ConsoleLoggerConfig`) has the
 
 ```
 logger {
-  # log pattern
+  # log pattern, default value: LogFormat.default
   pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause"
   
   filter {
@@ -62,21 +62,27 @@ You can find the source code [here](https://github.com/zio/zio-logging/tree/mast
 ```scala
 package zio.logging.example
 
+import zio.config.typesafe.TypesafeConfigProvider
 import zio.logging.consoleLogger
-import zio.{ Cause, Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer }
+import zio.{ Cause, Config, ConfigProvider, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  val logPattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
+  val configString: String =
+    s"""
+       |logger {
+       |
+       |  pattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
+       |
+       |  filter {
+       |    mappings {
+       |      "zio.logging.example.LivePingService" = "DEBUG"
+       |    }
+       |  }
+       |}
+       |""".stripMargin
 
-  val configProvider: ConfigProvider = ConfigProvider.fromMap(
-    Map(
-      "logger/pattern"                                             -> logPattern,
-      "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
-      "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
-    ),
-    "/"
-  )
+  val configProvider: ConfigProvider = TypesafeConfigProvider.fromHoconString(configString)
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
     Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleLogger()
@@ -164,7 +170,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
 
   val logPattern =
     "%label{timestamp}{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}} %label{level}{%level} %label{fiberId}{%fiberId} %label{message}{%message} %label{cause}{%cause} %label{name}{%name} %kvs"
-
+  
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
       "logger/pattern"          -> logPattern,

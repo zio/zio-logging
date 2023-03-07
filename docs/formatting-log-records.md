@@ -53,7 +53,10 @@ examples:
 
 ```
 %timestamp %level [%fiberId] %name:%line %message %cause
+
 %highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}
+
+%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}
 ```
 
 ## LogFormat and LogAppender

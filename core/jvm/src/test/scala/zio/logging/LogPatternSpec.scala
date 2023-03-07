@@ -57,6 +57,31 @@ object LogPatternSpec extends ZIOSpecDefault {
         )
       )
     },
+    test("parse pattern with labels from string") {
+
+      val pattern =
+        LogPattern.parse(
+          "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
+        )
+
+      assertTrue(
+        pattern == Right(
+          LogPattern.Patterns(
+            Chunk(
+              LogPattern.Label("timestamp", LogPattern.Fixed(32, LogPattern.Timestamp.default)),
+              LogPattern.Text(" "),
+              LogPattern.Label("level", LogPattern.LogLevel),
+              LogPattern.Text(" "),
+              LogPattern.Label("thread", LogPattern.FiberId),
+              LogPattern.Text(" "),
+              LogPattern.Label("message", LogPattern.LogMessage),
+              LogPattern.Text(" "),
+              LogPattern.Label("cause", LogPattern.Cause)
+            )
+          )
+        )
+      )
+    },
     test("parse pattern with highlight from string") {
 
       val pattern = LogPattern.parse("%timestamp %highlight{%level %{xyz%} %message %cause %span{abc}}")

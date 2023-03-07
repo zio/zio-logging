@@ -24,8 +24,17 @@ object ConsoleLoggerConfigSpec extends ZIOSpecDefault {
         assertTrue(true)
       }
     },
-    test("fail on invalid config") {
+    test("load default with missing config") {
+      val configProvider: ConfigProvider = ConfigProvider.fromMap(
+        Map.empty,
+        "/"
+      )
 
+      configProvider.load(ConsoleLoggerConfig.config.nested("logger")).map { _ =>
+        assertTrue(true)
+      }
+    },
+    test("fail on invalid filter config") {
       val logPattern =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
 
@@ -33,6 +42,24 @@ object ConsoleLoggerConfigSpec extends ZIOSpecDefault {
         Map(
           "logger/pattern"          -> logPattern,
           "logger/filter/rootLevel" -> "INVALID_LOG_LEVEL"
+        ),
+        "/"
+      )
+
+      configProvider
+        .load(ConsoleLoggerConfig.config.nested("logger"))
+        .exit
+        .map { e =>
+          assert(e)(Assertion.failsWithA[Config.Error])
+        }
+    },
+    test("fail on invalid pattern config") {
+      val logPattern =
+        "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{%level} [%fiberId] %name:%line %message %cause}"
+
+      val configProvider: ConfigProvider = ConfigProvider.fromMap(
+        Map(
+          "logger/pattern" -> logPattern
         ),
         "/"
       )

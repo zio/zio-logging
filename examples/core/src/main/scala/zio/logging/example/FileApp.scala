@@ -15,22 +15,21 @@
  */
 package zio.logging.example
 
+import zio.config.typesafe.TypesafeConfigProvider
 import zio.logging.fileLogger
-import zio.{ Config, ConfigProvider, ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppDefault, ZLayer }
+import zio.{ Config, ConfigProvider, ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, ZLayer }
 
 object FileApp extends ZIOAppDefault {
 
-  val logPattern =
-    "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
+  val configString: String =
+    s"""
+       |logger {
+       |  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
+       |  path = "file:///tmp/file_app.log"
+       |}
+       |""".stripMargin
 
-  val configProvider: ConfigProvider = ConfigProvider.fromMap(
-    Map(
-      "logger/pattern"          -> logPattern,
-      "logger/path"             -> "file:///tmp/file_app.log",
-      "logger/filter/rootLevel" -> LogLevel.Info.label
-    ),
-    "/"
-  )
+  val configProvider: ConfigProvider = TypesafeConfigProvider.fromHoconString(configString)
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
     Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> fileLogger()

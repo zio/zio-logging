@@ -47,20 +47,20 @@ object FileLoggerConfig {
         Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${value}"))
     }
 
-  private val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
-  private val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
-  private val filterConfig             = LogFilter.LogLevelByNameConfig.config.nested("filter")
-  private val charsetConfig            =
-    Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
-  private val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
-
   val config: Config[FileLoggerConfig] = {
-    val patternConfig = LogPattern.config.nested("pattern")
+    val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
+    val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
+    val filterConfig             = LogFilter.LogLevelByNameConfig.config.nested("filter")
+    val charsetConfig            =
+      Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
+    val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
+    val patternConfig            = LogPattern.config.nested("pattern").optional
+
     (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
       case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
         FileLoggerConfig(
           path,
-          pattern.toLogFormat,
+          pattern.map(_.toLogFormat).getOrElse(LogFormat.default),
           LogFilter.logLevelByName(filterConfig),
           charset,
           autoFlushBatchSize,
