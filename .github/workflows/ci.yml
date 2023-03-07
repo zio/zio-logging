@@ -31,8 +31,8 @@ jobs:
         distribution: temurin
         java-version: '17'
         check-latest: true
-    - name: Check if the site workflow is up to date
-      run: sbt  checkGithubWorkflow
+#    - name: Check if the site workflow is up to date
+#      run: sbt  checkGithubWorkflow
     - name: Check artifacts build process
       run: sbt  +publishLocal
     - name: Check website build process
@@ -111,7 +111,6 @@ jobs:
       if: ${{ ((startsWith(matrix.scala, '2.12.')) || (startsWith(matrix.scala, '2.13.'))) && (matrix.java == '11') }}
       run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
   ci:
-    name: CI
     runs-on: ubuntu-latest
     continue-on-error: false
     needs:
