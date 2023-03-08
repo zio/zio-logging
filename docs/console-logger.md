@@ -203,9 +203,9 @@ object ConsoleJsonApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-{"timestamp":"2023-03-05T12:30:22+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Starting operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"2519aff9-b433-474c-acca-fdccb6fb0f14","user":{"first_name":"John","last_name":"Doe"}}
-{"timestamp":"2023-03-05T12:30:22+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Starting operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"b6663fb1-65cb-449a-8709-994700eca856","user":{"first_name":"John","last_name":"Doe"}}
-{"timestamp":"2023-03-05T12:30:23+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Stopping operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"b6663fb1-65cb-449a-8709-994700eca856","user":{"first_name":"John","last_name":"Doe"}}
-{"timestamp":"2023-03-05T12:30:23+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Stopping operation","cause":,"name":"zio.logging.example.ConsoleJsonApp","trace_id":"48b6d93c-a129-45cc-a9af-8190dde406f3","uuid":"2519aff9-b433-474c-acca-fdccb6fb0f14","user":{"first_name":"John","last_name":"Doe"}}
-{"timestamp":"2023-03-05T12:30:23+0100","level":"INFO","fiberId":"zio-fiber-4","message":"Done","cause":,"name":"zio.logging.example.ConsoleJsonApp"}
+{"timestamp":"2023-03-08T19:36:04+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Starting operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"3b971312-cb3e-420e-8c12-7fb96add2224","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:04+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Starting operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"93b87ff0-410a-4fc1-9cc7-b7eb7c655f60","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:05+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Stopping operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"3b971312-cb3e-420e-8c12-7fb96add2224","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:05+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Stopping operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"93b87ff0-410a-4fc1-9cc7-b7eb7c655f60","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:05+0100","level":"INFO","fiberId":"zio-fiber-4","message":"Done","name":"zio.logging.example.ConsoleJsonApp"}
 ```
