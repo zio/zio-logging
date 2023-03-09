@@ -16,7 +16,7 @@ import zio.logging.LogFilter
 val filter = LogFilter.logLevelByName(
     LogLevel.Debug,
     "io.netty" -> LogLevel.Info, 
-    io.grpc.netty" -> LogLevel.Info
+    "io.grpc.netty" -> LogLevel.Info
 )
 ```
 
@@ -29,7 +29,7 @@ Logger name is extracted from log annotation or `zio.Trace`.
 
 ## Configuration
 
-the configuration for filter (`zio.logging.LogFilter.LogLevelByNameConfig`) has the following structure:
+the configuration for filter (`zio.logging.LogFilter.LogLevelByNameConfig`) has the following configuration structure:
 
 ```
 {
@@ -40,8 +40,8 @@ the configuration for filter (`zio.logging.LogFilter.LogLevelByNameConfig`) has 
     
     # LogLevel configurations for specific logger names, or prefixes, default value: empty
     mappings {
-      "logger.name.prefix" = "DEBUG"
-      "logger.name" = "WARN"
+      "io.netty" = "INFO"
+      "io.grpc.netty" = "INFO"
     }
 }
 ```
@@ -50,8 +50,10 @@ this configuration is equivalent to following:
 
 ```scala
 import zio.LogLevel
-import zio.logging.LogFilter.LogLevelByNameConfig
+import zio.logging.LogFilter
 
 val config =
-    LogLevelByNameConfig(LogLevel.Debug, Map("logger.name.prefix" -> LogLevel.Debug, "logger.name" -> LogLevel.Warning))
+  LogFilter.LogLevelByNameConfig(LogLevel.Debug, Map("io.netty" -> LogLevel.Info, "io.grpc.netty" -> LogLevel.Info))
+
+val filter = LogFilter.logLevelByName(config)    
 ```

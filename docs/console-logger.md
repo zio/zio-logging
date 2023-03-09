@@ -11,7 +11,7 @@ import zio.{ ConfigProvider, Runtime }
 
 val configProvider: ConfigProvider = ???
 
-val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleLogger()
+val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleLogger(configPath = "logger")
 ```
 
 logger layer with given configuration:
@@ -33,12 +33,12 @@ there are other versions of console loggers:
 
 ## Configuration
 
-the configuration for console logger (`zio.logging.ConsoleLoggerConfig`) has the following structure:
+the configuration for console logger (`zio.logging.ConsoleLoggerConfig`) has the following configuration structure:
 
 ```
 logger {
   # log pattern, default value: LogFormat.default
-  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %level [%fiberId] %name:%line %message %cause"
+  pattern = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
   
   filter {
     # see filter configuration
