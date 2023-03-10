@@ -17,7 +17,7 @@ package zio.logging
 
 import zio.logging.internal._
 import zio.parser.{ Syntax, _ }
-import zio.{ Cause, Config, Chunk, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
+import zio.{ Cause, Chunk, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -572,18 +572,18 @@ object LogFormat {
         )
         .widen[Pattern]
 
-    val config: Config[Pattern] = Config.string.mapOrFail { value =>
-      parse(value) match {
-        case Right(p) => Right(p)
-        case Left(_)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogPattern, but found ${value}"))
-      }
-    }
-
     def parse(pattern: String): Either[Parser.ParserError[String], Pattern] =
       syntax.parseString(pattern)
   }
 
   private val NL = System.lineSeparator()
+
+  val config: Config[LogFormat] = Config.string.mapOrFail { value =>
+    Pattern.parse(value) match {
+      case Right(p) => Right(p.toLogFormat)
+      case Left(_)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogFormat, but found ${value}"))
+    }
+  }
 
   def make(
     format: (

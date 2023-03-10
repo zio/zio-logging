@@ -37,8 +37,8 @@ the configuration for console logger (`zio.logging.ConsoleLoggerConfig`) has the
 
 ```
 logger {
-  # log pattern, default value: LogFormat.default
-  pattern = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
+  # log format, default value: LogFormat.default
+  format = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
   
   filter {
     # see filter configuration
@@ -47,7 +47,7 @@ logger {
 }
 ```
 
-see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
+see also [log format configuration](formatting-log-records.md#log-format-configuration) and [filter configuration](log-filter.md#configuration)
 
 
 ## Examples
@@ -72,7 +72,7 @@ object ConsoleColoredApp extends ZIOAppDefault {
     s"""
        |logger {
        |
-       |  pattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
+       |  format = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
        |
        |  filter {
        |    mappings {
@@ -168,12 +168,12 @@ object ConsoleJsonApp extends ZIOAppDefault {
   private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
   private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
-  val logPattern =
+  val logFormat =
     "%label{timestamp}{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}} %label{level}{%level} %label{fiberId}{%fiberId} %label{message}{%message} %label{cause}{%cause} %label{name}{%name} %kvs"
   
   val configProvider: ConfigProvider = ConfigProvider.fromMap(
     Map(
-      "logger/pattern"          -> logPattern,
+      "logger/format"           -> logFormat,
       "logger/filter/rootLevel" -> LogLevel.Info.label
     ),
     "/"

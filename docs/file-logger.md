@@ -37,8 +37,8 @@ the configuration for file logger (`zio.logging.FileLoggerConfig`) has the follo
 
 ```
 logger {
-  # log pattern, default value: LogFormat.default
-  pattern = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
+  # log format, default value: LogFormat.default
+  format = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
   
   # URI to file
   path = "file:///tmp/console_app.log"
@@ -59,7 +59,7 @@ logger {
 }
 ```
 
-see also [log pattern](formatting-log-records.md#logpattern) and [filter configuration](log-filter.md#configuration)
+see also [log format configuration](formatting-log-records.md#log-format-configuration) and [filter configuration](log-filter.md#configuration)
 
 
 ## Examples
@@ -82,7 +82,7 @@ object FileApp extends ZIOAppDefault {
   val configString: String =
     s"""
        |logger {
-       |  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
+       |  format = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
        |  path = "file:///tmp/file_app.log"
        |}
        |""".stripMargin

@@ -12,12 +12,12 @@ object FileLoggerConfigSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("FileLoggerConfig")(
     test("load valid config") {
 
-      val logPattern =
+      val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
 
       val configProvider: ConfigProvider = ConfigProvider.fromMap(
         Map(
-          "logger/pattern"                                             -> logPattern,
+          "logger/format"                                              -> logFormat,
           "logger/path"                                                -> "file:///tmp/test.log",
           "logger/autoFlushBatchSize"                                  -> "2",
           "logger/bufferedIOSize"                                      -> "4096",
@@ -51,12 +51,12 @@ object FileLoggerConfigSpec extends ZIOSpecDefault {
       }
     },
     test("fail on invalid charset and filter config") {
-      val logPattern =
+      val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
 
       val configProvider: ConfigProvider = ConfigProvider.fromMap(
         Map(
-          "logger/pattern"          -> logPattern,
+          "logger/format"           -> logFormat,
           "logger/charset"          -> "INVALID_CHARSET",
           "logger/filter/rootLevel" -> "INVALID_LOG_LEVEL"
         ),
@@ -70,14 +70,14 @@ object FileLoggerConfigSpec extends ZIOSpecDefault {
           assert(e)(Assertion.failsWithA[Config.Error])
         }
     },
-    test("fail on invalid pattern config") {
-      val logPattern =
+    test("fail on invalid format config") {
+      val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{%level} [%fiberId] %name:%line %message %cause}"
 
       val configProvider: ConfigProvider = ConfigProvider.fromMap(
         Map(
-          "logger/pattern" -> logPattern,
-          "logger/path"    -> "file:///tmp/test.log"
+          "logger/format" -> logFormat,
+          "logger/path"   -> "file:///tmp/test.log"
         ),
         "/"
       )

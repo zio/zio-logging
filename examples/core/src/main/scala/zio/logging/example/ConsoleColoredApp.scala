@@ -25,7 +25,7 @@ object ConsoleColoredApp extends ZIOAppDefault {
     s"""
        |logger {
        |
-       |  pattern = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
+       |  format = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
        |
        |  filter {
        |    mappings {

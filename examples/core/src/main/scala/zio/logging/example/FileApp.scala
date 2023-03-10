@@ -24,7 +24,7 @@ object FileApp extends ZIOAppDefault {
   val configString: String =
     s"""
        |logger {
-       |  pattern = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
+       |  format = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
        |  path = "file:///tmp/file_app.log"
        |}
        |""".stripMargin

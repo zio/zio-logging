@@ -8,12 +8,12 @@ object ConsoleLoggerConfigSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("ConsoleLoggerConfig")(
     test("load valid config") {
 
-      val logPattern =
+      val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
 
       val configProvider: ConfigProvider = ConfigProvider.fromMap(
         Map(
-          "logger/pattern"                                             -> logPattern,
+          "logger/format"                                              -> logFormat,
           "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
           "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
         ),
@@ -35,12 +35,12 @@ object ConsoleLoggerConfigSpec extends ZIOSpecDefault {
       }
     },
     test("fail on invalid filter config") {
-      val logPattern =
+      val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
 
       val configProvider: ConfigProvider = ConfigProvider.fromMap(
         Map(
-          "logger/pattern"          -> logPattern,
+          "logger/format"           -> logFormat,
           "logger/filter/rootLevel" -> "INVALID_LOG_LEVEL"
         ),
         "/"
@@ -53,13 +53,13 @@ object ConsoleLoggerConfigSpec extends ZIOSpecDefault {
           assert(e)(Assertion.failsWithA[Config.Error])
         }
     },
-    test("fail on invalid pattern config") {
-      val logPattern =
+    test("fail on invalid format config") {
+      val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{%level} [%fiberId] %name:%line %message %cause}"
 
       val configProvider: ConfigProvider = ConfigProvider.fromMap(
         Map(
-          "logger/pattern" -> logPattern
+          "logger/format" -> logFormat
         ),
         "/"
       )

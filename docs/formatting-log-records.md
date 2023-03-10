@@ -24,30 +24,30 @@ import zio.logging.LogFilter
 LogFormat.label("cause", LogFormat.cause).filter(LogFilter.causeNonEmpty)
 ```
 
-## LogPattern
+## Log Format Configuration
 
-Log pattern is string representation of LogFormat
+String representation of LogFormat:
 
-| pattern                                | description                                                                                                             |
-|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| %timestamp{date-format}<br/>%timestamp | Timestamp, where date format is `java.time.format.DateTimeFormatter`,<br/>example: `%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}` |
-| %fiberId                               | Fiber Id                                                                                                                |
-| %fixed{size}{pattern}                  | Fixed size for pattern,<br/>example: `%fixed{7}{%level}`                                                                |
-| %label{name}{pattern}                  | Labeled pattern,<br/>example: `%label{abcSpan}{%span{abc}}`                                                             |
-| %color{LogColor}{pattern}              | Colored pattern, log color values: `RED`, `BLUE`, `YELLOW`, `CYAN`, `GREEN`, `MAGENTA`, `WHITE`, <br/>example: `%color{CYAN}{%timestamp}`                                             |
-| %level                                 | Log level                                                                                                               |
-| %name                                  | Logger name (from logger name annotation or Trace)                                                                      |
-| %line                                  | Log/trace line (from Trace)                                                                                             |
-| %message                               | Log message                                                                                                             |
-| %cause                                 | Cause                                                                                                                   |
-| %kvs                                   | Key-values - all annotations                                                                                            |
-| %kv{key}                               | Key-value - annotation with given key                                                                                   |
-| %spans                                 | All log spans                                                                                                           |
-| %span{span}                            | Log spans with key                                                                                                      |
-| %highlight{pattern}                    | Highlight given pattern with colors based on log Level                                                                  |
-| %%                                     | % character                                                                                                             |
-| %{                                     | { character                                                                                                             |
-| %}                                     | } character                                                                                                             |
+| format                                 | description                                                                                                                              |
+|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| %timestamp{date-format}<br/>%timestamp | Timestamp, where date format is `java.time.format.DateTimeFormatter`,<br/>example: `%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}`                  |
+| %fiberId                               | Fiber Id                                                                                                                                 |
+| %fixed{size}{format}                   | Fixed size for format,<br/>example: `%fixed{7}{%level}`                                                                                  |
+| %label{name}{format}                   | Labeled format,<br/>example: `%label{abcSpan}{%span{abc}}`                                                                               |
+| %color{LogColor}{format}               | Colored format, log color values: `RED`, `BLUE`, `YELLOW`, `CYAN`, `GREEN`, `MAGENTA`, `WHITE`, <br/>example: `%color{CYAN}{%timestamp}` |
+| %level                                 | Log level                                                                                                                                |
+| %name                                  | Logger name (from logger name annotation or Trace)                                                                                       |
+| %line                                  | Log/trace line (from Trace)                                                                                                              |
+| %message                               | Log message                                                                                                                              |
+| %cause                                 | Cause                                                                                                                                    |
+| %kvs                                   | Key-values - all annotations                                                                                                             |
+| %kv{key}                               | Key-value - annotation with given key                                                                                                    |
+| %spans                                 | All log spans                                                                                                                            |
+| %span{span}                            | Log spans with key                                                                                                                       |
+| %highlight{format}                     | Highlight given format with colors based on log Level                                                                                    |
+| %%                                     | % character                                                                                                                              |
+| %{                                     | { character                                                                                                                              |
+| %}                                     | } character                                                                                                                              |
 
 examples:
 
