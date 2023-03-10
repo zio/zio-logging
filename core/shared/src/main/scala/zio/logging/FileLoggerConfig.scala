@@ -54,7 +54,7 @@ object FileLoggerConfig {
     val charsetConfig            =
       Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
     val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
-    val patternConfig            = LogPattern.config.nested("pattern").optional
+    val patternConfig            = LogFormat.Pattern.config.nested("pattern").optional
 
     (pathConfig ++ patternConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
       case (path, pattern, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>

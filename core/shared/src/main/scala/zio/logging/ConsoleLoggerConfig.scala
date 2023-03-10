@@ -24,7 +24,7 @@ object ConsoleLoggerConfig {
   val default: ConsoleLoggerConfig = ConsoleLoggerConfig(LogFormat.default, LogFilter.logLevel(LogLevel.Info))
 
   val config: Config[ConsoleLoggerConfig] = {
-    val patternConfig = LogPattern.config.nested("pattern").optional
+    val patternConfig = LogFormat.Pattern.config.nested("pattern").optional
     val filterConfig  = LogFilter.LogLevelByNameConfig.config.nested("filter")
     (patternConfig ++ filterConfig).map { case (pattern, filterConfig) =>
       ConsoleLoggerConfig(
