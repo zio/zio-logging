@@ -1,6 +1,6 @@
 package zio.logging.slf4j.bridge
 
-import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor, consoleJson }
+import zio.logging.{ ConsoleLoggerConfig, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
@@ -14,9 +14,11 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
-      logFilter
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+      ConsoleLoggerConfig(
+        LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
+        logFilter
+      )
     ) >+> Slf4jBridge.initialize
 
   override def run: ZIO[Scope, Any, ExitCode] =

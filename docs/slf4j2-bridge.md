@@ -46,8 +46,9 @@ SLF4J bridge with custom logger can be setup:
 
 ```scala
 import zio.logging.slf4j.Slf4jBridge
+import zio.logging.{ ConsoleLoggerConfig, consoleJsonLogger }
 
-val logger = Runtime.removeDefaultLoggers >>> zio.logging.consoleJson(LogFormat.default, LogLevel.Debug) >+> Slf4jBridge.initialize
+val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger(ConsoleLoggerConfig.default) >+> Slf4jBridge.initialize
 ```
 
 <br/>
@@ -67,7 +68,14 @@ You can find the source code [here](https://github.com/zio/zio-logging/tree/mast
 ```scala
 package zio.logging.slf4j.bridge
 
-import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor, consoleJson }
+import zio.logging.slf4j.bridge.Slf4jBridge
+import zio.logging.{
+  ConsoleLoggerConfig,
+  LogFilter,
+  LogFormat,
+  LoggerNameExtractor,
+  consoleJsonLogger
+}
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
@@ -81,16 +89,19 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
-      logFilter
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+      ConsoleLoggerConfig(
+        LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
+        logFilter
+      )
     ) >+> Slf4jBridge.initialize
 
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
-      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.logDebug("Start")
+      _ <- ZIO.succeed(slf4jLogger.debug("Test {}!", "DEBUG"))
       _ <- ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))
-      _ <- ZIO.logDebug("Done")
+      _ <- ZIO.logInfo("Done")
     } yield ExitCode.success
 
 }

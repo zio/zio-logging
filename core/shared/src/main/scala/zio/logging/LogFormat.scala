@@ -16,10 +16,12 @@
 package zio.logging
 
 import zio.logging.internal._
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
+import zio.parser.{ Syntax, _ }
+import zio.{ Cause, Chunk, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import scala.util.Try
 
 /**
  * A [[LogFormat]] represents a DSL to describe the format of text log messages.
@@ -201,7 +203,387 @@ trait LogFormat { self =>
 
 object LogFormat {
 
+  /**
+   * A `Pattern` is string representation of `LogFormat`
+   */
+  sealed trait Pattern {
+
+    /**
+     * Converts this log pattern into a log format.
+     */
+    def toLogFormat: LogFormat
+
+    def isDefinedFilter: Option[LogFilter[Any]] = None
+  }
+
+  object Pattern {
+
+    sealed trait Arg extends Pattern {
+      def name: String
+    }
+
+    final case class Patterns(patterns: Chunk[Pattern]) extends Pattern {
+
+      override def toLogFormat: LogFormat = {
+        val formats = patterns.map(_.toLogFormat)
+        if (formats.isEmpty) {
+          LogFormat.empty
+        } else formats.reduce(_ + _)
+      }
+
+      override def isDefinedFilter: Option[LogFilter[Any]] =
+        patterns.map(_.isDefinedFilter).collect { case Some(f) => f }.reduceOption(_ or _)
+
+    }
+
+    final case object Cause extends Arg {
+      override val name = "cause"
+
+      override val toLogFormat: LogFormat = LogFormat.cause
+
+      override val isDefinedFilter: Option[LogFilter[Any]] = Some(LogFilter.causeNonEmpty)
+    }
+
+    final case object LogLevel extends Arg {
+      override val name = "level"
+
+      override val toLogFormat: LogFormat = LogFormat.level
+    }
+
+    final case object LoggerName extends Arg {
+      override val name = "name"
+
+      override val toLogFormat: LogFormat = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
+    }
+
+    final case object LogMessage extends Arg {
+      override val name = "message"
+
+      override val toLogFormat: LogFormat = LogFormat.line
+    }
+
+    final case object FiberId extends Arg {
+      override val name = "fiberId"
+
+      override val toLogFormat: LogFormat = LogFormat.fiberId
+    }
+
+    final case class Timestamp(formatter: DateTimeFormatter) extends Arg {
+
+      override val name = Timestamp.name
+
+      override val toLogFormat: LogFormat = LogFormat.timestamp(formatter)
+    }
+
+    object Timestamp {
+      val name = "timestamp"
+
+      val default: Timestamp = Timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    }
+
+    final case object KeyValues extends Arg {
+      override val name = "kvs"
+
+      override val toLogFormat: LogFormat = LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey))
+    }
+
+    final case class KeyValue(annotationKey: String) extends Arg {
+
+      override val name = KeyValue.name
+
+      override val toLogFormat: LogFormat = LogFormat.anyAnnotation(annotationKey)
+    }
+
+    object KeyValue {
+      val name: String = "kv"
+    }
+
+    final case object EscapedArgPrefix extends Arg {
+      override val name = "%"
+
+      override val toLogFormat: LogFormat = LogFormat.text(name)
+    }
+
+    final case object EscapedOpenBracket extends Arg {
+      override val name = "{"
+
+      override val toLogFormat: LogFormat = LogFormat.text(name)
+    }
+
+    final case object EscapedCloseBracket extends Arg {
+      override val name = "}"
+
+      override val toLogFormat: LogFormat = LogFormat.text(name)
+    }
+
+    final case object Spans extends Arg {
+      override val name = "spans"
+
+      override val toLogFormat: LogFormat = LogFormat.spans
+    }
+
+    final case class Span(spanName: String) extends Arg {
+
+      override val name = Span.name
+
+      override val toLogFormat: LogFormat = LogFormat.span(spanName)
+    }
+
+    object Span {
+      val name: String = "span"
+    }
+
+    final case object TraceLine extends Arg {
+      override val name = "line"
+
+      override val toLogFormat: LogFormat = LogFormat.traceLine
+    }
+
+    final case class Highlight(pattern: Pattern) extends Arg {
+
+      override val name = Highlight.name
+
+      override val toLogFormat: LogFormat = pattern.toLogFormat.highlight
+    }
+
+    object Highlight {
+      val name: String = "highlight"
+    }
+
+    final case class Label(labelName: String, pattern: Pattern) extends Arg {
+
+      override val name = Label.name
+
+      override val toLogFormat: LogFormat =
+        pattern.isDefinedFilter match {
+          case Some(f) => LogFormat.label(labelName, pattern.toLogFormat).filter(f)
+          case None    => LogFormat.label(labelName, pattern.toLogFormat)
+        }
+    }
+
+    object Label {
+      val name: String = "label"
+    }
+
+    final case class Fixed(size: Int, pattern: Pattern) extends Arg {
+
+      override val name = Fixed.name
+
+      override val toLogFormat: LogFormat = pattern.toLogFormat.fixed(size)
+    }
+
+    object Fixed {
+      val name: String = "fixed"
+    }
+
+    final case class Color(color: LogColor, pattern: Pattern) extends Arg {
+
+      override val name = Color.name
+
+      override val toLogFormat: LogFormat = pattern.toLogFormat.color(color)
+    }
+
+    object Color {
+      val name: String = "color"
+    }
+
+    final case class Text(text: String) extends Pattern {
+      override val toLogFormat: LogFormat = LogFormat.text(text)
+    }
+
+    object Text {
+      val empty: Text = Text("")
+    }
+
+    private val argPrefix = '%'
+
+    private def arg1EitherSyntax[A <: Arg](
+      name: String,
+      make: String => Either[String, A],
+      extract: A => Either[String, String]
+    ): Syntax[String, Char, Char, A] = {
+
+      val begin = Syntax.string(s"${argPrefix}${name}{", ())
+
+      val middle = Syntax
+        .charNotIn('{', '}')
+        .repeat
+        .string
+        .transformEither(
+          make,
+          extract
+        )
+
+      val end = Syntax.char('}')
+
+      begin ~> middle <~ end
+    }
+
+    private def arg1Syntax[A <: Arg](
+      name: String,
+      make: String => A,
+      extract: A => String
+    ): Syntax[String, Char, Char, A] =
+      arg1EitherSyntax[A](name, v => Right(make(v)), v => Right(extract(v)))
+
+    private def arg1Syntax[A <: Arg, A1](
+      name: String,
+      syntax: Syntax[String, Char, Char, A1],
+      make: A1 => A,
+      extract: A => A1
+    ): Syntax[String, Char, Char, A] = {
+      val begin  = Syntax.string(s"${argPrefix}${name}{", ())
+      val middle = syntax.transform[A](make, extract)
+      val end    = Syntax.char('}')
+
+      begin ~> middle <~ end
+    }
+
+    private def arg2Syntax[A <: Arg, A1, A2](
+      name: String,
+      a1Syntax: Syntax[String, Char, Char, A1],
+      a2Syntax: Syntax[String, Char, Char, A2],
+      make: (A1, A2) => A,
+      extract: A => (A1, A2)
+    ): Syntax[String, Char, Char, A] = {
+      val begin1 = Syntax.string(s"${argPrefix}${name}{", ())
+      val begin2 = Syntax.char('{')
+      val end    = Syntax.char('}')
+
+      (begin1 ~> a1Syntax <~ end).zip(begin2 ~> a2Syntax <~ end).transform(v => make(v._1, v._2), extract)
+    }
+
+    private def argSyntax[A <: Arg](name: String, value: A): Syntax[String, Char, Char, A] =
+      Syntax.string(s"${argPrefix}${name}", value)
+
+    private val intSyntax = Syntax.digit.repeat.string
+      .transformEither(v => Try(v.toInt).toEither.left.map(_.getMessage), (v: Int) => Right(v.toString))
+
+    private val stringSyntax = Syntax.charNotIn(argPrefix, '{', '}').repeat.string
+
+    private val logColorSyntax = stringSyntax
+      .transformEither(
+        v => LogColor.logColorMapping.get(v).toRight(s"Unknown value: $v"),
+        (v: LogColor) => Right(v.getClass.getSimpleName)
+      )
+
+    private val textSyntax = stringSyntax.transform(Pattern.Text.apply, (p: Pattern.Text) => p.text)
+
+    private val logLevelSyntax = argSyntax(Pattern.LogLevel.name, Pattern.LogLevel)
+
+    private val loggerNameSyntax = argSyntax(Pattern.LoggerName.name, Pattern.LoggerName)
+
+    private val logMessageSyntax = argSyntax(Pattern.LogMessage.name, Pattern.LogMessage)
+
+    private val fiberIdSyntax = argSyntax(Pattern.FiberId.name, Pattern.FiberId)
+
+    private val timestampSyntax =
+      arg1EitherSyntax[Pattern.Timestamp](
+        Pattern.Timestamp.name,
+        p => Try(DateTimeFormatter.ofPattern(p)).toEither.left.map(_.getMessage).map(dtf => Pattern.Timestamp(dtf)),
+        p => Right(p.formatter.toString)
+      ) <> argSyntax(Pattern.Timestamp.name, Pattern.Timestamp.default)
+
+    private val keyValuesSyntax = argSyntax(Pattern.KeyValues.name, Pattern.KeyValues)
+
+    private val spansSyntax = argSyntax(Pattern.Spans.name, Pattern.Spans)
+
+    private val causeSyntax = argSyntax(Pattern.Cause.name, Pattern.Cause)
+
+    private val traceLineSyntax = argSyntax(Pattern.TraceLine.name, Pattern.TraceLine)
+
+    private val keyValueSyntax =
+      arg1Syntax[Pattern.KeyValue](Pattern.KeyValue.name, Pattern.KeyValue.apply, _.annotationKey)
+
+    private val spanSyntax = arg1Syntax[Pattern.Span](Pattern.Span.name, Pattern.Span.apply, _.spanName)
+
+    private val escapedArgPrefixSyntax = argSyntax(Pattern.EscapedArgPrefix.name, Pattern.EscapedArgPrefix)
+
+    private val escapedEscapedOpenBracketSyntax =
+      argSyntax(Pattern.EscapedOpenBracket.name, Pattern.EscapedOpenBracket)
+
+    private val escapedEscapedCloseBracketSyntax =
+      argSyntax(Pattern.EscapedCloseBracket.name, Pattern.EscapedCloseBracket)
+
+    private lazy val highlightSyntax =
+      arg1Syntax(
+        Pattern.Highlight.name,
+        syntax,
+        Pattern.Highlight.apply,
+        (p: Pattern.Highlight) => p.pattern
+      )
+
+    private lazy val fixedSyntax =
+      arg2Syntax(
+        Pattern.Fixed.name,
+        intSyntax,
+        syntax,
+        Pattern.Fixed.apply,
+        (p: Pattern.Fixed) => (p.size, p.pattern)
+      )
+
+    private lazy val labelSyntax =
+      arg2Syntax(
+        Pattern.Label.name,
+        stringSyntax,
+        syntax,
+        Pattern.Label.apply,
+        (p: Pattern.Label) => (p.labelName, p.pattern)
+      )
+
+    private lazy val colorSyntax =
+      arg2Syntax(
+        Pattern.Color.name,
+        logColorSyntax,
+        syntax,
+        Pattern.Color.apply,
+        (p: Pattern.Color) => (p.color, p.pattern)
+      )
+
+    private lazy val syntax: Syntax[String, Char, Char, Pattern] =
+      (logLevelSyntax.widen[Pattern]
+        <> loggerNameSyntax.widen[Pattern]
+        <> logMessageSyntax.widen[Pattern]
+        <> fiberIdSyntax.widen[Pattern]
+        <> timestampSyntax.widen[Pattern]
+        <> keyValuesSyntax.widen[Pattern]
+        <> keyValueSyntax.widen[Pattern]
+        <> spansSyntax.widen[Pattern]
+        <> spanSyntax.widen[Pattern]
+        <> causeSyntax.widen[Pattern]
+        <> traceLineSyntax.widen[Pattern]
+        <> escapedArgPrefixSyntax.widen[Pattern]
+        <> escapedEscapedOpenBracketSyntax.widen[Pattern]
+        <> escapedEscapedCloseBracketSyntax.widen[Pattern]
+        <> highlightSyntax.widen[Pattern]
+        <> fixedSyntax.widen[Pattern]
+        <> labelSyntax.widen[Pattern]
+        <> colorSyntax.widen[Pattern]
+        <> textSyntax.widen[Pattern]).repeat
+        .transform[Pattern](
+          ps =>
+            if (ps.size == 1) {
+              ps.head
+            } else Pattern.Patterns(ps),
+          _ match {
+            case Pattern.Patterns(ps) => ps
+            case p: Pattern           => Chunk(p)
+          }
+        )
+        .widen[Pattern]
+
+    def parse(pattern: String): Either[Parser.ParserError[String], Pattern] =
+      syntax.parseString(pattern)
+  }
+
   private val NL = System.lineSeparator()
+
+  val config: Config[LogFormat] = Config.string.mapOrFail { value =>
+    Pattern.parse(value) match {
+      case Right(p) => Right(p.toLogFormat)
+      case Left(_)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogFormat, but found ${value}"))
+    }
+  }
 
   def make(
     format: (
@@ -259,6 +641,20 @@ object LogFormat {
 
   def annotation[A](ann: LogAnnotation[A]): LogFormat = logAnnotation(ann)
 
+  def anyAnnotation(name: String): LogFormat =
+    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
+      annotations
+        .get(name)
+        .orElse(
+          fiberRefs
+            .get(logContext)
+            .flatMap(_.get(name))
+        )
+        .foreach { value =>
+          builder.appendKeyValue(name, value)
+        }
+    }
+
   /**
    * Returns a new log format that appends all annotations to the log output.
    */
@@ -299,6 +695,10 @@ object LogFormat {
   val bracketStart: LogFormat = text("[")
 
   val bracketEnd: LogFormat = text("]")
+
+  val empty: LogFormat = LogFormat.make { (_, _, _, _, _, _, _, _, _) =>
+    ()
+  }
 
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>

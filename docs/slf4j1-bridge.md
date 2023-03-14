@@ -36,8 +36,9 @@ SLF4J bridge with custom logger can be setup:
 
 ```scala
 import zio.logging.slf4j.Slf4jBridge
+import zio.logging.{ ConsoleLoggerConfig, consoleJsonLogger }
 
-val logger = Runtime.removeDefaultLoggers >>> zio.logging.consoleJson(LogFormat.default, LogLevel.Debug) >+> Slf4jBridge.initialize
+val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger(ConsoleLoggerConfig.default) >+> Slf4jBridge.initialize
 ```
 
 <br/>
@@ -55,7 +56,14 @@ ZIO logging. Enabling both causes circular logging and makes no sense.
 ```scala
 package zio.logging.slf4j.bridge
 
-import zio.logging.{ LogFilter, LogFormat, LoggerNameExtractor, consoleJson }
+import zio.logging.slf4j.bridge.Slf4jBridge
+import zio.logging.{
+  ConsoleLoggerConfig,
+  LogFilter,
+  LogFormat,
+  LoggerNameExtractor,
+  consoleJsonLogger
+}
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
@@ -69,9 +77,11 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
-      logFilter
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+      ConsoleLoggerConfig(
+        LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
+        logFilter
+      )
     ) >+> Slf4jBridge.initialize
 
   override def run: ZIO[Scope, Any, ExitCode] =

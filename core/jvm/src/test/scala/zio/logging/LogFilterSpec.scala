@@ -3,7 +3,7 @@ package zio.logging
 import zio.logging.test.TestService
 import zio.test.ZTestLogger.LogEntry
 import zio.test._
-import zio.{ Cause, Chunk, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
+import zio.{ Cause, Chunk, Config, ConfigProvider, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
 
 object LogFilterSpec extends ZIOSpecDefault {
 
@@ -121,6 +121,53 @@ object LogFilterSpec extends ZIOSpecDefault {
       testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
       testFilterAnnotation(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
       testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+    },
+    test("log filtering by log level and name with annotation from config") {
+
+      val configProvider = ConfigProvider.fromMap(
+        Map(
+          "logger/rootLevel"      -> LogLevel.Debug.label,
+          "logger/mappings/a"     -> LogLevel.Info.label,
+          "logger/mappings/a.b.c" -> LogLevel.Warning.label,
+          "logger/mappings/e.f"   -> LogLevel.Error.label
+        ),
+        "/"
+      )
+
+      configProvider.load(LogFilter.LogLevelByNameConfig.config.nested("logger")).map { config =>
+        val filter: LogFilter[String] = LogFilter.logLevelByName(config)
+
+        testFilterAnnotation(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilterAnnotation(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilterAnnotation(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilterAnnotation(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilterAnnotation(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse)
+      }
+    },
+    test("log filtering by log level and name default config") {
+
+      val configProvider = ConfigProvider.fromMap(Map.empty, "/")
+
+      configProvider
+        .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+        .map { config =>
+          assertTrue(config.rootLevel == LogLevel.Info) && assertTrue(config.mappings.isEmpty)
+        }
+    },
+    test("log filtering by log level and name config should fail on invalid values") {
+
+      val configProvider = ConfigProvider.fromMap(Map("logger/rootLevel" -> "INVALID_LOG_LEVEL"), "/")
+
+      configProvider
+        .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+        .exit
+        .map { e =>
+          assert(e)(Assertion.failsWithA[Config.Error])
+        }
     },
     test("log filtering by log level and name matcher with annotation") {
 

@@ -3,28 +3,89 @@ id: console-logger
 title: "Console Logger"
 ---
 
-## Colorful Console Logger With Log Filtering
+logger layer with configuration from config provider:
+
+```scala
+import zio.logging.consoleLogger
+import zio.{ ConfigProvider, Runtime }
+
+val configProvider: ConfigProvider = ???
+
+val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleLogger(configPath = "logger")
+```
+
+logger layer with given configuration:
+
+```scala
+import zio.logging.{ consoleLogger, ConsoleLoggerConfig }
+import zio.Runtime
+
+val config: ConsoleLoggerConfig = ???
+
+val logger = Runtime.removeDefaultLoggers >>> consoleLogger(config)
+```
+
+there are other versions of console loggers:
+* `zio.logging.consoleJsonLogger` - output in json format
+* error console:
+  * `zio.logging.consoleErrLogger` - output in string format
+  * `zio.logging.consoleErrJsonLogger` - output in json format
+
+## Configuration
+
+the configuration for console logger (`zio.logging.ConsoleLoggerConfig`) has the following configuration structure:
+
+```
+logger {
+  # log format, default value: LogFormat.default
+  format = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
+  
+  filter {
+    # see filter configuration
+    rootLevel = INFO
+  }
+}
+```
+
+see also [log format configuration](formatting-log-records.md#log-format-configuration) and [filter configuration](log-filter.md#configuration)
+
+
+## Examples
+
+You can find the source code [here](https://github.com/zio/zio-logging/tree/master/examples)
+
+
+### Colorful Console Logger With Log Filtering
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
 package zio.logging.example
 
-import zio.logging.{ LogFilter, LogFormat, console }
-import zio.{ Cause, ExitCode, LogLevel, Runtime, Scope, URIO, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
+import zio.config.typesafe.TypesafeConfigProvider
+import zio.logging.consoleLogger
+import zio.{ Cause, Config, ConfigProvider, ExitCode, Runtime, Scope, URIO, ZIO, ZIOAppDefault, ZLayer }
 
 object ConsoleColoredApp extends ZIOAppDefault {
 
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> console(
-      LogFormat.colored,
-      LogFilter
-        .logLevelByName(
-          LogLevel.Info,
-          "zio.logging.example.LivePingService" -> LogLevel.Debug
-        )
-        .cached
-    )
+  val configString: String =
+    s"""
+       |logger {
+       |
+       |  format = "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
+       |
+       |  filter {
+       |    mappings {
+       |      "zio.logging.example.LivePingService" = "DEBUG"
+       |    }
+       |  }
+       |}
+       |""".stripMargin
+
+  val configProvider: ConfigProvider = TypesafeConfigProvider.fromHoconString(configString)
+
+  override val bootstrap: ZLayer[Any, Config.Error, Unit] =
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleLogger()
 
   private def ping(address: String): URIO[PingService, Unit] =
     PingService
@@ -46,9 +107,19 @@ object ConsoleColoredApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-timestamp=2022-10-28T21:12:07.313782+02:00 level=DEBUG thread=zio-fiber-6 message="ping: /127.0.0.1"
-timestamp=2022-10-28T21:12:07.326911+02:00 level=INFO thread=zio-fiber-6 message="ping: 127.0.0.1 - result: true"
-timestamp=2022-10-28T21:12:07.348939+02:00 level=ERROR thread=zio-fiber-6 message="ping: x8.8.8.8 - invalid address error" cause=Exception in thread "zio-fiber-6" java.net.UnknownHostException: java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+2023-03-05T12:24:05+0100 DEBUG   [zio-fiber-4] zio.logging.example.LivePingService:37 ping: /127.0.0.1 
+2023-03-05T12:24:05+0100 INFO    [zio-fiber-4] zio.logging.example.ConsoleColoredApp:43 ping: 127.0.0.1 - result: true 
+2023-03-05T12:24:05+0100 ERROR   [zio-fiber-4] zio.logging.example.LivePingService:36 ping: x8.8.8.8 - invalid address error Exception in thread "zio-fiber-4" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
+	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:848)
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1519)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1378)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1306)
+	at java.base/java.net.InetAddress.getByName(InetAddress.java:1256)
+	at zio.logging.example.LivePingService.$anonfun$ping$2(PingService.scala:35)
+	at zio.ZIOCompanionVersionSpecific.$anonfun$attempt$1(ZIOCompanionVersionSpecific.scala:100)
 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
 	at java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
 	at java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
@@ -60,43 +131,61 @@ timestamp=2022-10-28T21:12:07.348939+02:00 level=ERROR thread=zio-fiber-6 messag
 	at zio.logging.example.LivePingService.ping(PingService.scala:35)
 	at zio.logging.example.LivePingService.ping(PingService.scala:36)
 	at zio.logging.example.LivePingService.ping(PingService.scala:33)
-	at zio.logging.example.ConsoleColoredApp.ping(ConsoleColoredApp.scala:37)
-	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:45)
-	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:46)
-timestamp=2022-10-28T21:12:07.357647+02:00 level=ERROR thread=zio-fiber-6 message="ping: x8.8.8.8 - error" cause=Exception in thread "zio-fiber-" java.net.UnknownHostException: java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+	at zio.logging.example.ConsoleColoredApp.ping(ConsoleColoredApp.scala:41)
+	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:49)
+	at zio.logging.example.ConsoleColoredApp.run(ConsoleColoredApp.scala:50)
+2023-03-05T12:24:05+0100 ERROR   [zio-fiber-4] zio.logging.example.ConsoleColoredApp:42 ping: x8.8.8.8 - error Exception in thread "zio-fiber-" java.net.UnknownHostException: x8.8.8.8: nodename nor servname provided, or not known
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
+	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:929)
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1529)
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:848)
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1519)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1378)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1306)
+	at java.base/java.net.InetAddress.getByName(InetAddress.java:1256)
+	at zio.logging.example.LivePingService.$anonfun$ping$2(PingService.scala:35)
+	at zio.ZIOCompanionVersionSpecific.$anonfun$attempt$1(ZIOCompanionVersionSpecific.scala:100)
 ```
 
-## JSON Console Logger 
+### JSON Console Logger 
 
 [//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
 package zio.logging.example
 
-import zio.logging.{ LogAnnotation, LogFormat, consoleJson }
+import zio.logging.{ LogAnnotation, consoleJsonLogger }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object ConsoleJsonApp extends ZIOAppDefault {
 
-  case class User(firstName: String, lastName: String) {
+  final case class User(firstName: String, lastName: String) {
     def toJson: String = s"""{"first_name":"$firstName","last_name":"$lastName"}""".stripMargin
   }
 
   private val userLogAnnotation = LogAnnotation[User]("user", (_, u) => u, _.toJson)
   private val uuid              = LogAnnotation[UUID]("uuid", (_, i) => i, _.toString)
 
+  val logFormat =
+    "%label{timestamp}{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ}} %label{level}{%level} %label{fiberId}{%fiberId} %label{message}{%message} %label{cause}{%cause} %label{name}{%name} %kvs"
+  
+  val configProvider: ConfigProvider = ConfigProvider.fromMap(
+    Map(
+      "logger/format"           -> logFormat,
+      "logger/filter/rootLevel" -> LogLevel.Info.label
+    ),
+    "/"
+  )
+
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJson(
-      LogFormat.default + LogFormat.annotation(LogAnnotation.TraceId) +
-        LogFormat.annotation(userLogAnnotation) + LogFormat.annotation(uuid)
-    )
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> consoleJsonLogger()
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
   override def run: ZIO[Scope, Any, ExitCode] =
-    (for {
+    for {
       traceId <- ZIO.succeed(UUID.randomUUID())
       _       <- ZIO.foreachPar(uuids) { uId =>
         {
@@ -106,7 +195,7 @@ object ConsoleJsonApp extends ZIOAppDefault {
         } @@ userLogAnnotation(User("John", "Doe")) @@ uuid(uId)
       } @@ LogAnnotation.TraceId(traceId)
       _       <- ZIO.logInfo("Done")
-    } yield ExitCode.success)
+    } yield ExitCode.success
 
 }
 ```
@@ -114,9 +203,9 @@ object ConsoleJsonApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-{"timestamp":"2023-02-22T00:20:09.04078+01:00 ","level":"INFO","thread":"zio-fiber-6","message":"Starting operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"b997115e-c939-485f-a931-39e16ca9f786"}
-{"timestamp":"2023-02-22T00:20:09.040778+01:00","level":"INFO","thread":"zio-fiber-5","message":"Starting operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"da26ff30-57de-44fa-895b-ef7864fc8e7e"}
-{"timestamp":"2023-02-22T00:20:09.576845+01:00","level":"INFO","thread":"zio-fiber-6","message":"Stopping operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"b997115e-c939-485f-a931-39e16ca9f786"}
-{"timestamp":"2023-02-22T00:20:09.577009+01:00","level":"INFO","thread":"zio-fiber-5","message":"Stopping operation","trace_id":"0c787f94-d8b1-40c6-bcf9-c479a8733902","user":{"first_name":"John","last_name":"Doe"},"uuid":"da26ff30-57de-44fa-895b-ef7864fc8e7e"}
-{"timestamp":"2023-02-22T00:20:09.581515+01:00","level":"INFO","thread":"zio-fiber-4","message":"Done"}
+{"timestamp":"2023-03-08T19:36:04+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Starting operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"3b971312-cb3e-420e-8c12-7fb96add2224","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:04+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Starting operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"93b87ff0-410a-4fc1-9cc7-b7eb7c655f60","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:05+0100","level":"INFO","fiberId":"zio-fiber-5","message":"Stopping operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"3b971312-cb3e-420e-8c12-7fb96add2224","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:05+0100","level":"INFO","fiberId":"zio-fiber-6","message":"Stopping operation","name":"zio.logging.example.ConsoleJsonApp","trace_id":"f30c2e89-006c-4f7c-adfa-497e3bba1b98","uuid":"93b87ff0-410a-4fc1-9cc7-b7eb7c655f60","user":{"first_name":"John","last_name":"Doe"}}
+{"timestamp":"2023-03-08T19:36:05+0100","level":"INFO","fiberId":"zio-fiber-4","message":"Done","name":"zio.logging.example.ConsoleJsonApp"}
 ```

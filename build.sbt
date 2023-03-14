@@ -3,7 +3,7 @@ import Versions._
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 import zio.sbt.githubactions.Condition
-import zio.sbt.githubactions.Step.{ SingleStep, StepSequence }
+import zio.sbt.githubactions.Step.SingleStep
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
@@ -88,6 +88,11 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("core"))
   .settings(stdSettings("zio-logging", turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableStreaming = true))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio" %%% "zio-parser" % zioParser
+    )
+  )
   .jvmSettings(
     Test / fork := true,
     run / fork  := true,
@@ -189,7 +194,8 @@ lazy val examplesCore = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-metrics-connectors" % zioMetricsConnectorsVersion
+      "dev.zio" %% "zio-metrics-connectors" % zioMetricsConnectorsVersion,
+      "dev.zio" %% "zio-config-typesafe"    % zioConfig
     )
   )
 
