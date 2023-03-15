@@ -58,13 +58,15 @@ The recommended place for setting the logger is application boostrap. In this ca
 [//]: # (TODO: make snippet type-checked using mdoc)
 
 ```scala
-import zio.logging.{ LogFormat, console }
+package zio.logging.example
+
+import zio.logging.consoleLogger
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object SimpleApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> console(LogFormat.default)
+    Runtime.removeDefaultLoggers >>> consoleLogger()
 
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
@@ -79,9 +81,9 @@ object SimpleApp extends ZIOAppDefault {
 Expected console output:
 
 ```
-timestamp=2022-10-28T18:40:25.517623+02:00 level=INFO thread=zio-fiber-6 message="Start"
-timestamp=2022-10-28T18:40:25.54676+02:00  level=ERROR thread=zio-fiber-0 message="" cause=Exception in thread "zio-fiber-6" java.lang.String: FAILURE
-	at zio.logging.example.SimpleApp.run(SimpleApp.scala:14)
+timestamp=2023-03-15T08:36:24.421098+01:00 level=INFO thread=zio-fiber-4 message="Start"
+timestamp=2023-03-15T08:36:24.440181+01:00 level=ERROR thread=zio-fiber-0 message="" cause=Exception in thread "zio-fiber-4" java.lang.String: FAILURE
+	at zio.logging.example.SimpleApp.run(SimpleApp.scala:29)
 ```
 
 You can find the source code of examples [here](https://github.com/zio/zio-logging/tree/master/examples)

@@ -45,7 +45,7 @@ code [here](https://github.com/zio/zio-logging/tree/master/examples)
 ```scala
 package zio.logging.example
 
-import zio.logging.{ ConsoleLoggerConfig, consoleLogger, logMetrics }
+import zio.logging.{ consoleLogger, logMetrics }
 import zio.metrics.connectors.MetricsConfig
 import zio.metrics.connectors.prometheus.{ PrometheusPublisher, prometheusLayer, publisherLayer }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, _ }
@@ -53,7 +53,7 @@ import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, _
 object MetricsApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> (consoleLogger(ConsoleLoggerConfig.default) ++ logMetrics)
+    Runtime.removeDefaultLoggers >>> (consoleLogger() ++ logMetrics)
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {
@@ -74,18 +74,18 @@ object MetricsApp extends ZIOAppDefault {
 Expected Console Output:
 
 ```
-timestamp=2023-02-28T23:32:59.496915+01:00 level=INFO thread=zio-fiber-6 message="Start"
-timestamp=2023-02-28T23:32:59.511716+01:00 level=WARN thread=zio-fiber-6 message="Some warning"
-timestamp=2023-02-28T23:32:59.513327+01:00 level=ERROR thread=zio-fiber-6 message="Some error"
-timestamp=2023-02-28T23:32:59.51419+01:00  level=ERROR thread=zio-fiber-6 message="Another error"
+timestamp=2023-03-15T08:44:39.93193+01:00  level=INFO thread=zio-fiber-6 message="Start"
+timestamp=2023-03-15T08:44:39.951764+01:00 level=WARN thread=zio-fiber-6 message="Some warning"
+timestamp=2023-03-15T08:44:39.95388+01:00  level=ERROR thread=zio-fiber-6 message="Some error"
+timestamp=2023-03-15T08:44:39.954738+01:00 level=ERROR thread=zio-fiber-6 message="Another error"
 # TYPE zio_log_total counter
-# HELP zio_log_total Some help
-zio_log_total{level="error"}  2.0 1677623580344
+# HELP zio_log_total
+zio_log_total{level="error",} 2.0 1678866280778
 # TYPE zio_log_total counter
-# HELP zio_log_total Some help
-zio_log_total{level="warn"}  1.0 1677623580344
+# HELP zio_log_total
+zio_log_total{level="warn",} 1.0 1678866280778
 # TYPE zio_log_total counter
-# HELP zio_log_total Some help
-zio_log_total{level="info"}  1.0 1677623580344
-timestamp=2023-02-28T23:33:00.536379+01:00 level=INFO thread=zio-fiber-6 message="Done"
+# HELP zio_log_total
+zio_log_total{level="info",} 1.0 1678866280778
+timestamp=2023-03-15T08:44:40.972877+01:00 level=INFO thread=zio-fiber-6 message="Done"
 ```

@@ -46,9 +46,9 @@ SLF4J bridge with custom logger can be setup:
 
 ```scala
 import zio.logging.slf4j.Slf4jBridge
-import zio.logging.{ ConsoleLoggerConfig, consoleJsonLogger }
+import zio.logging.consoleJsonLogger
 
-val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger(ConsoleLoggerConfig.default) >+> Slf4jBridge.initialize
+val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridge.initialize
 ```
 
 <br/>
