@@ -15,15 +15,18 @@
  */
 package zio.logging.internal
 
-import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
+import java.io.{ BufferedWriter, File, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
-import java.nio.file.Path
+import java.nio.file.{ FileSystems, Path }
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private[logging] class FileWriter(
   destination: Path,
   charset: Charset,
   autoFlushBatchSize: Int,
-  bufferedIOSize: Option[Int]
+  bufferedIOSize: Option[Int],
+  rolling: Boolean
 ) extends Writer {
   private val writer: Writer = {
     val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
@@ -38,15 +41,46 @@ private[logging] class FileWriter(
   final def write(buffer: Array[Char], offset: Int, length: Int): Unit =
     writer.write(buffer, offset, length)
 
-  final def writeln(line: String): Unit = {
-    writer.write(line)
-    writer.write(System.lineSeparator)
-
-    entriesWritten += 1
-
-    if (entriesWritten % autoFlushBatchSize == 0)
-      writer.flush()
+  private def makeDateFile(): File = {
+    val currentDateTime = LocalDateTime.now()
+    val formatter       = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val time            = formatter.format(currentDateTime)
+    val fileNameArray   = destination.getFileName.toString.split("\\.")
+    val timeFileName    = if (fileNameArray.length >= 2) {
+      fileNameArray.drop(1).mkString(".") + "-" + time + "." + fileNameArray.last
+    } else {
+      fileNameArray.head + "-" + time
+    }
+    val timeDestination = FileSystems.getDefault.getPath(destination.getParent.toString, timeFileName)
+    timeDestination.toFile
   }
+
+  final def writeln(line: String): Unit =
+    if (rolling) {
+      val output = new OutputStreamWriter(
+        new FileOutputStream(makeDateFile(), true),
+        charset
+      )
+      val writer = bufferedIOSize match {
+        case Some(bufferSize) => new BufferedWriter(output, bufferSize)
+        case None             => output
+      }
+      writer.write(line)
+      writer.write(System.lineSeparator)
+
+      entriesWritten += 1
+
+      if (entriesWritten % autoFlushBatchSize == 0)
+        writer.flush()
+    } else {
+      writer.write(line)
+      writer.write(System.lineSeparator)
+
+      entriesWritten += 1
+
+      if (entriesWritten % autoFlushBatchSize == 0)
+        writer.flush()
+    }
 
   final def flush(): Unit = writer.flush()
 

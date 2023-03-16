@@ -28,7 +28,8 @@ final case class FileLoggerConfig(
   filter: LogFilter[String],
   charset: Charset = StandardCharsets.UTF_8,
   autoFlushBatchSize: Int = 1,
-  bufferedIOSize: Option[Int] = None
+  bufferedIOSize: Option[Int] = None,
+  rolling: Boolean
 )
 
 object FileLoggerConfig {
@@ -64,7 +65,8 @@ object FileLoggerConfig {
           LogFilter.logLevelByName(filterConfig),
           charset,
           autoFlushBatchSize,
-          bufferedIOSize
+          bufferedIOSize,
+          rolling = false
         )
     }
   }
