@@ -15,6 +15,9 @@
  */
 package zio.logging.internal
 
+import zio.logging.FileLoggerConfig
+import zio.logging.FileLoggerConfig.FileRollingPolicy
+
 import java.io.{ BufferedWriter, File, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
 import java.nio.file.{ FileSystems, Path }
@@ -26,7 +29,7 @@ private[logging] class FileWriter(
   charset: Charset,
   autoFlushBatchSize: Int,
   bufferedIOSize: Option[Int],
-  rolling: Boolean
+  rolling: Option[FileLoggerConfig.FileRollingPolicy]
 ) extends Writer {
   private val writer: Writer = {
     val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
@@ -56,30 +59,34 @@ private[logging] class FileWriter(
   }
 
   final def writeln(line: String): Unit =
-    if (rolling) {
-      val output = new OutputStreamWriter(
-        new FileOutputStream(makeDateFile(), true),
-        charset
-      )
-      val writer = bufferedIOSize match {
-        case Some(bufferSize) => new BufferedWriter(output, bufferSize)
-        case None             => output
-      }
-      writer.write(line)
-      writer.write(System.lineSeparator)
+    rolling match {
+      case Some(value) =>
+        value match {
+          case FileRollingPolicy.TimeBasedRollingPolicy =>
+            val output = new OutputStreamWriter(
+              new FileOutputStream(makeDateFile(), true),
+              charset
+            )
+            val writer = bufferedIOSize match {
+              case Some(bufferSize) => new BufferedWriter(output, bufferSize)
+              case None             => output
+            }
+            writer.write(line)
+            writer.write(System.lineSeparator)
 
-      entriesWritten += 1
+            entriesWritten += 1
 
-      if (entriesWritten % autoFlushBatchSize == 0)
-        writer.flush()
-    } else {
-      writer.write(line)
-      writer.write(System.lineSeparator)
+            if (entriesWritten % autoFlushBatchSize == 0)
+              writer.flush()
+        }
+      case None        =>
+        writer.write(line)
+        writer.write(System.lineSeparator)
 
-      entriesWritten += 1
+        entriesWritten += 1
 
-      if (entriesWritten % autoFlushBatchSize == 0)
-        writer.flush()
+        if (entriesWritten % autoFlushBatchSize == 0)
+          writer.flush()
     }
 
   final def flush(): Unit = writer.flush()

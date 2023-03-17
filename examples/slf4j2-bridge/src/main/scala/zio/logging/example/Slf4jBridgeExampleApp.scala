@@ -15,6 +15,7 @@
  */
 package zio.logging.example
 
+import zio.logging.FileLoggerConfig.FileRollingPolicy
 import zio.logging.slf4j.bridge.Slf4jBridge
 import zio.logging.{
   ConsoleLoggerConfig,
@@ -49,7 +50,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
         destination = FileSystems.getDefault.getPath("YourPath", "YourFileName"),
         format = LogFormat.default,
         filter = LogFilter.logLevel(LogLevel.Debug),
-        rolling = true
+        rollingPolicy = Some(FileRollingPolicy.TimeBasedRollingPolicy)
       )
     ) >+> Slf4jBridge.initialize
 

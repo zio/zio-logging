@@ -29,10 +29,24 @@ final case class FileLoggerConfig(
   charset: Charset = StandardCharsets.UTF_8,
   autoFlushBatchSize: Int = 1,
   bufferedIOSize: Option[Int] = None,
-  rolling: Boolean
+  rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
 )
 
 object FileLoggerConfig {
+  sealed trait FileRollingPolicy
+  object FileRollingPolicy {
+    case object TimeBasedRollingPolicy extends FileRollingPolicy
+
+    private[logging] val logLevelMapping: Map[String, FileRollingPolicy] = Map(
+      "TimeBasedRollingPolicy" -> FileRollingPolicy.TimeBasedRollingPolicy
+    )
+
+    private[logging] def fileRollingPolicyValue(value: String): Either[Config.Error.InvalidData, FileRollingPolicy] =
+      logLevelMapping.get(value.toUpperCase) match {
+        case Some(v) => Right(v)
+        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogLevel, but found ${value}"))
+      }
+  }
 
   private def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
     Try(Charset.forName(value)) match {
@@ -56,9 +70,11 @@ object FileLoggerConfig {
       Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
     val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
     val formatConfig             = LogFormat.config.nested("format").withDefault(LogFormat.default)
+    val rollingPolicyConfig      =
+      Config.string.mapOrFail(FileRollingPolicy.fileRollingPolicyValue).nested("format").optional
 
-    (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
-      case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
+    (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig ++ rollingPolicyConfig).map {
+      case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
         FileLoggerConfig(
           path,
           format,
@@ -66,7 +82,7 @@ object FileLoggerConfig {
           charset,
           autoFlushBatchSize,
           bufferedIOSize,
-          rolling = false
+          rollingPolicy
         )
     }
   }
