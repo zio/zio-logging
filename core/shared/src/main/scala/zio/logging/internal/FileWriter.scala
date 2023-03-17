@@ -47,7 +47,7 @@ private[logging] class FileWriter(
     val time            = formatter.format(currentDateTime)
     val fileNameArray   = destination.getFileName.toString.split("\\.")
     val timeFileName    = if (fileNameArray.length >= 2) {
-      fileNameArray.drop(1).mkString(".") + "-" + time + "." + fileNameArray.last
+      fileNameArray.dropRight(1).mkString(".") + "-" + time + "." + fileNameArray.last
     } else {
       fileNameArray.head + "-" + time
     }
