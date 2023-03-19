@@ -42,7 +42,7 @@ object FileLoggerConfig {
     )
 
     private[logging] def fileRollingPolicyValue(value: String): Either[Config.Error.InvalidData, FileRollingPolicy] =
-      logLevelMapping.get(value.toUpperCase) match {
+      logLevelMapping.get(value) match {
         case Some(v) => Right(v)
         case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogLevel, but found ${value}"))
       }
