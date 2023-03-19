@@ -31,12 +31,23 @@ private[logging] class FileWriter(
   bufferedIOSize: Option[Int],
   rolling: Option[FileLoggerConfig.FileRollingPolicy]
 ) extends Writer {
-  private val writer: Writer = {
-    val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
+  private var currentDestination             = destination
+  private def makeWriter(path: Path): Writer = {
+    val output = new OutputStreamWriter(new FileOutputStream(path.toFile, true), charset)
     bufferedIOSize match {
       case Some(bufferSize) => new BufferedWriter(output, bufferSize)
       case None             => output
     }
+  }
+  private var writer: Writer                 = rolling match {
+    case Some(policy) =>
+      policy match {
+        case FileRollingPolicy.TimeBasedRollingPolicy =>
+          val newPath = makeDatePath()
+          currentDestination = newPath
+          makeWriter(newPath)
+      }
+    case None         => makeWriter(destination)
   }
 
   private var entriesWritten: Long = 0
@@ -44,7 +55,7 @@ private[logging] class FileWriter(
   final def write(buffer: Array[Char], offset: Int, length: Int): Unit =
     writer.write(buffer, offset, length)
 
-  private def makeDateFile(): File = {
+  private def makeDatePath(): Path = {
     val currentDateTime = LocalDateTime.now()
     val formatter       = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     val time            = formatter.format(currentDateTime)
@@ -55,39 +66,32 @@ private[logging] class FileWriter(
       fileNameArray.head + "-" + time
     }
     val timeDestination = FileSystems.getDefault.getPath(destination.getParent.toString, timeFileName)
-    timeDestination.toFile
+    timeDestination
   }
 
-  final def writeln(line: String): Unit =
+  final def writeln(line: String): Unit = {
     rolling match {
-      case Some(value) =>
-        value match {
+      case Some(policy) =>
+        policy match {
           case FileRollingPolicy.TimeBasedRollingPolicy =>
-            val output = new OutputStreamWriter(
-              new FileOutputStream(makeDateFile(), true),
-              charset
-            )
-            val writer = bufferedIOSize match {
-              case Some(bufferSize) => new BufferedWriter(output, bufferSize)
-              case None             => output
+            val newPath = makeDatePath()
+            if (newPath != currentDestination) {
+              println("새로운 파일 생성")
+              currentDestination = newPath
+              writer.close()
+              writer = makeWriter(newPath)
             }
-            writer.write(line)
-            writer.write(System.lineSeparator)
-
-            entriesWritten += 1
-
-            if (entriesWritten % autoFlushBatchSize == 0)
-              writer.flush()
         }
-      case None        =>
-        writer.write(line)
-        writer.write(System.lineSeparator)
-
-        entriesWritten += 1
-
-        if (entriesWritten % autoFlushBatchSize == 0)
-          writer.flush()
+      case None         => ()
     }
+    writer.write(line)
+    writer.write(System.lineSeparator)
+
+    entriesWritten += 1
+
+    if (entriesWritten % autoFlushBatchSize == 0)
+      writer.flush()
+  }
 
   final def flush(): Unit = writer.flush()
 
