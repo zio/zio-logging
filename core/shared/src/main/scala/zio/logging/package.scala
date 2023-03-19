@@ -194,7 +194,7 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None,
-    rolling: Option[FileLoggerConfig.FileRollingPolicy]
+    rolling: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
     fileAsync(
       destination,
@@ -228,7 +228,7 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None,
-    rolling: Option[FileLoggerConfig.FileRollingPolicy]
+    rolling: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
     fileJson(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize, rolling)
 
@@ -254,7 +254,7 @@ package object logging {
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
     bufferedIOSize: Option[Int] = None,
-    rolling: Option[FileLoggerConfig.FileRollingPolicy]
+    rolling: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
     fileAsyncJson(
       destination,
