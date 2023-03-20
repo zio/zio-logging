@@ -18,11 +18,12 @@ package zio.logging.internal
 import zio.logging.FileLoggerConfig
 import zio.logging.FileLoggerConfig.FileRollingPolicy
 
-import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
+import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter, Writer}
 import java.nio.charset.Charset
-import java.nio.file.{ FileSystems, Path }
+import java.nio.file.{FileSystems, Path}
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 private[logging] class FileWriter(
   destination: Path,
@@ -84,18 +85,17 @@ private[logging] class FileWriter(
       charset: Charset,
       bufferedIOSize: Option[Int]
     ) extends WriterProvider {
-      private var currentDestination    = makeDatePath
-      private var currentWriter: Writer = makeWriter(currentDestination)
-
-      private def makeDatePath: Path = {
-        val currentDateTime = LocalDateTime.now()
-        val formatter       = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm:ss")
-        val time            = formatter.format(currentDateTime)
+      private var timeInUse = makeNewTime
+      private var currentWriter: Writer = makeWriter(makePath(timeInUse))
+      private def makeNewTime = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
+      private def makePath(time: LocalDateTime): Path = {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val formattedTime = formatter.format(time)
         val fileNameArray   = destination.getFileName.toString.split("\\.")
         val timeFileName    = if (fileNameArray.length >= 2) {
-          fileNameArray.dropRight(1).mkString(".") + "-" + time + "." + fileNameArray.last
+          fileNameArray.dropRight(1).mkString(".") + "-" + formattedTime + "." + fileNameArray.last
         } else {
-          fileNameArray.head + "-" + time
+          fileNameArray.head + "-" + formattedTime
         }
         val timeDestination = FileSystems.getDefault.getPath(destination.getParent.toString, timeFileName)
         timeDestination
@@ -110,11 +110,11 @@ private[logging] class FileWriter(
       }
 
       override def writer: Writer = {
-        val newPath = makeDatePath
-        if (newPath != currentDestination) {
-          currentDestination = newPath
+        val newTime = makeNewTime
+        if (newTime != timeInUse) {
           currentWriter.close()
-          currentWriter = makeWriter(newPath)
+          currentWriter = makeWriter(makePath(newTime))
+          timeInUse = newTime
         }
         currentWriter
       }
