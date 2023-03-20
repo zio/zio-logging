@@ -37,14 +37,14 @@ object FileLoggerConfig {
   object FileRollingPolicy {
     case object TimeBasedRollingPolicy extends FileRollingPolicy
 
-    private[logging] val logLevelMapping: Map[String, FileRollingPolicy] = Map(
+    private[logging] val fileRollingPolicyMapping: Map[String, FileRollingPolicy] = Map(
       "TimeBasedRollingPolicy" -> FileRollingPolicy.TimeBasedRollingPolicy
     )
 
     private[logging] def fileRollingPolicyValue(value: String): Either[Config.Error.InvalidData, FileRollingPolicy] =
-      logLevelMapping.get(value) match {
+      fileRollingPolicyMapping.get(value) match {
         case Some(v) => Right(v)
-        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogLevel, but found ${value}"))
+        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a FileRollingPolicy, but found ${value}"))
       }
   }
 

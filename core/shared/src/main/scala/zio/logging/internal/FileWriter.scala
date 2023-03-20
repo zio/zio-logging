@@ -76,7 +76,6 @@ private[logging] class FileWriter(
           case FileRollingPolicy.TimeBasedRollingPolicy =>
             val newPath = makeDatePath()
             if (newPath != currentDestination) {
-              println("새로운 파일 생성")
               currentDestination = newPath
               writer.close()
               writer = makeWriter(newPath)
