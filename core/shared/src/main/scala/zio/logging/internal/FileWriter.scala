@@ -18,7 +18,7 @@ package zio.logging.internal
 import zio.logging.FileLoggerConfig
 import zio.logging.FileLoggerConfig.FileRollingPolicy
 
-import java.io.{ BufferedWriter, File, FileOutputStream, OutputStreamWriter, Writer }
+import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
 import java.nio.file.{ FileSystems, Path }
 import java.time.LocalDateTime
@@ -29,60 +29,24 @@ private[logging] class FileWriter(
   charset: Charset,
   autoFlushBatchSize: Int,
   bufferedIOSize: Option[Int],
-  rolling: Option[FileLoggerConfig.FileRollingPolicy]
+  rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
 ) extends Writer {
-  private var currentDestination             = destination
-  private def makeWriter(path: Path): Writer = {
-    val output = new OutputStreamWriter(new FileOutputStream(path.toFile, true), charset)
-    bufferedIOSize match {
-      case Some(bufferSize) => new BufferedWriter(output, bufferSize)
-      case None             => output
-    }
-  }
-  private var writer: Writer                 = rolling match {
+  private val writerProvider: WriterProvider = rollingPolicy match {
     case Some(policy) =>
       policy match {
         case FileRollingPolicy.TimeBasedRollingPolicy =>
-          val newPath = makeDatePath()
-          currentDestination = newPath
-          makeWriter(newPath)
+          WriterProvider.TimeBasedRollingWriterProvider(destination, charset, bufferedIOSize)
       }
-    case None         => makeWriter(destination)
+    case None         => WriterProvider.SimpleWriterProvider(destination, charset, bufferedIOSize)
   }
 
   private var entriesWritten: Long = 0
 
   final def write(buffer: Array[Char], offset: Int, length: Int): Unit =
-    writer.write(buffer, offset, length)
-
-  private def makeDatePath(): Path = {
-    val currentDateTime = LocalDateTime.now()
-    val formatter       = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val time            = formatter.format(currentDateTime)
-    val fileNameArray   = destination.getFileName.toString.split("\\.")
-    val timeFileName    = if (fileNameArray.length >= 2) {
-      fileNameArray.dropRight(1).mkString(".") + "-" + time + "." + fileNameArray.last
-    } else {
-      fileNameArray.head + "-" + time
-    }
-    val timeDestination = FileSystems.getDefault.getPath(destination.getParent.toString, timeFileName)
-    timeDestination
-  }
+    writerProvider.writer.write(buffer, offset, length)
 
   final def writeln(line: String): Unit = {
-    rolling match {
-      case Some(policy) =>
-        policy match {
-          case FileRollingPolicy.TimeBasedRollingPolicy =>
-            val newPath = makeDatePath()
-            if (newPath != currentDestination) {
-              currentDestination = newPath
-              writer.close()
-              writer = makeWriter(newPath)
-            }
-        }
-      case None         => ()
-    }
+    val writer = writerProvider.writer
     writer.write(line)
     writer.write(System.lineSeparator)
 
@@ -92,7 +56,68 @@ private[logging] class FileWriter(
       writer.flush()
   }
 
-  final def flush(): Unit = writer.flush()
+  final def flush(): Unit = writerProvider.writer.flush()
 
-  final def close(): Unit = writer.close()
+  final def close(): Unit = writerProvider.writer.close()
+
+  private[logging] sealed trait WriterProvider {
+    def writer: Writer
+  }
+
+  private[logging] object WriterProvider {
+    final case class SimpleWriterProvider(
+      destination: Path,
+      charset: Charset,
+      bufferedIOSize: Option[Int]
+    ) extends WriterProvider {
+      override val writer: Writer = {
+        val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
+        bufferedIOSize match {
+          case Some(bufferSize) => new BufferedWriter(output, bufferSize)
+          case None             => output
+        }
+      }
+    }
+
+    final case class TimeBasedRollingWriterProvider(
+      destination: Path,
+      charset: Charset,
+      bufferedIOSize: Option[Int]
+    ) extends WriterProvider {
+      private var currentDestination    = makeDatePath
+      private var currentWriter: Writer = makeWriter(currentDestination)
+
+      private def makeDatePath: Path = {
+        val currentDateTime = LocalDateTime.now()
+        val formatter       = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm:ss")
+        val time            = formatter.format(currentDateTime)
+        val fileNameArray   = destination.getFileName.toString.split("\\.")
+        val timeFileName    = if (fileNameArray.length >= 2) {
+          fileNameArray.dropRight(1).mkString(".") + "-" + time + "." + fileNameArray.last
+        } else {
+          fileNameArray.head + "-" + time
+        }
+        val timeDestination = FileSystems.getDefault.getPath(destination.getParent.toString, timeFileName)
+        timeDestination
+      }
+
+      private def makeWriter(path: Path): Writer = {
+        val output = new OutputStreamWriter(new FileOutputStream(path.toFile, true), charset)
+        bufferedIOSize match {
+          case Some(bufferSize) => new BufferedWriter(output, bufferSize)
+          case None             => output
+        }
+      }
+
+      override def writer: Writer = {
+        val newPath = makeDatePath
+        if (newPath != currentDestination) {
+          currentDestination = newPath
+          currentWriter.close()
+          currentWriter = makeWriter(newPath)
+        }
+        currentWriter
+      }
+    }
+  }
 }
