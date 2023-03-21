@@ -71,7 +71,7 @@ object FileLoggerConfig {
     val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
     val formatConfig             = LogFormat.config.nested("format").withDefault(LogFormat.default)
     val rollingPolicyConfig      =
-      Config.string.mapOrFail(FileRollingPolicy.fileRollingPolicyValue).nested("format").optional
+      Config.string.mapOrFail(FileRollingPolicy.fileRollingPolicyValue).nested("rollingPolicy").optional
 
     (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig ++ rollingPolicyConfig).map {
       case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
