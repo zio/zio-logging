@@ -15,19 +15,9 @@
  */
 package zio.logging.example
 
-import zio.logging.FileLoggerConfig.FileRollingPolicy
 import zio.logging.slf4j.bridge.Slf4jBridge
-import zio.logging.{
-  ConsoleLoggerConfig,
-  FileLoggerConfig,
-  LogFilter,
-  LogFormat,
-  LoggerNameExtractor,
-  consoleJsonLogger
-}
-import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
-
-import java.nio.file.FileSystems
+import zio.logging.{ ConsoleLoggerConfig, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
+import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, durationInt }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
@@ -44,13 +34,6 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
       ConsoleLoggerConfig(
         LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
         logFilter
-      )
-    ) >>> zio.logging.fileLogger(
-      FileLoggerConfig(
-        destination = FileSystems.getDefault.getPath("YourPath", "YourFileName"),
-        format = LogFormat.default,
-        filter = LogFilter.logLevel(LogLevel.Debug),
-        rollingPolicy = Some(FileRollingPolicy.TimeBasedRollingPolicy)
       )
     ) >+> Slf4jBridge.initialize
 
