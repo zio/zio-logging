@@ -29,29 +29,31 @@ private[logging] object WriterProvider {
   final case class TimeBasedRollingWriterProvider(
     destination: Path,
     charset: Charset,
-    bufferedIOSize: Option[Int],
-    formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    bufferedIOSize: Option[Int]
   ) extends WriterProvider {
     import TimeBasedRollingWriterProvider._
 
     private var timeInUse             = makeNewTime
-    private var currentWriter: Writer = makeWriter(makePath(destination, timeInUse, formatter), charset, bufferedIOSize)
+    private var currentWriter: Writer = makeWriter(makePath(destination, timeInUse), charset, bufferedIOSize)
+    val formatter: DateTimeFormatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
 
     override def writer: Writer = {
       val newTime = makeNewTime
       if (newTime != timeInUse) {
         currentWriter.close()
-        currentWriter = makeWriter(makePath(destination, timeInUse, formatter), charset, bufferedIOSize)
+        currentWriter = makeWriter(makePath(destination, timeInUse), charset, bufferedIOSize)
         timeInUse = newTime
       }
       currentWriter
     }
   }
   object TimeBasedRollingWriterProvider {
+    private val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     private def makeNewTime = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
 
-    def makePath(destination: Path, time: LocalDateTime, formatter: DateTimeFormatter): Path = {
-      val formattedTime   = formatter.format(time)
+    def makePath(destination: Path, time: LocalDateTime): Path = {
+      val formattedTime   = dateTimeFormatter.format(time)
       val fileNameArray   = destination.getFileName.toString.split("\\.")
       val timeFileName    = if (fileNameArray.length >= 2) {
         fileNameArray.dropRight(1).mkString(".") + "-" + formattedTime + "." + fileNameArray.last
