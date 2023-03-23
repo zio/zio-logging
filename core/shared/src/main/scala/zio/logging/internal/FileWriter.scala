@@ -18,12 +18,9 @@ package zio.logging.internal
 import zio.logging.FileLoggerConfig
 import zio.logging.FileLoggerConfig.FileRollingPolicy
 
-import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter, Writer}
+import java.io.Writer
 import java.nio.charset.Charset
-import java.nio.file.{FileSystems, Path}
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+import java.nio.file.Path
 
 private[logging] class FileWriter(
   destination: Path,

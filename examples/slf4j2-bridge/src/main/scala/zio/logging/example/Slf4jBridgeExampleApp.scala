@@ -17,7 +17,7 @@ package zio.logging.example
 
 import zio.logging.slf4j.bridge.Slf4jBridge
 import zio.logging.{ ConsoleLoggerConfig, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
-import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer, durationInt }
+import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
