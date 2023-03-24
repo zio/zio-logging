@@ -31,19 +31,27 @@ private[logging] object WriterProvider {
     charset: Charset,
     bufferedIOSize: Option[Int]
   ) extends WriterProvider {
+    import java.util.concurrent.locks.ReentrantLock
     import TimeBasedRollingWriterProvider._
 
     private var timeInUse             = makeNewTime
     private var currentWriter: Writer = makeWriter(makePath(destination, timeInUse), charset, bufferedIOSize)
-    val formatter: DateTimeFormatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
+    private val lock: ReentrantLock = new ReentrantLock()
 
     override def writer: Writer = {
       val newTime = makeNewTime
       if (newTime != timeInUse) {
-        currentWriter.close()
-        currentWriter = makeWriter(makePath(destination, timeInUse), charset, bufferedIOSize)
-        timeInUse = newTime
+        lock.lock()
+        try {
+          val newTimeInLock = makeNewTime
+          if (newTimeInLock != timeInUse) {
+            currentWriter.close()
+            currentWriter = makeWriter(makePath(destination, newTimeInLock), charset, bufferedIOSize)
+            timeInUse = newTimeInLock
+          }
+        } finally {
+          lock.unlock()
+        }
       }
       currentWriter
     }
