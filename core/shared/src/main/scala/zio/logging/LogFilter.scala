@@ -285,59 +285,38 @@ object LogFilter {
     val nameGroup      = group.map(splitNameByDot)
 
     @tailrec
-    def compareRoutes(l: List[String], m: List[String]): Boolean = (l, m) match {
-      case (Nil, Nil)                       => true
-      case (Nil, _)                         => false
-      case (l, Nil)                         => true
-      case (l @ (lh :: ls), m @ (mh :: ms)) =>
-        l.startsWith(m) ||
-          (m.span(g => !g.contains("*")) match {
-            case (_, Nil)          => false
-            case (m0, "**" :: Nil) => true
-            case (Nil, "*" :: m)   =>
-              // we drop lh which is matched by '*'
-              compareRoutes(ls, m)
+    def globStarCompare(l: List[String], m: List[String]): Boolean =
+      (l, m) match {
+        case (_, Nil)           => true
+        case (Nil, _)           => false
+        case (l @ (_ :: ls), m) =>
+          // try a regular, routesCompare or check if skipping paths (globstar pattern) results in a matching path
+          l.startsWith(m) || compareRoutes(l, m) || globStarCompare(ls, m)
+      }
 
-            case (m0, "*" :: m) =>
-              // match the m0 part and remove it from the list before the compare the remainder
-              l.startsWith(m0) && (l.drop(m0.size) match {
-                case Nil      => false
-                case lh :: ls => compareRoutes(ls, m)
-              })
-
-            case (Nil, "**" :: mh :: ms) =>
-              // remove any paths not matching the mh part
-              l.dropWhile(_ != mh) match {
-                case Nil      => false // we didn't find a match so this route is invalid
-                case lh :: ls => compareRoutes(ls, ms)
-              }
-
-            case (m0, "**" :: mh :: ms) =>
-              // match the m0 part and remove it from the list before the compare the remainder
-              l.startsWith(m0) && (
-                ls.dropWhile(_ != mh) match {
-                  case Nil      => false
-                  case lh :: ls => compareRoutes(ls, ms)
-                }
-              )
-
-            case (m0, s"$s*$e" :: m) =>
-              // match the m0 part and remove it from the list before the compare the remainder
-              l.startsWith(m0) && (l.drop(m0.size) match {
-                case Nil      => false
-                case lh :: ls =>
-                  // check if lh starts with s, strip it (we don't want overlap) and ends with e, then the compare the remainder
-                  lh.startsWith(s) && lh.stripPrefix(s).endsWith(e) && compareRoutes(ls, m)
-              })
-
-            case _ => false // should not happen, to dismiss exhaustiveness warning
-          })
-    }
+    @tailrec
+    def compareRoutes(l: List[String], m: List[String]): Boolean =
+      (l, m) match {
+        case (_, Nil)                                  => true
+        case (Nil, _)                                  => false
+        case (_ :: Nil, "*" :: Nil)                    => true
+        case (l, "**" :: ms)                           =>
+          globStarCompare(l, ms)
+        case (lh :: ls, mh :: ms) if !mh.contains("*") =>
+          lh == mh && compareRoutes(ls, ms)
+        case (l @ (lh :: ls), m @ (mh :: ms))          =>
+          mh.split('*')
+            .toList
+            .foldLeft((true, lh)) { case ((matchResult, name), p) =>
+              (matchResult && name.contains(p)) -> name.split(p).tail.mkString
+            }
+            ._1 && compareRoutes(ls, ms)
+      }
 
     logLevelByGroup[M, List[String]](
       rootLevel,
       nameGroup,
-      (l, m) => compareRoutes(l, m),
+      (l, m) => l.startsWith(m) || compareRoutes(l, m),
       mappingsSorted: _*
     )
   }
@@ -421,7 +400,11 @@ object LogFilter {
         case (xFirst :: xTail, yFirst :: yTail) =>
           val r = yFirst.compareTo(xFirst)
           if (r != 0) {
-            r
+            if (xFirst.contains('*') || yFirst.contains('*')) {
+              if (Set("**", "*").contains(xFirst)) 1
+              else if (Set("**", "*").contains(yFirst)) -1
+              else compareNames(xFirst.split('*').toList, yFirst.split('*').toList)
+            } else r
           } else compareNames(xTail, yTail)
 
         case _ => 0
