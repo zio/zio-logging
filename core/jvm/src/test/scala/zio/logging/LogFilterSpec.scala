@@ -81,49 +81,89 @@ object LogFilterSpec extends ZIOSpecDefault {
   }
 
   val spec: Spec[Environment, Any] = suite("LogFilterSpec")(
-    test("log filtering by log level and name") {
+    suite("log filtering by log level and name")(
+      test("simple paths") {
+        val filter: LogFilter[String] = LogFilter.logLevelByName(
+          LogLevel.Debug,
+          "a"     -> LogLevel.Info,
+          "a.b.c" -> LogLevel.Warning,
+          "e.f"   -> LogLevel.Error
+        )
 
-      val filter: LogFilter[String] = LogFilter.logLevelByName(
-        LogLevel.Debug,
-        "a"         -> LogLevel.Info,
-        "a.b.c"     -> LogLevel.Warning,
-        "e.f"       -> LogLevel.Error,
-        "k.*.m"     -> LogLevel.Info,
-        "k2.a*c.m2" -> LogLevel.Info,
-        "k3.a*.m3"  -> LogLevel.Trace,
-        "k3.alc.m3" -> LogLevel.Warning,
-        "k4.*c.m4"  -> LogLevel.Info,
-        "q.**.t"    -> LogLevel.Warning,
-        "q.**.t.u"  -> LogLevel.Info
-      )
+        testFilter(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilter(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "e.f.Exec.exec", LogLevel.Error, Assertion.isTrue)
+      },
+      test("any string pattern") {
+        val filter: LogFilter[String] = LogFilter.logLevelByName(
+          LogLevel.Debug,
+          "a"     -> LogLevel.Info,
+          "a.*.c" -> LogLevel.Warning,
+          "e.f.*" -> LogLevel.Error
+        )
 
-      testFilter(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
-      testFilter(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
-      testFilter(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
-      testFilter(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
-      testFilter(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
-      testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
-      testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
-      testFilter(filter, "k.l.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "k.l.m.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
-      testFilter(filter, "k.l.m.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
-      testFilter(filter, "k.l.l.m.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "k2.alc.m2.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
-      testFilter(filter, "k3.alc.m3.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
-      testFilter(filter, "k3.alc.m3.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
-      testFilter(filter, "k3.lc.m3.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "k4.alc.m4.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
-      testFilter(filter, "k4.alc.m4.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
-      testFilter(filter, "k4.al.m4.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-      testFilter(filter, "q.r.t.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
-      testFilter(filter, "q.r.t.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
-      testFilter(filter, "q.r.s.t.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
-      testFilter(filter, "q.r.s.t.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
-      testFilter(filter, "q.r.s.t.u.Exec.exec", LogLevel.Info, Assertion.isTrue)
-      testFilter(filter, "q.r.s.u.Exec.exec", LogLevel.Debug, Assertion.isTrue)
-    },
+        testFilter(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilter(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.b2.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.b2.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "a.b2.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "e.f.Exec.exec", LogLevel.Error, Assertion.isTrue)
+      },
+      test("any string and globstar patterns") {
+        val filter: LogFilter[String] = LogFilter.logLevelByName(
+          LogLevel.Debug,
+          "a"       -> LogLevel.Info,
+          "a.**.*y" -> LogLevel.Warning
+        )
+
+        testFilter(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.y.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.y.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "a.b.y.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "a.b.xy.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "a.b.xyz.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.b.xyz.Exec.exec", LogLevel.Info, Assertion.isTrue)
+      },
+      test("globstar pattern") {
+        val filter: LogFilter[String] = LogFilter.logLevelByName(
+          LogLevel.Debug,
+          "a"      -> LogLevel.Info,
+          "a.**.c" -> LogLevel.Warning,
+          "e.f.**" -> LogLevel.Error
+        )
+
+        testFilter(filter, "x.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilter(filter, "a.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.b.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.b2.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "a.b.Exec.exec", LogLevel.Info, Assertion.isTrue) &&
+        testFilter(filter, "a.b.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.b2.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.b.b2.c.Exec.exec", LogLevel.Info, Assertion.isFalse) &&
+        testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "a.b2.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "a.b.b2.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
+        testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
+        testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "e.f.g.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "e.f.g.Exec.exec", LogLevel.Error, Assertion.isTrue)
+      }
+    ),
     test("log filtering by log level and name with annotation") {
 
       val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()

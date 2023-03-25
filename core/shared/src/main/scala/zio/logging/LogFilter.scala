@@ -287,9 +287,9 @@ object LogFilter {
     @tailrec
     def globStarCompare(l: List[String], m: List[String]): Boolean =
       (l, m) match {
-        case (_, Nil)           => true
-        case (Nil, _)           => false
-        case (l @ (_ :: ls), m) =>
+        case (_, Nil)                       => true
+        case (Nil, _)                       => false
+        case (l @ (_ :: ls), m @ (mh :: _)) =>
           // try a regular, routesCompare or check if skipping paths (globstar pattern) results in a matching path
           l.startsWith(m) || compareRoutes(l, m) || globStarCompare(ls, m)
       }
@@ -299,18 +299,18 @@ object LogFilter {
       (l, m) match {
         case (_, Nil)                                  => true
         case (Nil, _)                                  => false
-        case (_ :: Nil, "*" :: Nil)                    => true
-        case (l, "**" :: ms)                           =>
-          globStarCompare(l, ms)
+        case (_ :: ls, "*" :: ms)                      => true && compareRoutes(ls, ms)
+        case (l, "**" :: ms)                           => globStarCompare(l, ms)
         case (lh :: ls, mh :: ms) if !mh.contains("*") =>
           lh == mh && compareRoutes(ls, ms)
         case (l @ (lh :: ls), m @ (mh :: ms))          =>
-          mh.split('*')
+          val (result, unprocessed) = mh
+            .split('*')
             .toList
-            .foldLeft((true, lh)) { case ((matchResult, name), p) =>
-              (matchResult && name.contains(p)) -> name.split(p).tail.mkString
+            .foldLeft((true, lh)) { case ((matchResult, lr), p) =>
+              (matchResult && lr.containsSlice(p)) -> lr.drop(lr.indexOfSlice(p) + p.size)
             }
-            ._1 && compareRoutes(ls, ms)
+          result && unprocessed.isEmpty && compareRoutes(ls, ms)
       }
 
     logLevelByGroup[M, List[String]](
@@ -403,7 +403,8 @@ object LogFilter {
             if (xFirst.contains('*') || yFirst.contains('*')) {
               if (Set("**", "*").contains(xFirst)) 1
               else if (Set("**", "*").contains(yFirst)) -1
-              else compareNames(xFirst.split('*').toList, yFirst.split('*').toList)
+              else
+                compareNames(xFirst.split('*').toList.filter(_.nonEmpty), yFirst.split('*').toList.filter(_.nonEmpty))
             } else r
           } else compareNames(xTail, yTail)
 
