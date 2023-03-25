@@ -120,8 +120,8 @@ object LogFilterSpec extends ZIOSpecDefault {
         testFilter(filter, "a.b.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
         testFilter(filter, "a.b2.c.Exec.exec", LogLevel.Warning, Assertion.isTrue) &&
         testFilter(filter, "e.Exec.exec", LogLevel.Debug, Assertion.isTrue) &&
-        testFilter(filter, "e.f.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
-        testFilter(filter, "e.f.Exec.exec", LogLevel.Error, Assertion.isTrue)
+        testFilter(filter, "e.f.g.Exec.exec", LogLevel.Debug, Assertion.isFalse) &&
+        testFilter(filter, "e.f.g.Exec.exec", LogLevel.Error, Assertion.isTrue)
       },
       test("any string and globstar patterns") {
         val filter: LogFilter[String] = LogFilter.logLevelByName(
