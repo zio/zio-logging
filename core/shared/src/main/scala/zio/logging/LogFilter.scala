@@ -287,30 +287,33 @@ object LogFilter {
     @tailrec
     def globStarCompare(l: List[String], m: List[String]): Boolean =
       (l, m) match {
-        case (_, Nil)                       => true
-        case (Nil, _)                       => false
-        case (l @ (_ :: ls), m @ (mh :: _)) =>
+        case (_, Nil)           => true
+        case (Nil, _)           => false
+        case (l @ (_ :: ls), m) =>
           // try a regular, routesCompare or check if skipping paths (globstar pattern) results in a matching path
           l.startsWith(m) || compareRoutes(l, m) || globStarCompare(ls, m)
       }
+
+    @tailrec
+    def anystringCompare(l: String, m: List[String]): Boolean = m match {
+      case mh :: ms =>
+        val startOfMh = l.indexOfSlice(mh)
+        if (startOfMh >= 0) anystringCompare(l.drop(startOfMh + mh.size), ms)
+        else false
+      case Nil      => l.isEmpty()
+    }
 
     @tailrec
     def compareRoutes(l: List[String], m: List[String]): Boolean =
       (l, m) match {
         case (_, Nil)                                  => true
         case (Nil, _)                                  => false
-        case (_ :: ls, "*" :: ms)                      => true && compareRoutes(ls, ms)
+        case (_ :: ls, "*" :: ms)                      => compareRoutes(ls, ms)
         case (l, "**" :: ms)                           => globStarCompare(l, ms)
         case (lh :: ls, mh :: ms) if !mh.contains("*") =>
           lh == mh && compareRoutes(ls, ms)
         case (l @ (lh :: ls), m @ (mh :: ms))          =>
-          val (result, unprocessed) = mh
-            .split('*')
-            .toList
-            .foldLeft((true, lh)) { case ((matchResult, lr), p) =>
-              (matchResult && lr.containsSlice(p)) -> lr.drop(lr.indexOfSlice(p) + p.size)
-            }
-          result && unprocessed.isEmpty && compareRoutes(ls, ms)
+          anystringCompare(lh, mh.split('*').toList) && compareRoutes(ls, ms)
       }
 
     logLevelByGroup[M, List[String]](
