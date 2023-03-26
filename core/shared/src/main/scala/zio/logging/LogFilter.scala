@@ -404,8 +404,10 @@ object LogFilter {
           val r = yFirst.compareTo(xFirst)
           if (r != 0) {
             if (xFirst.contains('*') || yFirst.contains('*')) {
-              if (Set("**", "*").contains(xFirst)) 1
-              else if (Set("**", "*").contains(yFirst)) -1
+              if (xFirst == "**") 1
+              else if (yFirst == "**") -1
+              else if (xFirst == "*") 1
+              else if (yFirst == "*") -1
               else
                 compareNames(xFirst.split('*').toList.filter(_.nonEmpty), yFirst.split('*').toList.filter(_.nonEmpty))
             } else r

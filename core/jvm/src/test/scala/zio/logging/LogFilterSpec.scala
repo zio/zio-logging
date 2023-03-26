@@ -366,6 +366,38 @@ object LogFilterSpec extends ZIOSpecDefault {
           "a"              -> LogLevel.Info,
           "a"              -> LogLevel.Warning
         )
+      ) &&
+      check(
+        Seq(
+          "a"               -> LogLevel.Warning,
+          "a"               -> LogLevel.Info,
+          "**"              -> LogLevel.Info,
+          "*"               -> LogLevel.Info,
+          "a.**.c.Service1" -> LogLevel.Warning,
+          "a.b.c.Service1"  -> LogLevel.Warning,
+          "a.*.c.Service1"  -> LogLevel.Warning,
+          "a.b.c"           -> LogLevel.Error,
+          "a.b.d"           -> LogLevel.Debug,
+          "e.f"             -> LogLevel.Error,
+          "e.*.g.*.i"       -> LogLevel.Error,
+          "e.*.g.h.*"       -> LogLevel.Error,
+          "e.f.*.h"         -> LogLevel.Error
+        ),
+        Seq(
+          "e.f.*.h"         -> LogLevel.Error,
+          "e.f"             -> LogLevel.Error,
+          "e.*.g.h.*"       -> LogLevel.Error,
+          "e.*.g.*.i"       -> LogLevel.Error,
+          "a.b.d"           -> LogLevel.Debug,
+          "a.b.c.Service1"  -> LogLevel.Warning,
+          "a.b.c"           -> LogLevel.Error,
+          "a.*.c.Service1"  -> LogLevel.Warning,
+          "a.**.c.Service1" -> LogLevel.Warning,
+          "a"               -> LogLevel.Info,
+          "a"               -> LogLevel.Warning,
+          "*"               -> LogLevel.Info,
+          "**"              -> LogLevel.Info
+        )
       )
     }
   )
