@@ -184,7 +184,9 @@ package object logging {
     bufferedIOSize: Option[Int],
     rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLayer[Any, Nothing, Unit] =
-    fileLogger(FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy))
+    fileLogger(
+      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
+    )
 
   @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
   def fileAsync(
@@ -230,7 +232,15 @@ package object logging {
     bufferedIOSize: Option[Int] = None,
     rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
-    fileJson(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
+    fileJson(
+      destination,
+      format,
+      LogFilter.logLevel(logLevel),
+      charset,
+      autoFlushBatchSize,
+      bufferedIOSize,
+      rollingPolicy
+    )
 
   @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
   def fileJson(
@@ -394,7 +404,16 @@ package object logging {
     for {
       queue       <- Queue.bounded[UIO[Any]](1000)
       stringLogger =
-        makeFileAsyncLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue, rollingPolicy)
+        makeFileAsyncLogger(
+          destination,
+          logger,
+          logFilter,
+          charset,
+          autoFlushBatchSize,
+          bufferedIOSize,
+          queue,
+          rollingPolicy
+        )
       _           <- ZIO.withLoggerScoped(stringLogger)
       _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
     } yield ()

@@ -58,5 +58,4 @@ private[logging] class FileWriter(
 
   final def close(): Unit = writerProvider.writer.close()
 
-
 }
