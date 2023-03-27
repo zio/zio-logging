@@ -29,17 +29,18 @@ private[logging] object WriterProvider {
   final case class TimeBasedRollingWriterProvider(
     destination: Path,
     charset: Charset,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    makeNewTime: () => LocalDateTime = TimeBasedRollingWriterProvider.makeNewTime
   ) extends WriterProvider {
     import java.util.concurrent.locks.ReentrantLock
     import TimeBasedRollingWriterProvider._
 
-    private var timeInUse             = makeNewTime
+    private var timeInUse             = makeNewTime()
     private var currentWriter: Writer = makeWriter(makePath(destination, timeInUse), charset, bufferedIOSize)
     private val lock: ReentrantLock   = new ReentrantLock()
 
     override def writer: Writer = {
-      val newTime = makeNewTime
+      val newTime = makeNewTime()
       if (newTime != timeInUse) {
         lock.lock()
         try
@@ -56,7 +57,7 @@ private[logging] object WriterProvider {
   }
   object TimeBasedRollingWriterProvider {
     private val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    private def makeNewTime                          = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
+    private def makeNewTime()                        = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
 
     def makePath(destination: Path, time: LocalDateTime): Path = {
       val formattedTime   = dateTimeFormatter.format(time)
