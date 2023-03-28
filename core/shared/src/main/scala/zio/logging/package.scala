@@ -169,9 +169,10 @@ package object logging {
     logLevel: LogLevel = LogLevel.Info,
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None
+    bufferedIOSize: Option[Int] = None,
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
-    file(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
+    file(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
 
   @deprecated("use zio.logging.fileLogger", "2.1.10")
   def file(
@@ -180,9 +181,12 @@ package object logging {
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLayer[Any, Nothing, Unit] =
-    fileLogger(FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize))
+    fileLogger(
+      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
+    )
 
   @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
   def fileAsync(
@@ -191,7 +195,8 @@ package object logging {
     logLevel: LogLevel = LogLevel.Info,
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None
+    bufferedIOSize: Option[Int] = None,
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
     fileAsync(
       destination,
@@ -199,7 +204,8 @@ package object logging {
       LogFilter.logLevel(logLevel),
       charset,
       autoFlushBatchSize,
-      bufferedIOSize
+      bufferedIOSize,
+      rollingPolicy
     )
 
   @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
@@ -209,9 +215,12 @@ package object logging {
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLayer[Any, Nothing, Unit] =
-    fileAsyncLogger(FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize))
+    fileAsyncLogger(
+      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
+    )
 
   @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
   def fileJson(
@@ -220,9 +229,18 @@ package object logging {
     logLevel: LogLevel = LogLevel.Info,
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None
+    bufferedIOSize: Option[Int] = None,
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
-    fileJson(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize)
+    fileJson(
+      destination,
+      format,
+      LogFilter.logLevel(logLevel),
+      charset,
+      autoFlushBatchSize,
+      bufferedIOSize,
+      rollingPolicy
+    )
 
   @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
   def fileJson(
@@ -231,10 +249,11 @@ package object logging {
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLayer[Any, Nothing, Unit] =
     fileJsonLogger(
-      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize)
+      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
     )
 
   @deprecated("use zio.logging.fileAsyncJsonLogger", "2.1.10")
@@ -244,7 +263,8 @@ package object logging {
     logLevel: LogLevel = LogLevel.Info,
     charset: Charset = StandardCharsets.UTF_8,
     autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None
+    bufferedIOSize: Option[Int] = None,
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
   ): ZLayer[Any, Nothing, Unit] =
     fileAsyncJson(
       destination,
@@ -252,7 +272,8 @@ package object logging {
       LogFilter.logLevel(logLevel),
       charset,
       autoFlushBatchSize,
-      bufferedIOSize
+      bufferedIOSize,
+      rollingPolicy
     )
 
   @deprecated("use zio.logging.fileAsyncJsonLogger", "2.1.10")
@@ -262,10 +283,11 @@ package object logging {
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLayer[Any, Nothing, Unit] =
     fileAsyncJsonLogger(
-      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize)
+      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
     )
 
   def fileAsyncJsonLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
@@ -354,7 +376,8 @@ package object logging {
     config.filter,
     config.charset,
     config.autoFlushBatchSize,
-    config.bufferedIOSize
+    config.bufferedIOSize,
+    config.rollingPolicy
   )
 
   private def makeFileAsyncLogger(
@@ -365,7 +388,8 @@ package object logging {
     config.filter,
     config.charset,
     config.autoFlushBatchSize,
-    config.bufferedIOSize
+    config.bufferedIOSize,
+    config.rollingPolicy
   )
 
   private def makeFileAsyncLogger(
@@ -374,12 +398,22 @@ package object logging {
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZIO[Scope, Nothing, Unit] =
     for {
       queue       <- Queue.bounded[UIO[Any]](1000)
       stringLogger =
-        makeFileAsyncLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, queue)
+        makeFileAsyncLogger(
+          destination,
+          logger,
+          logFilter,
+          charset,
+          autoFlushBatchSize,
+          bufferedIOSize,
+          queue,
+          rollingPolicy
+        )
       _           <- ZIO.withLoggerScoped(stringLogger)
       _           <- queue.take.flatMap(task => task.ignore).forever.forkScoped
     } yield ()
@@ -391,9 +425,11 @@ package object logging {
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
-    queue: Queue[UIO[Any]]
+    queue: Queue[UIO[Any]],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLogger[String, Any] = {
-    val logWriter = new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
+    val logWriter =
+      new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
 
     val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
       zio.Unsafe.unsafe { implicit u =>
@@ -416,7 +452,8 @@ package object logging {
       config.filter,
       config.charset,
       config.autoFlushBatchSize,
-      config.bufferedIOSize
+      config.bufferedIOSize,
+      config.rollingPolicy
     )
 
   private def makeFileLogger(config: FileLoggerConfig): ZLogger[String, Any] =
@@ -426,7 +463,8 @@ package object logging {
       config.filter,
       config.charset,
       config.autoFlushBatchSize,
-      config.bufferedIOSize
+      config.bufferedIOSize,
+      config.rollingPolicy
     )
 
   private def makeFileLogger(
@@ -435,9 +473,11 @@ package object logging {
     logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int]
+    bufferedIOSize: Option[Int],
+    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ZLogger[String, Any] = {
-    val logWriter = new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize)
+    val logWriter =
+      new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
 
     val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
       try logWriter.writeln(line)
