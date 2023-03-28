@@ -16,12 +16,14 @@ import zio.logging.LogFilter
 val filter = LogFilter.logLevelByName(
     LogLevel.Debug,
     "io.netty" -> LogLevel.Info, 
-    "io.grpc.netty" -> LogLevel.Info
+    "io.grpc.netty" -> LogLevel.Info,
+    "org.my.**.ServiceX" -> LogLevel.Trace, // glob-like (any paths) filter
+    "org.my.X*Layers" -> LogLevel.Info // glob-like (single or partial path) filter
 )
 ```
 
 will use the `Debug` log level for everything except for log events with the logger name
-prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
+prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")` or `List("org", "my", "**", "ServiceX")` or `List("org", "my", "X*Layers")`.
 Logger name is extracted from log annotation or `zio.Trace`.
 
 `LogFilter.filter` returns a version of `zio.ZLogger` that only logs messages when this filter is satisfied.

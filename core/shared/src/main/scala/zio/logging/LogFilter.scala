@@ -284,10 +284,42 @@ object LogFilter {
     val mappingsSorted = mappings.map(splitNameByDotAndLevel.tupled).sorted(nameLevelOrdering)
     val nameGroup      = group.map(splitNameByDot)
 
+    @tailrec
+    def globStarCompare(l: List[String], m: List[String]): Boolean =
+      (l, m) match {
+        case (_, Nil)           => true
+        case (Nil, _)           => false
+        case (l @ (_ :: ls), m) =>
+          // try a regular, routesCompare or check if skipping paths (globstar pattern) results in a matching path
+          l.startsWith(m) || compareRoutes(l, m) || globStarCompare(ls, m)
+      }
+
+    @tailrec
+    def anystringCompare(l: String, m: List[String]): Boolean = m match {
+      case mh :: ms =>
+        val startOfMh = l.indexOfSlice(mh)
+        if (startOfMh >= 0) anystringCompare(l.drop(startOfMh + mh.size), ms)
+        else false
+      case Nil      => l.isEmpty()
+    }
+
+    @tailrec
+    def compareRoutes(l: List[String], m: List[String]): Boolean =
+      (l, m) match {
+        case (_, Nil)                                  => true
+        case (Nil, _)                                  => false
+        case (_ :: ls, "*" :: ms)                      => compareRoutes(ls, ms)
+        case (l, "**" :: ms)                           => globStarCompare(l, ms)
+        case (lh :: ls, mh :: ms) if !mh.contains("*") =>
+          lh == mh && compareRoutes(ls, ms)
+        case (l @ (lh :: ls), m @ (mh :: ms))          =>
+          anystringCompare(lh, mh.split('*').toList) && compareRoutes(ls, ms)
+      }
+
     logLevelByGroup[M, List[String]](
       rootLevel,
       nameGroup,
-      (l, m) => l.startsWith(m),
+      (l, m) => l.startsWith(m) || compareRoutes(l, m),
       mappingsSorted: _*
     )
   }
@@ -371,7 +403,14 @@ object LogFilter {
         case (xFirst :: xTail, yFirst :: yTail) =>
           val r = yFirst.compareTo(xFirst)
           if (r != 0) {
-            r
+            if (xFirst.contains('*') || yFirst.contains('*')) {
+              if (xFirst == "**") 1
+              else if (yFirst == "**") -1
+              else if (xFirst == "*") 1
+              else if (yFirst == "*") -1
+              else
+                compareNames(xFirst.split('*').toList.filter(_.nonEmpty), yFirst.split('*').toList.filter(_.nonEmpty))
+            } else r
           } else compareNames(xTail, yTail)
 
         case _ => 0
