@@ -1,6 +1,6 @@
 package zio.logging.internal
 
-import zio.{ ZIO, ZIOAspect }
+import zio.ZIO
 import zio.test._
 
 import java.nio.charset.StandardCharsets
