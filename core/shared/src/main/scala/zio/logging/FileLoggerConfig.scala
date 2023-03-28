@@ -28,10 +28,25 @@ final case class FileLoggerConfig(
   filter: LogFilter[String],
   charset: Charset = StandardCharsets.UTF_8,
   autoFlushBatchSize: Int = 1,
-  bufferedIOSize: Option[Int] = None
+  bufferedIOSize: Option[Int] = None,
+  rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
 )
 
 object FileLoggerConfig {
+  sealed trait FileRollingPolicy
+  object FileRollingPolicy {
+    case object TimeBasedRollingPolicy extends FileRollingPolicy
+
+    private[logging] val fileRollingPolicyMapping: Map[String, FileRollingPolicy] = Map(
+      "TimeBasedRollingPolicy" -> FileRollingPolicy.TimeBasedRollingPolicy
+    )
+
+    private[logging] def fileRollingPolicyValue(value: String): Either[Config.Error.InvalidData, FileRollingPolicy] =
+      fileRollingPolicyMapping.get(value) match {
+        case Some(v) => Right(v)
+        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a FileRollingPolicy, but found ${value}"))
+      }
+  }
 
   private def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
     Try(Charset.forName(value)) match {
@@ -55,16 +70,19 @@ object FileLoggerConfig {
       Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
     val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
     val formatConfig             = LogFormat.config.nested("format").withDefault(LogFormat.default)
+    val rollingPolicyConfig      =
+      Config.string.mapOrFail(FileRollingPolicy.fileRollingPolicyValue).nested("rollingPolicy").optional
 
-    (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig).map {
-      case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize) =>
+    (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig ++ rollingPolicyConfig).map {
+      case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
         FileLoggerConfig(
           path,
           format,
           LogFilter.logLevelByName(filterConfig),
           charset,
           autoFlushBatchSize,
-          bufferedIOSize
+          bufferedIOSize,
+          rollingPolicy
         )
     }
   }

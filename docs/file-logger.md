@@ -56,6 +56,9 @@ logger {
     # see filter configuration
     rootLevel = INFO
   }
+  
+  # log rolling, default value: None 
+  rollingPolicy = TimeBasedRollingPolicy
 }
 ```
 
@@ -84,6 +87,7 @@ object FileApp extends ZIOAppDefault {
        |logger {
        |  format = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
        |  path = "file:///tmp/file_app.log"
+       |  rollingPolicy = TimeBasedRollingPolicy
        |}
        |""".stripMargin
 
@@ -100,6 +104,8 @@ object FileApp extends ZIOAppDefault {
     } yield ExitCode.success
 }
 ```
+
+Expected file name: `file_app-2023-03-05.log`
 
 Expected file content:
 

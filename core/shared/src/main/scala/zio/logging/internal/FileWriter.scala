@@ -15,7 +15,10 @@
  */
 package zio.logging.internal
 
-import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
+import zio.logging.FileLoggerConfig
+import zio.logging.FileLoggerConfig.FileRollingPolicy
+
+import java.io.Writer
 import java.nio.charset.Charset
 import java.nio.file.Path
 
@@ -23,22 +26,25 @@ private[logging] class FileWriter(
   destination: Path,
   charset: Charset,
   autoFlushBatchSize: Int,
-  bufferedIOSize: Option[Int]
+  bufferedIOSize: Option[Int],
+  rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
 ) extends Writer {
-  private val writer: Writer = {
-    val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
-    bufferedIOSize match {
-      case Some(bufferSize) => new BufferedWriter(output, bufferSize)
-      case None             => output
-    }
+  private val writerProvider: WriterProvider = rollingPolicy match {
+    case Some(policy) =>
+      policy match {
+        case FileRollingPolicy.TimeBasedRollingPolicy =>
+          WriterProvider.TimeBasedRollingWriterProvider(destination, charset, bufferedIOSize)
+      }
+    case None         => WriterProvider.SimpleWriterProvider(destination, charset, bufferedIOSize)
   }
 
   private var entriesWritten: Long = 0
 
   final def write(buffer: Array[Char], offset: Int, length: Int): Unit =
-    writer.write(buffer, offset, length)
+    writerProvider.writer.write(buffer, offset, length)
 
   final def writeln(line: String): Unit = {
+    val writer = writerProvider.writer
     writer.write(line)
     writer.write(System.lineSeparator)
 
@@ -48,7 +54,8 @@ private[logging] class FileWriter(
       writer.flush()
   }
 
-  final def flush(): Unit = writer.flush()
+  final def flush(): Unit = writerProvider.writer.flush()
 
-  final def close(): Unit = writer.close()
+  final def close(): Unit = writerProvider.writer.close()
+
 }
