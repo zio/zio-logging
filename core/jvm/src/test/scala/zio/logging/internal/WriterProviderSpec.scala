@@ -36,7 +36,7 @@ object WriterProviderSpec extends ZIOSpecDefault {
         destination = FileSystems.getDefault.getPath("/tmp/file_app"),
         charset = StandardCharsets.UTF_8,
         bufferedIOSize = Some(1),
-        makeNewTime = testMakeNewTime
+        time = testMakeNewTime
       )
 
       val parallelExecution = ZIO

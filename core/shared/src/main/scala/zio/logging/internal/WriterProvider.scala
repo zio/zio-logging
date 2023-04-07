@@ -30,17 +30,17 @@ private[logging] object WriterProvider {
     destination: Path,
     charset: Charset,
     bufferedIOSize: Option[Int],
-    makeNewTime: () => LocalDateTime = TimeBasedRollingWriterProvider.makeNewTime
+    time: () => LocalDateTime = TimeBasedRollingWriterProvider.makeNewTime
   ) extends WriterProvider {
     import java.util.concurrent.locks.ReentrantLock
     import TimeBasedRollingWriterProvider._
 
-    private var timeInUse             = makeNewTime()
+    private var timeInUse             = time()
     private var currentWriter: Writer = makeWriter(makePath(destination, timeInUse), charset, bufferedIOSize)
     private val lock: ReentrantLock   = new ReentrantLock()
 
     override def writer: Writer = {
-      val newTime = makeNewTime()
+      val newTime = time()
       if (newTime != timeInUse) {
         lock.lock()
         try

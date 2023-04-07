@@ -37,15 +37,12 @@ object FileLoggerConfig {
   object FileRollingPolicy {
     case object TimeBasedRollingPolicy extends FileRollingPolicy
 
-    private[logging] val fileRollingPolicyMapping: Map[String, FileRollingPolicy] = Map(
-      "TimeBasedRollingPolicy" -> FileRollingPolicy.TimeBasedRollingPolicy
-    )
+    val config: Config[FileRollingPolicy] = {
+      val tpe       = Config.string("type")
+      val timeBased = Config.succeed(TimeBasedRollingPolicy)
 
-    private[logging] def fileRollingPolicyValue(value: String): Either[Config.Error.InvalidData, FileRollingPolicy] =
-      fileRollingPolicyMapping.get(value) match {
-        case Some(v) => Right(v)
-        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a FileRollingPolicy, but found ${value}"))
-      }
+      tpe.switch("TimeBasedRollingPolicy" -> timeBased)
+    }
   }
 
   private def charsetValue(value: String): Either[Config.Error.InvalidData, Charset] =
@@ -70,8 +67,7 @@ object FileLoggerConfig {
       Config.string.mapOrFail(charsetValue).nested("charset").withDefault(StandardCharsets.UTF_8)
     val pathConfig               = Config.string.mapOrFail(pathValue).nested("path")
     val formatConfig             = LogFormat.config.nested("format").withDefault(LogFormat.default)
-    val rollingPolicyConfig      =
-      Config.string.mapOrFail(FileRollingPolicy.fileRollingPolicyValue).nested("rollingPolicy").optional
+    val rollingPolicyConfig      = FileRollingPolicy.config.nested("rollingPolicy").optional
 
     (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig ++ rollingPolicyConfig).map {
       case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
