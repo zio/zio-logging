@@ -21,6 +21,7 @@ object FileLoggerConfigSpec extends ZIOSpecDefault {
           "logger/path"                                                -> "file:///tmp/test.log",
           "logger/autoFlushBatchSize"                                  -> "2",
           "logger/bufferedIOSize"                                      -> "4096",
+          "logger/rollingPolicy/type"                                  -> "TimeBasedRollingPolicy",
           "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
           "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
         ),
@@ -31,7 +32,8 @@ object FileLoggerConfigSpec extends ZIOSpecDefault {
         assertTrue(loadedConfig.charset == StandardCharsets.UTF_8) &&
         assertTrue(loadedConfig.destination == Paths.get(URI.create("file:///tmp/test.log"))) &&
         assertTrue(loadedConfig.autoFlushBatchSize == 2) &&
-        assertTrue(loadedConfig.bufferedIOSize == Some(4096))
+        assertTrue(loadedConfig.bufferedIOSize == Some(4096)) &&
+        assertTrue(loadedConfig.rollingPolicy == Some(FileLoggerConfig.FileRollingPolicy.TimeBasedRollingPolicy))
       }
     },
     test("load default config") {

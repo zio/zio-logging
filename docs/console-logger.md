@@ -40,6 +40,7 @@ logger {
   # log format, default value: LogFormat.default
   format = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
   
+  # log filter
   filter {
     # see filter configuration
     rootLevel = INFO

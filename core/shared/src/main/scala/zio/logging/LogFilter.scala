@@ -161,26 +161,9 @@ object LogFilter {
 
   object LogLevelByNameConfig {
 
-    private[logging] val logLevelMapping: Map[String, LogLevel] = Map(
-      LogLevel.All.label     -> LogLevel.All,
-      LogLevel.Trace.label   -> LogLevel.Trace,
-      LogLevel.Debug.label   -> LogLevel.Debug,
-      LogLevel.Info.label    -> LogLevel.Info,
-      LogLevel.Warning.label -> LogLevel.Warning,
-      LogLevel.Error.label   -> LogLevel.Error,
-      LogLevel.Fatal.label   -> LogLevel.Fatal,
-      LogLevel.None.label    -> LogLevel.None
-    )
-
-    private[logging] def logLevelValue(value: String): Either[Config.Error.InvalidData, LogLevel] =
-      logLevelMapping.get(value.toUpperCase) match {
-        case Some(v) => Right(v)
-        case None    => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a LogLevel, but found ${value}"))
-      }
-
     val config: Config[LogLevelByNameConfig] = {
-      val rootLevelConfig = Config.string.mapOrFail(logLevelValue).nested("rootLevel").withDefault(LogLevel.Info)
-      val mappingsConfig  = Config.table("mappings", Config.string.mapOrFail(logLevelValue)).withDefault(Map.empty)
+      val rootLevelConfig = Config.logLevel.nested("rootLevel").withDefault(LogLevel.Info)
+      val mappingsConfig  = Config.table("mappings", Config.logLevel).withDefault(Map.empty)
 
       (rootLevelConfig ++ mappingsConfig).map { case (rootLevel, mappings) =>
         LogLevelByNameConfig(rootLevel, mappings)

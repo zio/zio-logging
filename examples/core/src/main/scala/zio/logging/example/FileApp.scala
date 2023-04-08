@@ -26,7 +26,9 @@ object FileApp extends ZIOAppDefault {
        |logger {
        |  format = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
        |  path = "file:///tmp/file_app.log"
-       |  rollingPolicy = TimeBasedRollingPolicy
+       |  rollingPolicy {
+       |    type = TimeBasedRollingPolicy
+       |  }
        |}
        |""".stripMargin
 

@@ -52,13 +52,16 @@ logger {
   # if defined, buffered writer is used, with given buffer size
   # bufferedIOSize = 8192
   
+  # if defined, file log rolling policy is used
+  rollingPolicy {
+    type = TimeBasedRollingPolicy # time based file rolling policy based on date - currently only this one is supported
+  }
+  
+  # log filter
   filter {
     # see filter configuration
     rootLevel = INFO
   }
-  
-  # log rolling, default value: None 
-  rollingPolicy = TimeBasedRollingPolicy
 }
 ```
 
@@ -87,7 +90,9 @@ object FileApp extends ZIOAppDefault {
        |logger {
        |  format = "%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause"
        |  path = "file:///tmp/file_app.log"
-       |  rollingPolicy = TimeBasedRollingPolicy
+       |  rollingPolicy {
+       |    type = TimeBasedRollingPolicy
+       |  }
        |}
        |""".stripMargin
 
