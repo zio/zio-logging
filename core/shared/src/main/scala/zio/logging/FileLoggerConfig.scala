@@ -33,9 +33,12 @@ final case class FileLoggerConfig(
 )
 
 object FileLoggerConfig {
+
   sealed trait FileRollingPolicy
+
   object FileRollingPolicy {
-    case object TimeBasedRollingPolicy extends FileRollingPolicy
+
+    final case object TimeBasedRollingPolicy extends FileRollingPolicy
 
     val config: Config[FileRollingPolicy] = {
       val tpe       = Config.string("type")

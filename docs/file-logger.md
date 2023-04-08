@@ -52,9 +52,9 @@ logger {
   # if defined, buffered writer is used, with given buffer size
   # bufferedIOSize = 8192
   
-  # file log rolling policy, default value: None 
+  # if defined, file log rolling policy is used
   rollingPolicy {
-    type = TimeBasedRollingPolicy # time based file rolling policy based on date
+    type = TimeBasedRollingPolicy # time based file rolling policy based on date - currently only this one is supported
   }
   
   # log filter
