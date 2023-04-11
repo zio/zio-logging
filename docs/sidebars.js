@@ -3,7 +3,6 @@ const sidebars = {
     {
       type: "category",
       label: "ZIO Logging",
-      collapsed: false,
       link: { type: "doc", id: "index" },
       items: [
         'formatting-log-records',
