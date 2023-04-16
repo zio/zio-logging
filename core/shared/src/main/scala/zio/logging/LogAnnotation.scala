@@ -33,11 +33,41 @@ final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, rende
   type Id
   type Type = A
 
-  def apply(value: A): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        logContext.get.flatMap(context => logContext.locally(context.annotate(self, value))(zio))
+  sealed trait LogAnnotationAspect extends ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
+    private[zio] def annotations: Map[LogAnnotation[_], Any]
+
+    final def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
+      logContext.getWith { context =>
+        logContext.locally {
+          annotations.foldLeft(context) { case (context, (annotation, value)) =>
+            context.annotate(annotation.asInstanceOf[LogAnnotation[Any]], value)
+          }
+        }(zio)
+      }
+  }
+
+  def apply(value: A): LogAnnotationAspect =
+    new LogAnnotationAspect {
+      def annotations: Map[LogAnnotation[_], Any] = Map(self -> value)
+
+      override def @@[LowerR, UpperR, LowerE, UpperE, LowerA, UpperA](
+        that: ZIOAspect[LowerR, UpperR, LowerE, UpperE, LowerA, UpperA]
+      ): ZIOAspect[LowerR, UpperR, LowerE, UpperE, LowerA, UpperA] =
+        that match {
+          case that: LogAnnotationAspect =>
+            new LogAnnotationAspect {
+              def annotations: Map[LogAnnotation[_], Any] =
+                Map(self -> value).asInstanceOf[Map[LogAnnotation[_], Any]] ++ that.annotations
+            }
+          case that                      => super.andThen(that)
+        }
     }
+
+//  def apply(value: A): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
+//    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
+//      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
+//        logContext.get.flatMap(context => logContext.locally(context.annotate(self, value))(zio))
+//    }
 
   def id: Id = (name, tag).asInstanceOf[Id]
 
