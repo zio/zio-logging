@@ -31,13 +31,14 @@ In order to use this library, we need to add the following line in our `build.sb
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 
-the main module contains the following loggers implementations: 
+The main module contains the following loggers implementations: 
 * [console loggers](console-logger.md)
 * [file loggers](file-logger.md)
 
+
 ### SLF4J Backend
 
-The Simple Logging Facade for Java ([`SLF4J v1`](https://www.slf4j.org/)) logging backends (e.g. java.util.logging, logback, log4j) [v2](slf4j2.md) and [v1](slf4j1.md)
+If you like to use [`SLF4J`](https://www.slf4j.org/) logging backends (e.g. java.util.logging, logback, log4j) add the one of following lines, to your `build.sbt` file:
 
 ```scala
 // SLF4j v1 integration
@@ -46,10 +47,12 @@ libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 // SLF4j v2 integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
 ```
+See SLF4J [v2](slf4j2.md) or [v1](slf4j1.md) sections for more details.
+
 
 ### SLF4J Bridge
 
-SLF4J Bridge [v2](slf4j2-bridge.md) and [v1](slf4j1-bridge.md). With this logging bridge, it is possible to use `zio-logging` for SLF4J loggers (usually third-party non-ZIO libraries).
+With this logging bridge, it is possible to use `zio-logging` for SLF4J loggers (usually third-party non-ZIO libraries), add the one of following lines, to your `build.sbt` file: 
 
 ```scala
 // Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
@@ -59,14 +62,20 @@ libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
 ```
 
+See SLF4J Bridge [v2](slf4j2-bridge.md) or [v1](slf4j1-bridge.md) sections for more details.
+
+
 ### Java Platform/System Logger Backend
 
-[`Java Platform/System Logger`](https://openjdk.org/jeps/264) is logging API which was introduced in Java 9.
+If you like to use  [`Java Platform/System Logger`](https://openjdk.org/jeps/264) logging backend add the following line, to your `build.sbt` file:
 
 ```scala
 // JPL integration
 libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 ```
+
+See [`Java Platform/System Logger`](jpl.md) section for more details.
+
 
 ## Example
 
