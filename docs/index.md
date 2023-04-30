@@ -17,7 +17,7 @@ Key features of ZIO Logging:
 - **ZIO Native** — Other than it is a type-safe and purely functional solution, it leverages ZIO's features.
 - **Multi-Platform** - It supports both JVM and JS platforms.
 - **Composable** — Loggers are composable together via contraMap.
-- **Pluggable Backends** — Support multiple backends like ZIO Console, SLF4j, JS Console, JS HTTP endpoint.
+- **Pluggable Backends** — Support multiple backends like ZIO Console, SLF4j, JPL.
 - **Logger Context** — It has a first citizen _Logger Context_ implemented on top of `FiberRef`. The Logger Context maintains information like logger name, filters, correlation id, and so forth across different fibers. It supports _Mapped Diagnostic Context (MDC)_ which manages contextual information across fibers in a concurrent environment.
 - Richly integrated into ZIO 2's built-in logging facilities
 - ZIO Console, SLF4j, and other backends
@@ -27,26 +27,45 @@ Key features of ZIO Logging:
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
+// ZIO Logging backends
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 
-There are also some optional dependencies:
+the main module contains the following loggers implementations: 
+* [console loggers](console-logger.md)
+* [file loggers](file-logger.md)
+
+### SLF4J Backend
+
+The Simple Logging Facade for Java ([`SLF4J v1`](https://www.slf4j.org/)) logging backends (e.g. java.util.logging, logback, log4j) [v2](slf4j2.md) and [v1](slf4j1.md)
 
 ```scala
-// JPL integration
-libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
-
 // SLF4j v1 integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 
 // SLF4j v2 integration
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
+```
 
+### SLF4J Bridge
+
+SLF4J Bridge [v2](slf4j2-bridge.md) and [v1](slf4j1-bridge.md). With this logging bridge, it is possible to use `zio-logging` for SLF4J loggers (usually third-party non-ZIO libraries).
+
+```scala
 // Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 
 // Using ZIO Logging for SLF4j v2 loggers, usually third-party non-ZIO libraries
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
+```
+
+### Java Platform/System Logger Backend
+
+[`Java Platform/System Logger`](https://openjdk.org/jeps/264) is logging API which was introduced in Java 9.
+
+```scala
+// JPL integration
+libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 ```
 
 ## Example
