@@ -33,7 +33,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
     Unsafe.unsafe { implicit u =>
       runtime.unsafe.run {
         val logLevel = ZioLoggerRuntime.logLevelMapping(level)
-        ZIO.logSpan(name) {
+        ZIO.setFiberRefs(Slf4jBridge.fiberRefsThreadLocal.get()) *> ZIO.logSpan(name) {
           ZIO.logAnnotate(zio.logging.loggerNameAnnotationKey, name) {
             ZIO.logLevel(logLevel) {
               lazy val msg = if (arguments != null) {

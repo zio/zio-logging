@@ -43,7 +43,11 @@ class ZioLoggerFactory extends ILoggerFactory {
   private[impl] def run(f: ZIO[Any, Nothing, Any]): Unit =
     if (runtime != null) {
       zio.Unsafe.unsafe { implicit u =>
-        runtime.unsafe.run(f)
+        runtime.unsafe.run {
+          val fiberRefs = Slf4jBridge.fiberRefsThreadLocal.get()
+
+          ZIO.setFiberRefs(fiberRefs) *> f
+        }
         ()
       }
     }
