@@ -25,7 +25,11 @@ object Slf4jBridge {
   }
 
   def withFiberContext[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-    ZIO.getFiberRefs.map(fiberRefs => fiberRefsThreadLocal.set(fiberRefs)) *> zio
+    ZIO.scoped[R] {
+      ZIO.acquireRelease(ZIO.getFiberRefs.map(fiberRefs => fiberRefsThreadLocal.set(fiberRefs)) *> zio)(res =>
+        ZIO.succeed(fiberRefsThreadLocal.set(FiberRefs.empty)).as(res)
+      )
+    }
 
   val fiberContext: ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
