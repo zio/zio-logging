@@ -18,7 +18,7 @@ package zio.logging.slf4j.bridge
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
-import zio.{ Cause, FiberRefs, LogLevel, Runtime, Unsafe, ZIO }
+import zio.{ Cause, Fiber, LogLevel, Runtime, Unsafe, ZIO }
 
 final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
 
@@ -53,12 +53,10 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
           }
         }
 
-        val fiberRefs = Slf4jBridge.fiberRefsThreadLocal.get()
-
-        if (fiberRefs == FiberRefs.empty) {
-          log
-        } else {
-          ZIO.setFiberRefs(Slf4jBridge.fiberRefsThreadLocal.get()) *> log
+        val fiberRefs = Fiber.currentFiber().map(_.asInstanceOf[Fiber.Runtime[_, _]].unsafe.getFiberRefs())
+        fiberRefs match {
+          case Some(fiberRefs) => ZIO.setFiberRefs(fiberRefs) *> log
+          case None            => log
         }
       }
       ()

@@ -18,7 +18,7 @@ package org.slf4j.impl
 import com.github.ghik.silencer.silent
 import org.slf4j.{ ILoggerFactory, Logger }
 import zio.logging.slf4j.bridge.Slf4jBridge
-import zio.{ FiberRefs, ZIO }
+import zio.{ Fiber, ZIO }
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters._
@@ -44,11 +44,10 @@ class ZioLoggerFactory extends ILoggerFactory {
     if (runtime != null) {
       zio.Unsafe.unsafe { implicit u =>
         runtime.unsafe.run {
-          val fiberRefs = Slf4jBridge.fiberRefsThreadLocal.get()
-          if (fiberRefs == FiberRefs.empty) {
-            f
-          } else {
-            ZIO.setFiberRefs(fiberRefs) *> f
+          val fiberRefs = Fiber.currentFiber().map(_.asInstanceOf[Fiber.Runtime[_, _]].unsafe.getFiberRefs())
+          fiberRefs match {
+            case Some(fiberRefs) => ZIO.setFiberRefs(fiberRefs) *> f
+            case None            => f
           }
         }
         ()

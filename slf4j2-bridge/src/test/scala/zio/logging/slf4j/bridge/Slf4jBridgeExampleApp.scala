@@ -16,7 +16,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+    Runtime.enableCurrentFiber ++ Runtime.removeDefaultLoggers >>> consoleJsonLogger(
       ConsoleLoggerConfig(
         LogFormat.label(
           "name",
@@ -32,7 +32,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     for {
       _ <- ZIO.logInfo("Start")
       _ <- ZIO.foreachPar(uuids) { u =>
-             Slf4jBridge.withFiberContext(ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))) @@ LogAnnotation.UserId(
+             ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING")) @@ LogAnnotation.UserId(
                u.toString
              )
            } @@ LogAnnotation.TraceId(UUID.randomUUID())

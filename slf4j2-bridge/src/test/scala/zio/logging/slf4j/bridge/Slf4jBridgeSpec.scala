@@ -1,7 +1,7 @@
 package zio.logging.slf4j.bridge
 
 import zio.test._
-import zio.{ Cause, Chunk, LogLevel, ZIO, ZIOAspect }
+import zio.{ Cause, Chunk, LogLevel, Runtime, ZIO, ZIOAspect }
 
 object Slf4jBridgeSpec extends ZIOSpecDefault {
 
@@ -22,10 +22,9 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             (for {
               logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
               _      <- ZIO.attempt(logger.debug("test debug message"))
-              _      <- Slf4jBridge.withFiberContext(ZIO.attempt(logger.warn("hello {}", "world"))) @@ ZIOAspect
-                          .annotated("user_id", "uId")
-              _      <- Slf4jBridge.withFiberContext(ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1")))
-              _      <- Slf4jBridge.withFiberContext(ZIO.attempt(logger.warn("warn cause", testFailure)))
+              _      <- ZIO.attempt(logger.warn("hello {}", "world")) @@ ZIOAspect.annotated("user_id", "uId")
+              _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
+              _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
               _      <- ZIO.attempt(logger.error("error", testFailure))
               _      <- ZIO.attempt(logger.error("error", null))
             } yield ()).exit
@@ -91,5 +90,5 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("zio.test.logger"))
         } yield assertTrue(logger.getName == "zio.test.logger")
       }
-    ).provide(Slf4jBridge.initialize) @@ TestAspect.sequential
+    ).provide(Runtime.enableCurrentFiber ++ Slf4jBridge.initialize) @@ TestAspect.sequential
 }

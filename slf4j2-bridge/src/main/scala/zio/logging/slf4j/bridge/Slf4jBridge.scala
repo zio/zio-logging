@@ -15,25 +15,9 @@
  */
 package zio.logging.slf4j.bridge
 
-import zio.{ FiberRefs, Trace, ZIO, ZIOAspect, ZLayer }
+import zio.{ ZIO, ZLayer }
 
 object Slf4jBridge {
-  val fiberRefsThreadLocal: ThreadLocal[FiberRefs] = new ThreadLocal[FiberRefs] {
-    override def initialValue(): FiberRefs = FiberRefs.empty
-  }
-
-  def withFiberContext[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-    ZIO.scoped[R] {
-      ZIO.acquireRelease(ZIO.getFiberRefs.map(fiberRefs => fiberRefsThreadLocal.set(fiberRefs)) *> zio)(res =>
-        ZIO.succeed(fiberRefsThreadLocal.set(FiberRefs.empty)).as(res)
-      )
-    }
-
-  val fiberContext: ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        withFiberContext(zio)
-    }
 
   /**
    * initialize SLF4J bridge
