@@ -17,7 +17,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
 
   override def spec =
     suite("Slf4jBridge")(
-      test("logs through slf4j - leggacy logger name annotation key") {
+      test("logs through slf4j - legacy logger name annotation key") {
         val testFailure = new RuntimeException("test error")
         for {
           _      <-

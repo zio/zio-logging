@@ -51,6 +51,10 @@ import zio.logging.consoleJsonLogger
 val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridge.initialize
 ```
 
+To enable log annotations and span propagation to underlying code which using SLF4J api,
+`Runtime.enableCurrentFiber` needs to be added to application bootstrap.
+Use of this flag will negatively impact performance, so it is recommended to use it, only when you need this feature.
+
 <br/>
 
 **NOTE** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to
@@ -68,15 +72,10 @@ You can find the source code [here](https://github.com/zio/zio-logging/tree/mast
 ```scala
 package zio.logging.slf4j.bridge
 
-import zio.logging.slf4j.bridge.Slf4jBridge
-import zio.logging.{
-  ConsoleLoggerConfig,
-  LogFilter,
-  LogFormat,
-  LoggerNameExtractor,
-  consoleJsonLogger
-}
+import zio.logging._
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
+
+import java.util.UUID
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
@@ -89,19 +88,29 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+    Runtime.enableCurrentFiber ++ Runtime.removeDefaultLoggers >>> consoleJsonLogger(
       ConsoleLoggerConfig(
-        LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
+        LogFormat.label(
+          "name",
+          LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
+        ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+          LogAnnotation.TraceId
+        ) + LogFormat.default,
         logFilter
       )
     ) >+> Slf4jBridge.initialize
 
+  private val uuids = List.fill(2)(UUID.randomUUID())
+
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
-      _ <- ZIO.logDebug("Start")
-      _ <- ZIO.succeed(slf4jLogger.debug("Test {}!", "DEBUG"))
-      _ <- ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))
-      _ <- ZIO.logInfo("Done")
+      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.foreachPar(uuids) { u =>
+        ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING")) @@ LogAnnotation.UserId(
+          u.toString
+        )
+      } @@ LogAnnotation.TraceId(UUID.randomUUID())
+      _ <- ZIO.logDebug("Done")
     } yield ExitCode.success
 
 }
@@ -109,7 +118,8 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
 Expected Console Output:
 ```
-{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-01-07T18:25:40.397593+01:00","level":"DEBUG","thread":"zio-fiber-4","message":"Start"}
-{"name":"SLF4J-LOGGER","timestamp":"2023-01-07T18:25:40.416612+01:00","level":"WARN","thread":"zio-fiber-6","message":"Test WARNING!"}
-{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-01-07T18:25:40.42043+01:00 ","level":"INFO","thread":"zio-fiber-4","message":"Done"}
+{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-05-15T20:14:20.712983+02:00","level":"INFO","thread":"zio-fiber-6","message":"Start"}
+{"name":"SLF4J-LOGGER","user_id":"81e517bb-c69b-4187-a6e9-9911c427994c","trace_id":"bd317853-2b88-43d3-84dc-109e7e0eba70","timestamp":"2023-05-15T20:14:20.76863+02:00 ","level":"WARN","thread":"zio-fiber-9","message":"Test WARNING!"}
+{"name":"SLF4J-LOGGER","user_id":"844f97ef-7f09-469b-9f4b-765887beea9a","trace_id":"bd317853-2b88-43d3-84dc-109e7e0eba70","timestamp":"2023-05-15T20:14:20.768628+02:00","level":"WARN","thread":"zio-fiber-10","message":"Test WARNING!"}
+{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2023-05-15T20:14:20.777529+02:00","level":"DEBUG","thread":"zio-fiber-6","message":"Done"}
 ```

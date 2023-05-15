@@ -16,8 +16,10 @@
 package zio.logging.example
 
 import zio.logging.slf4j.bridge.Slf4jBridge
-import zio.logging.{ ConsoleLoggerConfig, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
+import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
+
+import java.util.UUID
 
 object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
@@ -30,19 +32,29 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+    Runtime.enableCurrentFiber ++ Runtime.removeDefaultLoggers >>> consoleJsonLogger(
       ConsoleLoggerConfig(
-        LogFormat.label("name", LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()) + LogFormat.default,
+        LogFormat.label(
+          "name",
+          LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
+        ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+          LogAnnotation.TraceId
+        ) + LogFormat.default,
         logFilter
       )
     ) >+> Slf4jBridge.initialize
 
+  private val uuids = List.fill(2)(UUID.randomUUID())
+
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
-      _ <- ZIO.logDebug("Start")
-      _ <- ZIO.succeed(slf4jLogger.debug("Test {}!", "DEBUG"))
-      _ <- ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING"))
-      _ <- ZIO.logInfo("Done")
+      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.foreachPar(uuids) { u =>
+             ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING")) @@ LogAnnotation.UserId(
+               u.toString
+             )
+           } @@ LogAnnotation.TraceId(UUID.randomUUID())
+      _ <- ZIO.logDebug("Done")
     } yield ExitCode.success
 
 }

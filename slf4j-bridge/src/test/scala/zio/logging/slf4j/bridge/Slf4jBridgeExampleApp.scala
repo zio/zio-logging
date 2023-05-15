@@ -21,7 +21,9 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
         LogFormat.label(
           "name",
           LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
-        ) + LogFormat.allAnnotations + LogFormat.default,
+        ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+          LogAnnotation.TraceId
+        ) + LogFormat.default,
         logFilter
       )
     ) >+> Slf4jBridge.initialize
@@ -32,7 +34,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     for {
       _ <- ZIO.logInfo("Start")
       _ <- ZIO.foreachPar(uuids) { u =>
-             ZIO.succeed(slf4jLogger.warn("Test {}! xxx", "WARNING")) @@ LogAnnotation.UserId(
+             ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING")) @@ LogAnnotation.UserId(
                u.toString
              )
            } @@ LogAnnotation.TraceId(UUID.randomUUID())
