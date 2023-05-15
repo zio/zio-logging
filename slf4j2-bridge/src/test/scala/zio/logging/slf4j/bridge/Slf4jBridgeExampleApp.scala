@@ -21,7 +21,9 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
         LogFormat.label(
           "name",
           LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
-        ) + LogFormat.allAnnotations + LogFormat.default,
+        ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+          LogAnnotation.TraceId
+        ) + LogFormat.default,
         logFilter
       )
     ) >+> Slf4jBridge.initialize
