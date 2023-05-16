@@ -18,7 +18,7 @@ package zio.logging.slf4j.bridge
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
-import zio.{ Cause, LogLevel, Runtime, Unsafe, ZIO }
+import zio.{ Cause, Fiber, LogLevel, Runtime, Unsafe, ZIO }
 
 final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
 
@@ -33,7 +33,8 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
     Unsafe.unsafe { implicit u =>
       runtime.unsafe.run {
         val logLevel = ZioLoggerRuntime.logLevelMapping(level)
-        ZIO.logSpan(name) {
+
+        val log = ZIO.logSpan(name) {
           ZIO.logAnnotate(zio.logging.loggerNameAnnotationKey, name) {
             ZIO.logLevel(logLevel) {
               lazy val msg = if (arguments != null) {
@@ -50,6 +51,14 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
               ZIO.logCause(msg, cause)
             }
           }
+        }
+
+        val fiber = Fiber._currentFiber.get()
+        if (fiber eq null) {
+          log
+        } else {
+          val fiberRefs = fiber.unsafe.getFiberRefs()
+          ZIO.setFiberRefs(fiberRefs) *> log
         }
       }
       ()
