@@ -40,11 +40,6 @@ import zio.logging.consoleJsonLogger
 
 val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridge.initialize
 ```
-
-To enable log annotations and span propagation to underlying code which using SLF4J api, 
-`Runtime.enableCurrentFiber` needs to be added to application bootstrap. 
-Use of this flag will negatively impact performance, so it is recommended to use it, only when you need this feature.
-
 <br/>
 
 **NOTE** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to
@@ -76,7 +71,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.enableCurrentFiber ++ Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
       ConsoleLoggerConfig(
         LogFormat.label(
           "name",

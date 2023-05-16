@@ -16,7 +16,7 @@
 package zio.logging.slf4j.bridge
 
 import org.slf4j.impl.ZioLoggerFactory
-import zio.{ ZIO, ZLayer }
+import zio.{ Runtime, ZIO, ZLayer }
 
 object Slf4jBridge {
 
@@ -30,7 +30,12 @@ object Slf4jBridge {
    * initialize SLF4J bridge
    */
   def initialize: ZLayer[Any, Nothing, Unit] =
-    initialize(zio.logging.loggerNameAnnotationKey)
+    Runtime.enableCurrentFiber ++ layer(zio.logging.loggerNameAnnotationKey)
+
+  /**
+   * initialize SLF4J bridge without `FiberRef` propagation
+   */
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer(zio.logging.loggerNameAnnotationKey)
 
   /**
    * initialize SLF4J bridge, where custom annotation key for logger name may be provided
@@ -39,6 +44,9 @@ object Slf4jBridge {
    * NOTE: this feature may be removed in future releases
    */
   def initialize(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
+    Runtime.enableCurrentFiber ++ layer(nameAnnotationKey)
+
+  private def layer(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {

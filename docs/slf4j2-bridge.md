@@ -39,7 +39,6 @@ val logFilter: LogFilter[String] = LogFilter.logLevelByName(
   "SLF4J-LOGGER"      -> LogLevel.Warning
 )
 ```
-
 <br/>
 
 SLF4J bridge with custom logger can be setup:
@@ -50,10 +49,6 @@ import zio.logging.consoleJsonLogger
 
 val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridge.initialize
 ```
-
-To enable log annotations and span propagation to underlying code which using SLF4J api,
-`Runtime.enableCurrentFiber` needs to be added to application bootstrap.
-Use of this flag will negatively impact performance, so it is recommended to use it, only when you need this feature.
 
 <br/>
 
@@ -88,7 +83,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.enableCurrentFiber ++ Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
       ConsoleLoggerConfig(
         LogFormat.label(
           "name",

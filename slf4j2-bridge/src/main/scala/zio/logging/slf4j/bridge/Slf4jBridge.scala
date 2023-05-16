@@ -15,14 +15,21 @@
  */
 package zio.logging.slf4j.bridge
 
-import zio.{ ZIO, ZLayer }
+import zio.{ Runtime, ZIO, ZLayer }
 
 object Slf4jBridge {
 
   /**
    * initialize SLF4J bridge
    */
-  def initialize: ZLayer[Any, Nothing, Unit] =
+  def initialize: ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer
+
+  /**
+   * initialize SLF4J bridge without `FiberRef` propagation
+   */
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer
+
+  private def layer: ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {

@@ -16,7 +16,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.enableCurrentFiber ++ Runtime.removeDefaultLoggers >>> consoleJsonLogger(
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
       ConsoleLoggerConfig(
         LogFormat.label(
           "name",
