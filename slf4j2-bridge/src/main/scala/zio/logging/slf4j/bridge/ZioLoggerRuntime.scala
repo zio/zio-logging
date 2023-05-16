@@ -53,10 +53,12 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
           }
         }
 
-        val fiberRefs = Fiber.currentFiber().map(_.asInstanceOf[Fiber.Runtime[_, _]].unsafe.getFiberRefs())
-        fiberRefs match {
-          case Some(fiberRefs) => ZIO.setFiberRefs(fiberRefs) *> log
-          case None            => log
+        val fiber = Fiber._currentFiber.get()
+        if (fiber eq null) {
+          log
+        } else {
+          val fiberRefs = fiber.unsafe.getFiberRefs()
+          ZIO.setFiberRefs(fiberRefs) *> log
         }
       }
       ()
