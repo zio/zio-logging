@@ -26,7 +26,7 @@ class ZioLoggerFactory extends ILoggerFactory {
   private var runtime: LoggerRuntime = null
   private val loggers                = new ConcurrentHashMap[String, Logger]().asScala: @silent("JavaConverters")
 
-  def attachRuntime(runtime: LoggerRuntime): Unit =
+  private[impl] def attachRuntime(runtime: LoggerRuntime): Unit =
     this.runtime = runtime
 
   private[impl] def log(

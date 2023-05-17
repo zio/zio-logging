@@ -19,7 +19,7 @@ import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.ZioLoggerBase
 
-class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
+final class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
   override protected def log(
     level: Level,
     marker: Marker,
