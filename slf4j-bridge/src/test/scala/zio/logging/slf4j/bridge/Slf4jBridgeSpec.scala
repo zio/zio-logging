@@ -3,7 +3,7 @@ package zio.logging.slf4j.bridge
 import org.slf4j.MarkerFactory
 import org.slf4j.impl.StaticMarkerBinder
 import zio.test._
-import zio.{ Cause, Chunk, LogLevel, Runtime, ZIO, ZIOAspect }
+import zio.{ Cause, Chunk, LogLevel, ZIO, ZIOAspect }
 
 object Slf4jBridgeSpec extends ZIOSpecDefault {
 
@@ -124,7 +124,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         } yield assertTrue(
           lines == Chunk(
             LogEntry(
-              List("test.logger"),
+              List("test.logger", "span"),
               LogLevel.Debug,
               Map(zio.logging.loggerNameAnnotationKey -> "test.logger", "trace_id" -> "tId"),
               "test debug message",
