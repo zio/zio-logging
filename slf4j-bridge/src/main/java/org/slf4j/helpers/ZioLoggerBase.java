@@ -160,9 +160,7 @@ public abstract class ZioLoggerBase extends MarkerIgnoringBase {
     }
 
     public void warn(String format, Object arg1, Object arg2) {
-
         logWithArgs(Level.WARN, null, format, arg1, arg2);
-
     }
 
     public void warn(String format, Object... arguments) {

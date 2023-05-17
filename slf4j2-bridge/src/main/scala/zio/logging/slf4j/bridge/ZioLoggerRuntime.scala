@@ -31,15 +31,15 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
     throwable: Throwable
   ): Unit =
     Unsafe.unsafe { implicit u =>
-      val logLevel = ZioLoggerRuntime.logLevelMapping(level)
-      val trace    = Trace.empty
-      val fiberId  = FiberId.make(trace)
-      val fiber    = Fiber._currentFiber.get()
+      val logLevel     = ZioLoggerRuntime.logLevelMapping(level)
+      val trace        = Trace.empty
+      val fiberId      = FiberId.make(trace)
+      val currentFiber = Fiber._currentFiber.get()
 
-      val currentFiberRefs = if (fiber eq null) {
+      val currentFiberRefs = if (currentFiber eq null) {
         runtime.fiberRefs.joinAs(fiberId)(FiberRefs.empty)
       } else {
-        runtime.fiberRefs.joinAs(fiberId)(fiber.unsafe.getFiberRefs())
+        runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
       val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
