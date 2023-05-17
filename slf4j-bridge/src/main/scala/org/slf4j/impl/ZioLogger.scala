@@ -20,7 +20,7 @@ import org.slf4j.event.Level
 import org.slf4j.helpers.ZioLoggerBase
 
 class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
-  override protected def handleNormalizedLoggingCall(
+  override protected def log(
     level: Level,
     marker: Marker,
     messagePattern: String,
