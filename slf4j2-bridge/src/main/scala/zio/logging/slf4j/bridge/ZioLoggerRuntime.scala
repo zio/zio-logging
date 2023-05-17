@@ -52,6 +52,8 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
           currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) + loggerName
         )
 
+      val fiberRuntime = zio.internal.FiberRuntime(fiberId, fiberRefs, runtime.runtimeFlags)
+
       lazy val msg = if (arguments != null) {
         MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage
       } else {
@@ -64,13 +66,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
         Cause.empty
       }
 
-      val spans                              = fiberRefs.getOrDefault(FiberRef.currentLogSpan)
-      val annotations                        = fiberRefs.getOrDefault(FiberRef.currentLogAnnotations)
-      val loggers: Set[ZLogger[String, Any]] = fiberRefs.getOrDefault(FiberRef.currentLoggers)
-
-      loggers.foreach { logger =>
-        logger(trace, fiberId, logLevel, () => msg, cause, fiberRefs, spans, annotations)
-      }
+      fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
 }
 
