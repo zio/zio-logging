@@ -16,43 +16,28 @@
 package org.slf4j.impl
 
 import com.github.ghik.silencer.silent
-import org.slf4j.{ ILoggerFactory, Logger }
-import zio.logging.slf4j.bridge.Slf4jBridge
-import zio.{ Fiber, ZIO }
+import org.slf4j.event.Level
+import org.slf4j.{ ILoggerFactory, Logger, Marker }
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters._
 
 class ZioLoggerFactory extends ILoggerFactory {
-  private var runtime: zio.Runtime[Any] = null
-  private var annotationKey: String     = Slf4jBridge.loggerNameAnnotationKey
-  private val loggers                   = new ConcurrentHashMap[String, Logger]().asScala: @silent("JavaConverters")
+  private var runtime: LoggerRuntime = null
+  private val loggers                = new ConcurrentHashMap[String, Logger]().asScala: @silent("JavaConverters")
 
-  def attachRuntime(runtime: zio.Runtime[Any]): Unit =
+  def attachRuntime(runtime: LoggerRuntime): Unit =
     this.runtime = runtime
 
-  def setNameAnnotationKey(annotationKey: String): Unit = {
-    if (annotationKey == null) {
-      throw new IllegalArgumentException("Name annotation key is required")
-    }
-    this.annotationKey = annotationKey
-  }
-
-  private[impl] def nameAnnotationKey = annotationKey
-
-  private[impl] def run(f: ZIO[Any, Nothing, Any]): Unit =
-    if (runtime != null) {
-      zio.Unsafe.unsafe { implicit u =>
-        runtime.unsafe.run {
-          val fiberRefs = Fiber.currentFiber().map(_.asInstanceOf[Fiber.Runtime[_, _]].unsafe.getFiberRefs())
-          fiberRefs match {
-            case Some(fiberRefs) => ZIO.setFiberRefs(fiberRefs) *> f
-            case None            => f
-          }
-        }
-        ()
-      }
-    }
+  private[impl] def log(
+    name: String,
+    level: Level,
+    marker: Marker,
+    messagePattern: String,
+    arguments: Array[AnyRef],
+    throwable: Throwable
+  ): Unit =
+    if (runtime != null) runtime.log(name, level, marker, messagePattern, arguments, throwable)
 
   override def getLogger(name: String): Logger =
     loggers.getOrElseUpdate(name, new ZioLogger(name, this))
@@ -60,24 +45,11 @@ class ZioLoggerFactory extends ILoggerFactory {
 
 object ZioLoggerFactory {
 
-  /**
-   * initialize logger factory
-   */
-  def initialize(runtime: zio.Runtime[Any]): Unit =
-    initialize(runtime, zio.logging.loggerNameAnnotationKey)
-
-  /**
-   * initialize logger factory, where custom annotation key for logger name may be provided
-   * this is to achieve backward compatibility where [[Slf4jBridge.loggerNameAnnotationKey]] was used
-   *
-   * NOTE: this feature may be removed in future releases
-   */
-  def initialize(runtime: zio.Runtime[Any], nameAnnotationKey: String): Unit = {
+  def initialize(runtime: LoggerRuntime): Unit = {
     val factory = StaticLoggerBinder.getSingleton.getLoggerFactory
       .asInstanceOf[ZioLoggerFactory]
 
     factory.attachRuntime(runtime)
-    factory.setNameAnnotationKey(nameAnnotationKey)
   }
 
 }

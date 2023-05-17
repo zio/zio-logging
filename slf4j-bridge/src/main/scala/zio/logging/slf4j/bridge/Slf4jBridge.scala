@@ -50,7 +50,7 @@ object Slf4jBridge {
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
-          ZioLoggerFactory.initialize(runtime, nameAnnotationKey)
+          ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey))
         }
       }
     }
