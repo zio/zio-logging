@@ -18,7 +18,7 @@ package zio.logging.slf4j.bridge
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
-import zio.{ Cause, Fiber, LogLevel, Runtime, Unsafe, ZIO }
+import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZLogger }
 
 final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
 
@@ -31,37 +31,46 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
     throwable: Throwable
   ): Unit =
     Unsafe.unsafe { implicit u =>
-      runtime.unsafe.run {
-        val logLevel = ZioLoggerRuntime.logLevelMapping(level)
+      val logLevel = ZioLoggerRuntime.logLevelMapping(level)
+      val trace    = Trace.empty
+      val fiberId  = FiberId.make(trace)
+      val fiber    = Fiber._currentFiber.get()
 
-        val log = ZIO.logSpan(name) {
-          ZIO.logAnnotate(zio.logging.loggerNameAnnotationKey, name) {
-            ZIO.logLevel(logLevel) {
-              lazy val msg = if (arguments != null) {
-                MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage
-              } else {
-                messagePattern
-              }
-              val cause    = if (throwable != null) {
-                Cause.die(throwable)
-              } else {
-                Cause.empty
-              }
-
-              ZIO.logCause(msg, cause)
-            }
-          }
-        }
-
-        val fiber = Fiber._currentFiber.get()
-        if (fiber eq null) {
-          log
-        } else {
-          val fiberRefs = fiber.unsafe.getFiberRefs()
-          ZIO.setFiberRefs(fiberRefs) *> log
-        }
+      val currentFiberRefs = if (fiber eq null) {
+        runtime.fiberRefs.joinAs(fiberId)(FiberRefs.empty)
+      } else {
+        runtime.fiberRefs.joinAs(fiberId)(fiber.unsafe.getFiberRefs())
       }
-      ()
+
+      val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
+      val loggerName = (zio.logging.loggerNameAnnotationKey -> name)
+
+      val fiberRefs = currentFiberRefs
+        .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
+        .updatedAs(fiberId)(
+          FiberRef.currentLogAnnotations,
+          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) + loggerName
+        )
+
+      lazy val msg = if (arguments != null) {
+        MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage
+      } else {
+        messagePattern
+      }
+
+      val cause = if (throwable != null) {
+        Cause.die(throwable)
+      } else {
+        Cause.empty
+      }
+
+      val spans                              = fiberRefs.getOrDefault(FiberRef.currentLogSpan)
+      val annotations                        = fiberRefs.getOrDefault(FiberRef.currentLogAnnotations)
+      val loggers: Set[ZLogger[String, Any]] = fiberRefs.getOrDefault(FiberRef.currentLoggers)
+
+      loggers.foreach { logger =>
+        logger(trace, fiberId, logLevel, () => msg, cause, fiberRefs, spans, annotations)
+      }
     }
 }
 

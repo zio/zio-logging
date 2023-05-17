@@ -23,7 +23,8 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           _      <-
             (for {
               logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
-              _      <- ZIO.attempt(logger.debug("test debug message")) @@ ZIOAspect.annotated("trace_id", "tId")
+              _      <- ZIO.logSpan("span")(ZIO.attempt(logger.debug("test debug message"))) @@ ZIOAspect
+                          .annotated("trace_id", "tId")
               _      <- ZIO.attempt(logger.warn("hello {}", "world")) @@ ZIOAspect.annotated("user_id", "uId")
               _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
               _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
@@ -43,7 +44,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         } yield assertTrue(
           lines == Chunk(
             LogEntry(
-              List("test.logger"),
+              List("test.logger", "span"),
               LogLevel.Debug,
               Map(Slf4jBridge.loggerNameAnnotationKey -> "test.logger", "trace_id" -> "tId"),
               "test debug message",
@@ -102,7 +103,8 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         for {
           _      <- (for {
                       logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
-                      _      <- ZIO.attempt(logger.debug("test debug message")) @@ ZIOAspect.annotated("trace_id", "tId")
+                      _      <- ZIO.logSpan("span")(ZIO.attempt(logger.debug("test debug message"))) @@ ZIOAspect
+                                  .annotated("trace_id", "tId")
                       _      <- ZIO.attempt(logger.warn("hello {}", "world")) @@ ZIOAspect.annotated("user_id", "uId")
                       _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
                       _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
