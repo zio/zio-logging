@@ -18,9 +18,10 @@ package zio.logging.slf4j.bridge
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
-import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZLogger }
+import org.slf4j.impl.LoggerRuntime
+import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], loggerNameAnnotationKey: String) extends LoggerRuntime {
 
   override def log(
     name: String,
@@ -43,7 +44,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
       }
 
       val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
-      val loggerName = (zio.logging.loggerNameAnnotationKey -> name)
+      val loggerName = (loggerNameAnnotationKey -> name)
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
