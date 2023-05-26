@@ -71,17 +71,11 @@ sealed trait LogFilter[-Message] { self =>
   /**
    * Returns a new log filter with cached results
    */
-  final def cached: LogFilter[Message] = {
-    val cache = new java.util.concurrent.ConcurrentHashMap[Value, Boolean]()
-    LogFilter[Message, self.Value](
-      self.group,
-      v =>
-        cache.computeIfAbsent(
-          v,
-          _ => self.predicate(v)
-        )
-    )
-  }
+  final def cached: LogFilter[Message] =
+    self match {
+      case LogFilter.Cached(filter) => LogFilter.Cached(filter)
+      case _                        => LogFilter.Cached(self)
+    }
 
   final def contramap[M](f: M => Message): LogFilter[M] = LogFilter[M, self.Value](
     group.contramap(f),
@@ -136,6 +130,47 @@ sealed trait LogFilter[-Message] { self =>
 
 object LogFilter {
 
+  private[logging] final case class GroupPredicate[M, V](
+    logGroup: LogGroup[M, V],
+    valuePredicate: V => Boolean
+  ) extends LogFilter[M] {
+    override type Value = V
+
+    override def group: LogGroup[M, Value] = logGroup
+
+    override def predicate(value: Value): Boolean = valuePredicate(value)
+  }
+
+  private[logging] final case class Cached[M](filter: LogFilter[M]) extends LogFilter[M] {
+
+    private[logging] val cache = new java.util.concurrent.ConcurrentHashMap[filter.Value, Boolean]()
+
+    override type Value = filter.Value
+
+    override def group: LogGroup[M, Value] = filter.group
+
+    override def predicate(value: Value): Boolean =
+      cache.computeIfAbsent(
+        value,
+        _ => filter.predicate(value)
+      )
+
+    def clear(): Unit =
+      cache.clear()
+  }
+
+  private[logging] final case class Configured[M, C](config: C, make: C => LogFilter[M]) extends LogFilter[M] {
+    val filter: LogFilter[M] = make(config)
+
+    override type Value = filter.Value
+
+    override def group: LogGroup[M, Value] = filter.group
+
+    override def predicate(value: Value): Boolean = filter.predicate(value)
+
+    def witConfig(newConfig: C): Configured[M, C] = Configured(newConfig, make)
+  }
+
   /**
    * Defines a filter from a list of log-levels specified per tree node
    *
@@ -174,11 +209,7 @@ object LogFilter {
   def apply[M, V](
     group0: LogGroup[M, V],
     predicate0: V => Boolean
-  ): LogFilter[M] = new LogFilter[M] {
-    override type Value = V
-    override def group: LogGroup[M, V]            = group0
-    override def predicate(value: Value): Boolean = predicate0(value)
-  }
+  ): LogFilter[M] = GroupPredicate(group0, predicate0)
 
   def apply[M](
     group0: LogGroup[M, Boolean]
@@ -333,7 +364,10 @@ object LogFilter {
     logLevelByGroup[M](rootLevel, LogGroup.loggerName, mappings: _*)
 
   def logLevelByGroup[M](group: LogGroup[M, String], config: LogLevelByNameConfig): LogFilter[M] =
-    logLevelByGroup[M](config.rootLevel, group, config.mappings.toList: _*)
+    Configured[M, LogLevelByNameConfig](
+      config,
+      config => logLevelByGroup[M](config.rootLevel, group, config.mappings.toList: _*)
+    )
 
   def logLevelByName[M](config: LogLevelByNameConfig): LogFilter[M] =
     logLevelByGroup[M](LogGroup.loggerName, config)
