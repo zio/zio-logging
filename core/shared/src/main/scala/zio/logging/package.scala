@@ -514,4 +514,12 @@ package object logging {
     def logAnnotate[V: Tag](key: LogAnnotation[V], value: V): ZIO[R, E, A] =
       self @@ key(value)
   }
+
+  implicit final class ZLoggerOps[M, O](private val self: ZLogger[M, O]) {
+
+    /**
+     * Returns a version of logger that only logs messages when this filter is satisfied
+     */
+    def filter(filter: LogFilter[M]): ZLogger[M, Option[O]] = FilteredLogger(self, filter)
+  }
 }

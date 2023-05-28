@@ -85,22 +85,7 @@ sealed trait LogFilter[-Message] { self =>
   /**
    * Returns a version of logger that only logs messages when this filter is satisfied
    */
-  def filter[M <: Message, O](logger: zio.ZLogger[M, O]): zio.ZLogger[M, Option[O]] =
-    new ZLogger[M, Option[O]] {
-      override def apply(
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => M,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ): Option[O] =
-        if (self(trace, fiberId, logLevel, message, cause, context, spans, annotations)) {
-          Some(logger(trace, fiberId, logLevel, message, cause, context, spans, annotations))
-        } else None
-    }
+  final def filter[M <: Message, O](logger: zio.ZLogger[M, O]): zio.ZLogger[M, Option[O]] = FilteredLogger(logger, self)
 
   /**
    * The alphanumeric version of the `!` operator.
