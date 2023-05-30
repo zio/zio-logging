@@ -1,73 +1,11 @@
-package zio.logging
+package zio.logging.internal
 
+import zio.logging.ConsoleLoggerConfig
 import zio.test._
-import zio.{
-  Cause,
-  Chunk,
-  Config,
-  ConfigProvider,
-  FiberId,
-  FiberRefs,
-  LogLevel,
-  LogSpan,
-  Queue,
-  Runtime,
-  Schedule,
-  Trace,
-  UIO,
-  ZIO,
-  ZLayer,
-  ZLogger
-}
-import zio._
-import java.util.concurrent.atomic.AtomicReference
+import zio.logging._
+import zio.{ Chunk, Config, ConfigProvider, LogLevel, Queue, Runtime, Schedule, ZIO, ZLayer, _ }
 
 object ReconfigurableLoggerSpec extends ZIOSpecDefault {
-
-  sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
-
-    def reconfigure(config: Config): Unit
-
-    def reconfigureIfChanged(config: Config): Boolean
-  }
-
-  object ReconfigurableLogger {
-
-    def apply[M, O, C](
-      config: C,
-      makeLogger: C => ZLogger[M, O]
-    ): ReconfigurableLogger[M, O, C] =
-      new ReconfigurableLogger[M, O, C] {
-        private val configureLogger: AtomicReference[(C, ZLogger[M, O])] = {
-          val logger = makeLogger(config)
-          new AtomicReference[(C, ZLogger[M, O])]((config, logger))
-        }
-
-        override def reconfigureIfChanged(config: C): Boolean =
-          if (configureLogger.get()._1 != config) {
-            reconfigure(config)
-            true
-          } else false
-
-        override def reconfigure(config: C): Unit = {
-          val logger = makeLogger(config)
-          configureLogger.set((config, logger))
-        }
-
-        override def apply(
-          trace: Trace,
-          fiberId: FiberId,
-          logLevel: LogLevel,
-          message: () => M,
-          cause: Cause[Any],
-          context: FiberRefs,
-          spans: List[LogSpan],
-          annotations: Map[String, String]
-        ): O =
-          configureLogger.get()._2.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-      }
-
-  }
 
   def configuredLogger(queue: zio.Queue[String], configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
@@ -94,7 +32,7 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
     }
 
   val spec: Spec[Environment, Any] = suite("ReconfigurableLogger")(
-    test("log") {
+    test("log with changed config") {
 
       val initialProperties = Map(
         "logger/format"                                              -> "%message",
