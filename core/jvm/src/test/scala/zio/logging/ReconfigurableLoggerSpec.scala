@@ -3,6 +3,7 @@ package zio.logging
 import zio.test._
 import zio.{
   Cause,
+  Chunk,
   Config,
   ConfigProvider,
   FiberId,
@@ -11,24 +12,27 @@ import zio.{
   LogSpan,
   Queue,
   Runtime,
+  Schedule,
   Trace,
   UIO,
   ZIO,
   ZLayer,
   ZLogger
 }
-
+import zio._
 import java.util.concurrent.atomic.AtomicReference
 
 object ReconfigurableLoggerSpec extends ZIOSpecDefault {
 
-  trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
+  sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
+
     def reconfigure(config: Config): Unit
 
     def reconfigureIfChanged(config: Config): Boolean
   }
 
   object ReconfigurableLogger {
+
     def apply[M, O, C](
       config: C,
       makeLogger: C => ZLogger[M, O]
@@ -79,35 +83,56 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
                        }
                      }.filter(config.filter)
                  )
-
-        _ <- ZIO.withLoggerScoped(logger)
+        _     <- ZIO
+                   .config(ConsoleLoggerConfig.config.nested(configPath))
+                   .map { newConfig =>
+                     logger.reconfigureIfChanged(newConfig)
+                   }
+                   .scheduleFork(Schedule.fixed(200.millis))
+        _     <- ZIO.withLoggerScoped(logger)
       } yield ()
     }
 
   val spec: Spec[Environment, Any] = suite("ReconfigurableLogger")(
     test("log") {
 
-      val logFormat = "%message"
-
-      val configProvider: ConfigProvider = ConfigProvider.fromMap(
-        Map(
-          "logger/format"                                              -> logFormat,
-          "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
-          "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
-        ),
-        "/"
+      val initialProperties = Map(
+        "logger/format"                                              -> "%message",
+        "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
+        "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
       )
 
-      Queue.unbounded[String].flatMap { queue =>
-        (for {
-          _         <- ZIO.logInfo("info")
-          elements1 <- queue.takeAll
-          _         <- ZIO.logInfo("debug")
-          elements2 <- queue.takeAll
-        } yield assertTrue(elements1.nonEmpty && elements2.nonEmpty))
-          .provide(Runtime.setConfigProvider(configProvider) >>> configuredLogger(queue))
-      }
+      ZIO
+        .foreach(initialProperties) { case (k, v) =>
+          TestSystem.putProperty(k, v).as(k -> v)
+        }
+        .flatMap { _ =>
+          Queue.unbounded[String].flatMap { queue =>
+            val runTest =
+              for {
+                _         <- ZIO.logInfo("info")
+                _         <- ZIO.logDebug("debug")
+                elements1 <- queue.takeAll
+                _         <- TestSystem.putProperty("logger/format", "%level %message")
+                _         <- ZIO.sleep(500.millis)
+                _         <- ZIO.logWarning("warn")
+                elements2 <- queue.takeAll
+                _         <- TestSystem.putProperty("logger/format", "L: %level M: %message")
+                _         <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)
+                _         <- ZIO.sleep(500.millis)
+                _         <- ZIO.logDebug("debug")
+                elements3 <- queue.takeAll
+              } yield assertTrue(
+                elements1 == Chunk("info") && elements2 == Chunk("WARN warn") && elements3 == Chunk("L: DEBUG M: debug")
+              )
 
-    }
+            runTest.provide(
+              Runtime.removeDefaultLoggers >>> Runtime
+                .setConfigProvider(ConfigProvider.fromProps("/")) >>> configuredLogger(queue)
+            )
+          }
+        }
+
+    } @@ TestAspect.withLiveClock
   )
 }
