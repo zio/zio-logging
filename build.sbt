@@ -94,7 +94,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(enableZIO(enableStreaming = true))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-parser" % zioParser
+      "dev.zio" %%% "zio-parser"  % zioParser,
+      "dev.zio" %%% "zio-prelude" % zioPrelude
     )
   )
   .jvmSettings(

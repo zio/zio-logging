@@ -16,6 +16,7 @@
 package zio.logging
 
 import zio._
+import zio.prelude._
 
 import java.net.URI
 import java.nio.charset.{ Charset, StandardCharsets }
@@ -84,6 +85,16 @@ object FileLoggerConfig {
           rollingPolicy
         )
     }
+  }
+
+  implicit val equal: Equal[FileLoggerConfig] = Equal.make { (l, r) =>
+    l.destination == r.destination &&
+    l.charset == r.charset &&
+    l.autoFlushBatchSize == r.autoFlushBatchSize &&
+    l.bufferedIOSize == r.bufferedIOSize &&
+    l.rollingPolicy == r.rollingPolicy &&
+    l.format == r.format &&
+    l.filter === r.filter
   }
 
 }

@@ -16,7 +16,7 @@
 package zio.logging.internal
 
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
-
+import zio.prelude._
 import java.util.concurrent.atomic.AtomicReference
 
 private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
@@ -28,7 +28,7 @@ private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] ex
 
 private[logging] object ReconfigurableLogger {
 
-  def apply[M, O, C](
+  def apply[M, O, C: Equal](
     config: C,
     makeLogger: C => ZLogger[M, O]
   ): ReconfigurableLogger[M, O, C] =
@@ -39,11 +39,13 @@ private[logging] object ReconfigurableLogger {
         new AtomicReference[(C, ZLogger[M, O])]((config, logger))
       }
 
-      override def reconfigureIfChanged(config: C): Boolean =
-        if (configureLogger.get()._1 != config) {
+      override def reconfigureIfChanged(config: C): Boolean = {
+        val currentConfig = configureLogger.get()._1
+        if (currentConfig !== config) {
           reconfigure(config)
           true
         } else false
+      }
 
       override def reconfigure(config: C): Unit = {
         val logger = makeLogger(config)

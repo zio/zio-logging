@@ -15,7 +15,8 @@
  */
 package zio.logging
 
-import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
+import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
+import zio.prelude.Equal
 
 import scala.annotation.tailrec
 
@@ -73,8 +74,8 @@ sealed trait LogFilter[-Message] { self =>
    */
   final def cached: LogFilter[Message] =
     self match {
-      case LogFilter.Cached(filter) => LogFilter.Cached(filter)
-      case _                        => LogFilter.Cached(self)
+      case LogFilter.CachedFilter(filter) => LogFilter.CachedFilter(filter)
+      case _                              => LogFilter.CachedFilter(self)
     }
 
   final def contramap[M](f: M => Message): LogFilter[M] = LogFilter[M, self.Value](
@@ -115,7 +116,16 @@ sealed trait LogFilter[-Message] { self =>
 
 object LogFilter {
 
-  private[logging] final case class GroupPredicate[M, V](
+  implicit val equal: Equal[LogFilter[_]] = Equal.make { (l, r) =>
+    (l, r) match {
+      case (l: GroupPredicateFilter[_, _], r: GroupPredicateFilter[_, _]) => GroupPredicateFilter.equal.equal(l, r)
+      case (l: CachedFilter[_], r: CachedFilter[_])                       => CachedFilter.equal.equal(l, r)
+      case (l: ConfiguredFilter[_, _], r: ConfiguredFilter[_, _])         => ConfiguredFilter.equal.equal(l, r)
+      case (l, r)                                                         => l == r
+    }
+  }
+
+  private[logging] final case class GroupPredicateFilter[M, V](
     logGroup: LogGroup[M, V],
     valuePredicate: V => Boolean
   ) extends LogFilter[M] {
@@ -126,7 +136,11 @@ object LogFilter {
     override def predicate(value: Value): Boolean = valuePredicate(value)
   }
 
-  private[logging] final case class Cached[M](filter: LogFilter[M]) extends LogFilter[M] {
+  private[logging] object GroupPredicateFilter {
+    implicit val equal: Equal[GroupPredicateFilter[_, _]] = Equal.default
+  }
+
+  private[logging] final case class CachedFilter[M](filter: LogFilter[M]) extends LogFilter[M] {
 
     private[logging] val cache = new java.util.concurrent.ConcurrentHashMap[filter.Value, Boolean]()
 
@@ -144,7 +158,11 @@ object LogFilter {
       cache.clear()
   }
 
-  private[logging] final case class Configured[M, C](config: C, make: C => LogFilter[M]) extends LogFilter[M] {
+  private[logging] object CachedFilter {
+    implicit val equal: Equal[CachedFilter[_]] = Equal.default.contramap(_.filter)
+  }
+
+  private[logging] final case class ConfiguredFilter[M, C](config: C, make: C => LogFilter[M]) extends LogFilter[M] {
     val filter: LogFilter[M] = make(config)
 
     override type Value = filter.Value
@@ -153,7 +171,11 @@ object LogFilter {
 
     override def predicate(value: Value): Boolean = filter.predicate(value)
 
-    def witConfig(newConfig: C): Configured[M, C] = Configured(newConfig, make)
+    def witConfig(newConfig: C): ConfiguredFilter[M, C] = ConfiguredFilter(newConfig, make)
+  }
+
+  private[logging] object ConfiguredFilter {
+    implicit val equal: Equal[ConfiguredFilter[_, _]] = Equal.default.contramap(_.config)
   }
 
   /**
@@ -194,7 +216,7 @@ object LogFilter {
   def apply[M, V](
     group0: LogGroup[M, V],
     predicate0: V => Boolean
-  ): LogFilter[M] = GroupPredicate(group0, predicate0)
+  ): LogFilter[M] = GroupPredicateFilter(group0, predicate0)
 
   def apply[M](
     group0: LogGroup[M, Boolean]
@@ -349,7 +371,7 @@ object LogFilter {
     logLevelByGroup[M](rootLevel, LogGroup.loggerName, mappings: _*)
 
   def logLevelByGroup[M](group: LogGroup[M, String], config: LogLevelByNameConfig): LogFilter[M] =
-    Configured[M, LogLevelByNameConfig](
+    ConfiguredFilter[M, LogLevelByNameConfig](
       config,
       config => logLevelByGroup[M](config.rootLevel, group, config.mappings.toList: _*)
     )

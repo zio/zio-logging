@@ -16,6 +16,7 @@
 package zio.logging
 
 import zio.{ Config, LogLevel }
+import zio.prelude._
 
 final case class ConsoleLoggerConfig(format: LogFormat, filter: LogFilter[String])
 
@@ -34,4 +35,7 @@ object ConsoleLoggerConfig {
     }
   }
 
+  implicit val equal: Equal[ConsoleLoggerConfig] = Equal.make { (l, r) =>
+    l.format == r.format && l.filter === r.filter
+  }
 }

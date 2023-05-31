@@ -71,6 +71,31 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
           }
         }
 
-    } @@ TestAspect.withLiveClock
-  )
+    },
+    test("equals config with same sources") {
+
+      val configPath = "logger"
+
+      val initialProperties = Map(
+        "logger/format"                                              -> "%message",
+        "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
+        "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
+      )
+
+      ZIO
+        .foreach(initialProperties) { case (k, v) =>
+          TestSystem.putProperty(k, v).as(k -> v)
+        }
+        .flatMap { _ =>
+          import zio.prelude._
+          for {
+            c1 <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+            c2 <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+          } yield assertTrue(
+            c1 === c2
+          )
+        }
+        .provide(Runtime.setConfigProvider(ConfigProvider.fromProps("/")))
+    }
+  ) @@ TestAspect.withLiveClock
 }
