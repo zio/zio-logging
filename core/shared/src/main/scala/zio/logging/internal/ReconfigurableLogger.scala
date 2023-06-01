@@ -15,8 +15,8 @@
  */
 package zio.logging.internal
 
+import zio._
 import zio.prelude._
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import java.util.concurrent.atomic.AtomicReference
 
@@ -65,5 +65,18 @@ private[logging] object ReconfigurableLogger {
       ): O =
         configureLogger.get()._2.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
     }
+
+  def make[E, M, O, C: Equal](
+    loadConfig: => ZIO[Any, E, C],
+    makeLogger: C => ZLogger[M, O],
+    duration: Duration = 10.seconds
+  ): ZIO[Scope, E, ReconfigurableLogger[M, O, C]] =
+    for {
+      config <- loadConfig
+      logger  = ReconfigurableLogger[M, O, C](config, makeLogger)
+      _      <- loadConfig.map { newConfig =>
+                  logger.reconfigureIfChanged(newConfig)
+                }.scheduleFork(Schedule.fixed(duration))
+    } yield logger
 
 }

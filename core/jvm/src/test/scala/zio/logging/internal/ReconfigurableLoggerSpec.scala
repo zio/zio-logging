@@ -1,6 +1,6 @@
 package zio.logging.internal
 
-import zio.logging.{ConsoleLoggerConfig, _}
+import zio.logging.{ ConsoleLoggerConfig, _ }
 import zio.test._
 import zio.{ Chunk, Config, ConfigProvider, LogLevel, Queue, Runtime, Schedule, ZIO, ZLayer, _ }
 
@@ -8,32 +8,22 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
 
   def configuredLogger(
     queue: zio.Queue[String],
-    reconfigurations: zio.Ref[Int],
     configPath: String = "logger"
   ): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
-        config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
-
-        logger = ReconfigurableLogger[String, Any, ConsoleLoggerConfig](
-                   config,
-                   config =>
-                     config.format.toLogger.map { line =>
-                       zio.Unsafe.unsafe { implicit u =>
-                         Runtime.default.unsafe.run(queue.offer(line))
-                       }
-                     }.filter(config.filter)
-                 )
-        _     <- ZIO
-                   .config(ConsoleLoggerConfig.config.nested(configPath))
-                   .map { newConfig =>
-                     logger.reconfigureIfChanged(newConfig)
-                   }
-                   .flatMap { reconfigured =>
-                     reconfigurations.update(_ + 1).when(reconfigured)
-                   }
-                   .scheduleFork(Schedule.fixed(200.millis))
-        _     <- ZIO.withLoggerScoped(logger)
+        logger <- ReconfigurableLogger
+                    .make[Config.Error, String, Any, ConsoleLoggerConfig](
+                      ZIO.config(ConsoleLoggerConfig.config.nested(configPath)),
+                      config =>
+                        config.format.toLogger.map { line =>
+                          zio.Unsafe.unsafe { implicit u =>
+                            Runtime.default.unsafe.run(queue.offer(line))
+                          }
+                        }.filter(config.filter),
+                      200.millis
+                    )
+        _      <- ZIO.withLoggerScoped(logger)
       } yield ()
     }
 
@@ -53,34 +43,31 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
 
         queue <- Queue.unbounded[String]
 
-        reconfigurationsCounter <- Ref.make(0)
-
         runTest =
           for {
-            _            <- ZIO.logInfo("info")
-            _            <- ZIO.logDebug("debug")
-            elements1    <- queue.takeAll
-            _            <- TestSystem.putProperty("logger/format", "%level %message")
-            _            <- ZIO.sleep(500.millis)
-            _            <- ZIO.logWarning("warn")
-            _            <- ZIO.logDebug("debug")
-            elements2    <- queue.takeAll
-            _            <- TestSystem.putProperty("logger/format", "L: %level M: %message")
-            _            <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)
-            _            <- ZIO.sleep(500.millis)
-            _            <- ZIO.logDebug("debug")
-            elements3    <- queue.takeAll
-            reconfigured <- reconfigurationsCounter.get
+            _         <- ZIO.logInfo("info")
+            _         <- ZIO.logDebug("debug")
+            elements1 <- queue.takeAll
+            _         <- TestSystem.putProperty("logger/format", "%level %message")
+            _         <- ZIO.sleep(500.millis)
+            _         <- ZIO.logWarning("warn")
+            _         <- ZIO.logDebug("debug")
+            elements2 <- queue.takeAll
+            _         <- TestSystem.putProperty("logger/format", "L: %level M: %message")
+            _         <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)
+            _         <- ZIO.sleep(500.millis)
+            _         <- ZIO.logDebug("debug")
+            elements3 <- queue.takeAll
           } yield assertTrue(
             elements1 == Chunk("info") && elements2 == Chunk("WARN warn") && elements3 == Chunk(
               "L: DEBUG M: debug"
-            ) && reconfigured == 2
+            )
           )
 
         result <-
           runTest.provide(
             Runtime.removeDefaultLoggers >>> Runtime
-              .setConfigProvider(ConfigProvider.fromProps("/")) >>> configuredLogger(queue, reconfigurationsCounter)
+              .setConfigProvider(ConfigProvider.fromProps("/")) >>> configuredLogger(queue)
           )
       } yield result
 
