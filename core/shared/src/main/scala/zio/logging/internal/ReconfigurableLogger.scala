@@ -15,8 +15,9 @@
  */
 package zio.logging.internal
 
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 import zio.prelude._
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
+
 import java.util.concurrent.atomic.AtomicReference
 
 private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {

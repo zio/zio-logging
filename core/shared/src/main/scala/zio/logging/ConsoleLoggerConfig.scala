@@ -15,8 +15,8 @@
  */
 package zio.logging
 
-import zio.{ Config, LogLevel }
 import zio.prelude._
+import zio.{ Config, LogLevel }
 
 final case class ConsoleLoggerConfig(format: LogFormat, filter: LogFilter[String])
 
