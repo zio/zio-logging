@@ -1,8 +1,7 @@
 package zio.logging.internal
 
-import zio.logging.ConsoleLoggerConfig
+import zio.logging.{ConsoleLoggerConfig, _}
 import zio.test._
-import zio.logging._
 import zio.{ Chunk, Config, ConfigProvider, LogLevel, Queue, Runtime, Schedule, ZIO, ZLayer, _ }
 
 object ReconfigurableLoggerSpec extends ZIOSpecDefault {
@@ -30,8 +29,8 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
                    .map { newConfig =>
                      logger.reconfigureIfChanged(newConfig)
                    }
-                   .flatMap { r =>
-                     reconfigurations.update(_ + 1).when(r)
+                   .flatMap { reconfigured =>
+                     reconfigurations.update(_ + 1).when(reconfigured)
                    }
                    .scheduleFork(Schedule.fixed(200.millis))
         _     <- ZIO.withLoggerScoped(logger)
@@ -64,6 +63,7 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
             _            <- TestSystem.putProperty("logger/format", "%level %message")
             _            <- ZIO.sleep(500.millis)
             _            <- ZIO.logWarning("warn")
+            _            <- ZIO.logDebug("debug")
             elements2    <- queue.takeAll
             _            <- TestSystem.putProperty("logger/format", "L: %level M: %message")
             _            <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)

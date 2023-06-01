@@ -15,8 +15,8 @@
  */
 package zio.logging
 
-import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
 import zio.prelude.Equal
+import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
 
 import scala.annotation.tailrec
 
