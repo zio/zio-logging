@@ -399,6 +399,37 @@ object LogFilterSpec extends ZIOSpecDefault {
           "**"              -> LogLevel.Info
         )
       )
+    },
+    test("log filters by log level and name from same configuration should be equal") {
+
+      val configProvider = ConfigProvider.fromMap(
+        Map(
+          "logger/rootLevel"      -> LogLevel.Debug.label,
+          "logger/mappings/a"     -> LogLevel.Info.label,
+          "logger/mappings/a.b.c" -> LogLevel.Warning.label,
+          "logger/mappings/e.f"   -> LogLevel.Error.label
+        ),
+        "/"
+      )
+
+      import zio.prelude._
+
+      for {
+        f1 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+        f2 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+        f3 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+                .map(_.cached)
+        f4 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+                .map(_.cached)
+      } yield assertTrue(f1 === f2, f3 === f4)
     }
   )
 }

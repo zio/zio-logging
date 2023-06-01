@@ -60,14 +60,7 @@ sealed trait LogFilter[-Message] { self =>
    * The alphanumeric version of the `&&` operator.
    */
   final def and[M <: Message](other: LogFilter[M]): LogFilter[M] =
-    LogFilter[M, (self.Value, other.Value)](
-      self.group ++ other.group,
-      v => {
-        val (v1, v2) = v
-
-        self.predicate(v1) && other.predicate(v2)
-      }
-    )
+    LogFilter.AndFilter(self, other)
 
   /**
    * Returns a new log filter with cached results
@@ -92,20 +85,13 @@ sealed trait LogFilter[-Message] { self =>
    * The alphanumeric version of the `!` operator.
    */
   final def not: LogFilter[Message] =
-    LogFilter[Message, self.Value](self.group, v => !self.predicate(v))
+    LogFilter.NotFilter(self)
 
   /**
    * The alphanumeric version of the `||` operator.
    */
   final def or[M <: Message](other: LogFilter[M]): LogFilter[M] =
-    LogFilter[M, (self.Value, other.Value)](
-      self.group ++ other.group,
-      v => {
-        val (v1, v2) = v
-
-        self.predicate(v1) || other.predicate(v2)
-      }
-    )
+    LogFilter.OrFilter(self, other)
 
   /**
    * Returns a new log filter with negated result
@@ -120,6 +106,9 @@ object LogFilter {
     (l, r) match {
       case (l: GroupPredicateFilter[_, _], r: GroupPredicateFilter[_, _]) => GroupPredicateFilter.equal.equal(l, r)
       case (l: CachedFilter[_], r: CachedFilter[_])                       => CachedFilter.equal.equal(l, r)
+      case (l: AndFilter[_], r: AndFilter[_])                             => AndFilter.equal.equal(l, r)
+      case (l: OrFilter[_], r: OrFilter[_])                               => OrFilter.equal.equal(l, r)
+      case (l: NotFilter[_], r: NotFilter[_])                             => NotFilter.equal.equal(l, r)
       case (l: ConfiguredFilter[_, _], r: ConfiguredFilter[_, _])         => ConfiguredFilter.equal.equal(l, r)
       case (l, r)                                                         => l == r
     }
@@ -138,6 +127,63 @@ object LogFilter {
 
   private[logging] object GroupPredicateFilter {
     implicit val equal: Equal[GroupPredicateFilter[_, _]] = Equal.default
+  }
+
+  private[logging] final case class AndFilter[M](
+    first: LogFilter[M],
+    second: LogFilter[M]
+  ) extends LogFilter[M] {
+    override type Value = (first.Value, second.Value)
+
+    override val group: LogGroup[M, Value] = first.group ++ second.group
+
+    override def predicate(value: Value): Boolean = {
+      val (v1, v2) = value
+      first.predicate(v1) && second.predicate(v2)
+    }
+  }
+
+  private[logging] object AndFilter {
+    implicit val equal: Equal[AndFilter[_]] = Equal.make { (f, s) =>
+      LogFilter.equal.equal(f.first, s.first) && LogFilter.equal.equal(f.second, s.second)
+    }
+  }
+
+  private[logging] final case class OrFilter[M](
+    first: LogFilter[M],
+    second: LogFilter[M]
+  ) extends LogFilter[M] {
+    override type Value = (first.Value, second.Value)
+
+    override val group: LogGroup[M, Value] = first.group ++ second.group
+
+    override def predicate(value: Value): Boolean = {
+      val (v1, v2) = value
+      first.predicate(v1) || second.predicate(v2)
+    }
+  }
+
+  private[logging] object OrFilter {
+    implicit val equal: Equal[OrFilter[_]] = Equal.make { (f, s) =>
+      LogFilter.equal.equal(f.first, s.first) && LogFilter.equal.equal(f.second, s.second)
+    }
+  }
+
+  private[logging] final case class NotFilter[M](
+    filter: LogFilter[M]
+  ) extends LogFilter[M] {
+    override type Value = filter.Value
+
+    override def group: LogGroup[M, Value] = filter.group
+
+    override def predicate(value: Value): Boolean =
+      !filter.predicate(value)
+  }
+
+  private[logging] object NotFilter {
+    implicit val equal: Equal[NotFilter[_]] = Equal.make { (f, s) =>
+      LogFilter.equal.equal(f.filter, s.filter)
+    }
   }
 
   private[logging] final case class CachedFilter[M](filter: LogFilter[M]) extends LogFilter[M] {
@@ -159,7 +205,9 @@ object LogFilter {
   }
 
   private[logging] object CachedFilter {
-    implicit val equal: Equal[CachedFilter[_]] = Equal.default.contramap(_.filter)
+    implicit val equal: Equal[CachedFilter[_]] = Equal.make { (f, s) =>
+      LogFilter.equal.equal(f.filter, s.filter)
+    }
   }
 
   private[logging] final case class ConfiguredFilter[M, C](config: C, make: C => LogFilter[M]) extends LogFilter[M] {
