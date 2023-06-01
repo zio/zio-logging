@@ -93,7 +93,7 @@ sealed trait LogFormat { self =>
    * the log output is highlighted.
    */
   final def highlight: LogFormat =
-    highlight(defaultHighlighter(_))
+    highlight(defaultHighlighter)
 
   /**
    * The alphanumeric version of the `|-|` operator.
@@ -165,7 +165,7 @@ sealed trait LogFormat { self =>
     builder.toString()
   }
 
-  private def defaultHighlighter(level: LogLevel) = level match {
+  private val defaultHighlighter: LogLevel => LogColor = {
     case LogLevel.Error   => LogColor.RED
     case LogLevel.Warning => LogColor.YELLOW
     case LogLevel.Info    => LogColor.CYAN

@@ -7,7 +7,11 @@ import zio.{ Chunk, Config, ConfigProvider, LogLevel, Queue, Runtime, Schedule, 
 
 object ReconfigurableLoggerSpec extends ZIOSpecDefault {
 
-  def configuredLogger(queue: zio.Queue[String], configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def configuredLogger(
+    queue: zio.Queue[String],
+    reconfigurations: zio.Ref[Int],
+    configPath: String = "logger"
+  ): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
         config <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
@@ -26,6 +30,9 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
                    .map { newConfig =>
                      logger.reconfigureIfChanged(newConfig)
                    }
+                   .flatMap { r =>
+                     reconfigurations.update(_ + 1).when(r)
+                   }
                    .scheduleFork(Schedule.fixed(200.millis))
         _     <- ZIO.withLoggerScoped(logger)
       } yield ()
@@ -40,62 +47,43 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
         "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
       )
 
-      ZIO
-        .foreach(initialProperties) { case (k, v) =>
-          TestSystem.putProperty(k, v).as(k -> v)
-        }
-        .flatMap { _ =>
-          Queue.unbounded[String].flatMap { queue =>
-            val runTest =
-              for {
-                _         <- ZIO.logInfo("info")
-                _         <- ZIO.logDebug("debug")
-                elements1 <- queue.takeAll
-                _         <- TestSystem.putProperty("logger/format", "%level %message")
-                _         <- ZIO.sleep(500.millis)
-                _         <- ZIO.logWarning("warn")
-                elements2 <- queue.takeAll
-                _         <- TestSystem.putProperty("logger/format", "L: %level M: %message")
-                _         <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)
-                _         <- ZIO.sleep(500.millis)
-                _         <- ZIO.logDebug("debug")
-                elements3 <- queue.takeAll
-              } yield assertTrue(
-                elements1 == Chunk("info") && elements2 == Chunk("WARN warn") && elements3 == Chunk("L: DEBUG M: debug")
-              )
+      for {
+        _ <- ZIO.foreach(initialProperties) { case (k, v) =>
+               TestSystem.putProperty(k, v).as(k -> v)
+             }
 
-            runTest.provide(
-              Runtime.removeDefaultLoggers >>> Runtime
-                .setConfigProvider(ConfigProvider.fromProps("/")) >>> configuredLogger(queue)
-            )
-          }
-        }
+        queue <- Queue.unbounded[String]
 
-    },
-    test("equals config with same sources") {
+        reconfigurationsCounter <- Ref.make(0)
 
-      val configPath = "logger"
-
-      val initialProperties = Map(
-        "logger/format"                                              -> "%message",
-        "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
-        "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
-      )
-
-      ZIO
-        .foreach(initialProperties) { case (k, v) =>
-          TestSystem.putProperty(k, v).as(k -> v)
-        }
-        .flatMap { _ =>
-          import zio.prelude._
+        runTest =
           for {
-            c1 <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
-            c2 <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+            _            <- ZIO.logInfo("info")
+            _            <- ZIO.logDebug("debug")
+            elements1    <- queue.takeAll
+            _            <- TestSystem.putProperty("logger/format", "%level %message")
+            _            <- ZIO.sleep(500.millis)
+            _            <- ZIO.logWarning("warn")
+            elements2    <- queue.takeAll
+            _            <- TestSystem.putProperty("logger/format", "L: %level M: %message")
+            _            <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)
+            _            <- ZIO.sleep(500.millis)
+            _            <- ZIO.logDebug("debug")
+            elements3    <- queue.takeAll
+            reconfigured <- reconfigurationsCounter.get
           } yield assertTrue(
-            c1 === c2
+            elements1 == Chunk("info") && elements2 == Chunk("WARN warn") && elements3 == Chunk(
+              "L: DEBUG M: debug"
+            ) && reconfigured == 2
           )
-        }
-        .provide(Runtime.setConfigProvider(ConfigProvider.fromProps("/")))
+
+        result <-
+          runTest.provide(
+            Runtime.removeDefaultLoggers >>> Runtime
+              .setConfigProvider(ConfigProvider.fromProps("/")) >>> configuredLogger(queue, reconfigurationsCounter)
+          )
+      } yield result
+
     }
   ) @@ TestAspect.withLiveClock
 }
