@@ -96,7 +96,7 @@ jobs:
       if: ${{ (matrix.java == '8') && (matrix.scala == '2.12.17') }}
       run: 'sbt  ++${{ matrix.scala }} coreJS/test  slf4jBridge/test  coreJVM/test  slf4j/test '
     - name: Test
-      if: ${{ (matrix.java == '17') && (matrix.scala == '3.2.2') }}
+      if: ${{ (matrix.java == '17') && (matrix.scala == '3.3.0') }}
       run: 'sbt  ++${{ matrix.scala }} slf4j/test  slf4jBridge/test  jpl/test  slf4j2/test  slf4j2Bridge/test  coreJS/test  coreJVM/test '
     - name: Test
       if: ${{ (matrix.java == '11') && (matrix.scala == '2.12.17') }}
@@ -108,10 +108,10 @@ jobs:
       if: ${{ (matrix.java == '11') && (matrix.scala == '2.13.10') }}
       run: 'sbt  ++${{ matrix.scala }} slf4j/test  slf4jBridge/test  jpl/test  slf4j2/test  slf4j2Bridge/test  coreJS/test  coreJVM/test '
     - name: Test
-      if: ${{ (matrix.java == '11') && (matrix.scala == '3.2.2') }}
+      if: ${{ (matrix.java == '11') && (matrix.scala == '3.3.0') }}
       run: 'sbt  ++${{ matrix.scala }} slf4j/test  slf4jBridge/test  jpl/test  slf4j2/test  slf4j2Bridge/test  coreJS/test  coreJVM/test '
     - name: Test
-      if: ${{ (matrix.java == '8') && (matrix.scala == '3.2.2') }}
+      if: ${{ (matrix.java == '8') && (matrix.scala == '3.3.0') }}
       run: 'sbt  ++${{ matrix.scala }} coreJS/test  slf4jBridge/test  coreJVM/test  slf4j/test '
     - name: Compile additional subprojects
       if: ${{ ((startsWith(matrix.scala, '2.12.')) || (startsWith(matrix.scala, '2.13.'))) && (matrix.java == '11') }}
