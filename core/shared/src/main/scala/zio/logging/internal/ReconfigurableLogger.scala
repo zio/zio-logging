@@ -69,14 +69,14 @@ private[logging] object ReconfigurableLogger {
   def make[E, M, O, C: Equal](
     loadConfig: => ZIO[Any, E, C],
     makeLogger: C => ZLogger[M, O],
-    duration: Duration = 10.seconds
+    interval: Duration = 10.seconds
   ): ZIO[Scope, E, ReconfigurableLogger[M, O, C]] =
     for {
       config <- loadConfig
       logger  = ReconfigurableLogger[M, O, C](config, makeLogger)
       _      <- loadConfig.map { newConfig =>
                   logger.reconfigureIfChanged(newConfig)
-                }.scheduleFork(Schedule.fixed(duration))
+                }.scheduleFork(Schedule.fixed(interval))
     } yield logger
 
 }
