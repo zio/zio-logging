@@ -77,6 +77,7 @@ lazy val root = project
     slf4jBridge,
     slf4j2Bridge,
     jpl,
+    apiHttp,
     benchmarks,
     examplesCore,
     examplesJpl,
@@ -109,6 +110,18 @@ lazy val coreJS  = core.js.settings(
   crossScalaVersions -= scala211.value,
   libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test
 )
+
+lazy val apiHttp = project
+  .in(file("api-http"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-api-http", turnCompilerWarningIntoErrors = false))
+  .settings(enableZIO())
+  .settings(mimaSettings(failOnProblem = true))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-http" % zioHttp
+    )
+  )
 
 lazy val slf4j = project
   .in(file("slf4j"))
