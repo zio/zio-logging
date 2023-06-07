@@ -17,27 +17,29 @@ package zio.logging.api.http
 
 import zio._
 import zio.http._
-import zio.http.codec.PathCodec.{ literal, string }
+import zio.http.codec.Doc
+import zio.http.codec.PathCodec.{literal, string}
+import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint._
 
 object ApiEndpoints {
 
   import Domain._
 
-  def getLoggerConfigurations(rootPath: String) =
+  def getLoggerConfigurations(rootPath: String): Endpoint[Unit, String, List[LoggerConfiguration], None] =
     Endpoint
       .get(literal(rootPath) / literal("logger"))
       .out[List[LoggerConfiguration]]
       .outError[String](Status.InternalServerError)
 
-  def getLoggerConfiguration(rootPath: String) =
+  def getLoggerConfiguration(rootPath: String): Endpoint[String, String, LoggerConfiguration, None] =
     Endpoint
       .get(literal(rootPath) / literal("logger") / string("name"))
       .out[LoggerConfiguration]
       .outError[String](Status.NotFound)
       .outError[String](Status.InternalServerError)
 
-  def setLoggerConfiguration(rootPath: String) =
+  def setLoggerConfiguration(rootPath: String): Endpoint[(String, LogLevel), String, LoggerConfiguration, None] =
     Endpoint
       .put(literal(rootPath) / literal("logger") / string("name"))
       .in[LogLevel]
@@ -45,4 +47,6 @@ object ApiEndpoints {
       .outError[String](Status.NotFound)
       .outError[String](Status.InternalServerError)
 
+  def doc(rootPath: String): Doc =
+    getLoggerConfigurations(rootPath).doc + getLoggerConfiguration(rootPath).doc + setLoggerConfiguration(rootPath).doc
 }

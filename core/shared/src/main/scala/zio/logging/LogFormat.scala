@@ -362,10 +362,8 @@ object LogFormat {
             context.asMap.filterNot(kv => excludeKeys.contains(kv._1)).toList
           }
           .getOrElse(Nil)
-
         builder.appendKeyValues(keyValues)
         ()
-
       }(builder)
   }
 

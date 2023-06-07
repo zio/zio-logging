@@ -16,6 +16,8 @@
 package zio.logging.api.http
 
 import zio.ZIO
+import zio.http.endpoint.EndpointMiddleware.None
+import zio.http.endpoint.Routes
 
 object ApiHandlers {
 
@@ -30,7 +32,7 @@ object ApiHandlers {
       .implement { name =>
         LoggerService.getLoggerConfiguration(name).mapError(_ => "Internal Error").flatMap {
           case Some(r) => ZIO.succeed(r)
-          case None    => ZIO.fail("Not Found")
+          case _       => ZIO.fail("Not Found")
         }
       }
 
@@ -40,4 +42,7 @@ object ApiHandlers {
       .implement { case (name, logLevel) =>
         LoggerService.setLoggerConfiguration(name, logLevel).mapError(_ => "Internal Error")
       }
+
+  def routes(rootPath: String): Routes[LoggerService, String, None] =
+    getLoggerConfigurations(rootPath) ++ getLoggerConfiguration(rootPath) ++ setLoggerConfigurations(rootPath)
 }

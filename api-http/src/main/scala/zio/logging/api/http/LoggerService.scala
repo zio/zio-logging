@@ -27,6 +27,7 @@ trait LoggerService {
 }
 
 object LoggerService {
+
   def getLoggerConfigurations(): ZIO[LoggerService, Throwable, List[Domain.LoggerConfiguration]] =
     ZIO.serviceWithZIO[LoggerService](_.getLoggerConfigurations())
 
