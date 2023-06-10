@@ -17,35 +17,43 @@ package zio.logging.api.http
 
 import zio._
 import zio.http._
-import zio.http.codec.Doc
-import zio.http.codec.PathCodec.{literal, string}
+import zio.http.codec.{ Doc, HttpCodec }
+import zio.http.codec.PathCodec.{ literal, string }
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint._
 
 object ApiEndpoints {
+  import Domain.logLevelSchema
 
-  import Domain._
-
-  def getLoggerConfigurations(rootPath: String): Endpoint[Unit, String, List[LoggerConfiguration], None] =
+  def getLoggerConfigurations(rootPath: String): Endpoint[Unit, Domain.Error, List[Domain.LoggerConfiguration], None] =
     Endpoint
       .get(literal(rootPath) / literal("logger"))
-      .out[List[LoggerConfiguration]]
-      .outError[String](Status.InternalServerError)
+      .out[List[Domain.LoggerConfiguration]]
+      .outErrors[Domain.Error](
+        HttpCodec.error[Domain.Error.Internal](Status.InternalServerError),
+        HttpCodec.error[Domain.Error.NotFound](Status.NotFound)
+      )
 
-  def getLoggerConfiguration(rootPath: String): Endpoint[String, String, LoggerConfiguration, None] =
+  def getLoggerConfiguration(rootPath: String): Endpoint[String, Domain.Error, Domain.LoggerConfiguration, None] =
     Endpoint
       .get(literal(rootPath) / literal("logger") / string("name"))
-      .out[LoggerConfiguration]
-      .outError[String](Status.NotFound)
-      .outError[String](Status.InternalServerError)
+      .out[Domain.LoggerConfiguration]
+      .outErrors[Domain.Error](
+        HttpCodec.error[Domain.Error.Internal](Status.InternalServerError),
+        HttpCodec.error[Domain.Error.NotFound](Status.NotFound)
+      )
 
-  def setLoggerConfiguration(rootPath: String): Endpoint[(String, LogLevel), String, LoggerConfiguration, None] =
+  def setLoggerConfiguration(
+    rootPath: String
+  ): Endpoint[(String, LogLevel), Domain.Error, Domain.LoggerConfiguration, None] =
     Endpoint
       .put(literal(rootPath) / literal("logger") / string("name"))
       .in[LogLevel]
-      .out[LoggerConfiguration]
-      .outError[String](Status.NotFound)
-      .outError[String](Status.InternalServerError)
+      .out[Domain.LoggerConfiguration]
+      .outErrors[Domain.Error](
+        HttpCodec.error[Domain.Error.Internal](Status.InternalServerError),
+        HttpCodec.error[Domain.Error.NotFound](Status.NotFound)
+      )
 
   def doc(rootPath: String): Doc =
     getLoggerConfigurations(rootPath).doc + getLoggerConfiguration(rootPath).doc + setLoggerConfiguration(rootPath).doc

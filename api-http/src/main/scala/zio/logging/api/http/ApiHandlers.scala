@@ -24,15 +24,15 @@ object ApiHandlers {
   def getLoggerConfigurations(rootPath: String) =
     ApiEndpoints
       .getLoggerConfigurations(rootPath)
-      .implement(_ => LoggerService.getLoggerConfigurations().mapError(_ => "Internal Error"))
+      .implement(_ => LoggerService.getLoggerConfigurations().mapError(_ => Domain.Error.Internal()))
 
   def getLoggerConfiguration(rootPath: String) =
     ApiEndpoints
       .getLoggerConfiguration(rootPath)
       .implement { name =>
-        LoggerService.getLoggerConfiguration(name).mapError(_ => "Internal Error").flatMap {
+        LoggerService.getLoggerConfiguration(name).mapError(_ => Domain.Error.Internal()).flatMap {
           case Some(r) => ZIO.succeed(r)
-          case _       => ZIO.fail("Not Found")
+          case _       => ZIO.fail(Domain.Error.NotFound())
         }
       }
 
@@ -40,9 +40,9 @@ object ApiHandlers {
     ApiEndpoints
       .setLoggerConfiguration(rootPath)
       .implement { case (name, logLevel) =>
-        LoggerService.setLoggerConfiguration(name, logLevel).mapError(_ => "Internal Error")
+        LoggerService.setLoggerConfiguration(name, logLevel).mapError(_ => Domain.Error.Internal())
       }
 
-  def routes(rootPath: String): Routes[LoggerService, String, None] =
+  def routes(rootPath: String): Routes[LoggerService, Domain.Error, None] =
     getLoggerConfigurations(rootPath) ++ getLoggerConfiguration(rootPath) ++ setLoggerConfigurations(rootPath)
 }

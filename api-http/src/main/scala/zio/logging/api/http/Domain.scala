@@ -20,7 +20,27 @@ import zio.schema.{ DeriveSchema, Schema }
 
 object Domain {
 
-  implicit val logLevelSchema: Schema[LogLevel] = DeriveSchema.gen[LogLevel]
+  sealed trait Error {
+    def message: String
+  }
+
+  object Error {
+    final case class NotFound(message: String = "Not Found") extends Error
+
+    final case class Internal(message: String = "Internal") extends Error
+
+    implicit val notFoundSchema: Schema[Error.NotFound] = DeriveSchema.gen[Error.NotFound]
+    implicit val internalSchema: Schema[Error.Internal] = DeriveSchema.gen[Error.Internal]
+    implicit val schema: Schema[Error]                  = DeriveSchema.gen[Error]
+  }
+
+  implicit val logLevelSchema: Schema[LogLevel] = {
+    val levelToLabel: Map[LogLevel, String] = LogLevel.levels.map(level => (level, level.label)).toMap
+    val labelToLevel: Map[String, LogLevel] = LogLevel.levels.map(level => (level.label, level)).toMap
+
+    Schema[String]
+      .transformOrFail[LogLevel](v => labelToLevel.get(v).toRight("Failed"), v => levelToLabel.get(v).toRight("Failed"))
+  }
 
   final case class LoggerConfiguration(name: String, logLevel: LogLevel)
 
