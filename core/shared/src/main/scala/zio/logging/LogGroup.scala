@@ -122,34 +122,6 @@ object LogGroup {
       constant
   }
 
-  private[logging] final case object CauseGroup extends LogGroup[Any, Cause[Any]] {
-    override def apply(
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => Any,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ): Cause[Any] =
-      cause
-  }
-
-  private[logging] final case object LogLevelGroup extends LogGroup[Any, LogLevel] {
-    override def apply(
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => Any,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ): LogLevel =
-      logLevel
-  }
-
   private[logging] final case class ZipGroup[Message, Out1, Out2, Out](
     first: LogGroup[Message, Out1],
     second: LogGroup[Message, Out2]
@@ -240,7 +212,7 @@ object LogGroup {
   /**
    * Log group by cause
    */
-  val cause: LogGroup[Any, Cause[Any]] = CauseGroup
+  val cause: LogGroup[Any, Cause[Any]] = apply((_, _, _, _, cause, _, _, _) => cause)
 
   /**
    * Log group with given constant value
@@ -255,7 +227,7 @@ object LogGroup {
   /**
    * Log group by level
    */
-  val logLevel: LogGroup[Any, LogLevel] = LogLevelGroup
+  val logLevel: LogGroup[Any, LogLevel] = apply((_, _, logLevel, _, _, _, _, _) => logLevel)
 
   /**
    * Log group by logger name
