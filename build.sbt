@@ -206,7 +206,7 @@ lazy val benchmarks = project
 
 lazy val examplesCore = project
   .in(file("examples/core"))
-  .dependsOn(coreJVM)
+  .dependsOn(coreJVM, apiHttp)
   .settings(stdSettings("zio-logging-examples-core", turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
   .settings(

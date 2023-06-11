@@ -18,6 +18,8 @@ package zio.logging.example
 import zio.logging.internal.ReconfigurableLogger
 import zio.logging.{ ConsoleLoggerConfig, LogAnnotation }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
+import zio.http.Server
+import zio.logging.api.http.{ ApiHandlers, Domain, LoggerService }
 
 import java.util.UUID
 
@@ -78,9 +80,28 @@ object LoggerReconfigureApp extends ZIOAppDefault {
       _       <- ZIO.logDebug("Done") @@ LogAnnotation.TraceId(traceId)
     } yield ()
 
+  val loggerService = ZLayer.succeed {
+    new LoggerService {
+      override def getLoggerConfigurations(): ZIO[Any, Throwable, List[Domain.LoggerConfiguration]] =
+        ZIO.succeed(Domain.LoggerConfiguration("root", LogLevel.Info) :: Nil)
+
+      override def getLoggerConfiguration(name: String): ZIO[Any, Throwable, Option[Domain.LoggerConfiguration]] =
+        ZIO.succeed(Some(Domain.LoggerConfiguration(name, LogLevel.Info)))
+
+      override def setLoggerConfiguration(
+        name: String,
+        logLevel: LogLevel
+      ): ZIO[Any, Throwable, Domain.LoggerConfiguration] =
+        ZIO.succeed(Domain.LoggerConfiguration(name, logLevel))
+    }
+  }
+
+  val httpApp = ApiHandlers.routes("example").toApp[LoggerService]
+
   override def run: ZIO[Scope, Any, ExitCode] =
-    for {
+    (for {
+      _ <- Server.serve(httpApp).fork
       _ <- exec().repeat(Schedule.fixed(500.millis))
-    } yield ExitCode.success
+    } yield ExitCode.success).provide(loggerService ++ Server.default)
 
 }
