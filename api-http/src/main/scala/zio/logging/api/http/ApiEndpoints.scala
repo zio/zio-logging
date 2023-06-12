@@ -17,7 +17,7 @@ package zio.logging.api.http
 
 import zio._
 import zio.http._
-import zio.http.codec.{ Doc, HttpCodec }
+import zio.http.codec.{ Doc, HttpCodec, PathCodec }
 import zio.http.codec.PathCodec.{ literal, string }
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint._
@@ -25,18 +25,29 @@ import zio.http.endpoint._
 object ApiEndpoints {
   import Domain.logLevelSchema
 
-  def getLoggerConfigurations(rootPath: String): Endpoint[Unit, Domain.Error, List[Domain.LoggerConfiguration], None] =
+  def rootPathCodec(rootPath: Iterable[String]): PathCodec[Unit] =
+    if (rootPath.isEmpty) {
+      HttpCodec.empty
+    } else {
+      rootPath.map(literal).reduce(_ / _)
+    }
+
+  def getLoggerConfigurations(
+    rootPath: Iterable[String] = Iterable.empty
+  ): Endpoint[Unit, Domain.Error, List[Domain.LoggerConfiguration], None] =
     Endpoint
-      .get(literal(rootPath) / literal("logger"))
+      .get(rootPathCodec(rootPath) / literal("logger"))
       .out[List[Domain.LoggerConfiguration]]
       .outErrors[Domain.Error](
         HttpCodec.error[Domain.Error.Internal](Status.InternalServerError),
         HttpCodec.error[Domain.Error.NotFound](Status.NotFound)
       )
 
-  def getLoggerConfiguration(rootPath: String): Endpoint[String, Domain.Error, Domain.LoggerConfiguration, None] =
+  def getLoggerConfiguration(
+    rootPath: Iterable[String] = Iterable.empty
+  ): Endpoint[String, Domain.Error, Domain.LoggerConfiguration, None] =
     Endpoint
-      .get(literal(rootPath) / literal("logger") / string("name"))
+      .get(rootPathCodec(rootPath) / literal("logger") / string("name"))
       .out[Domain.LoggerConfiguration]
       .outErrors[Domain.Error](
         HttpCodec.error[Domain.Error.Internal](Status.InternalServerError),
@@ -44,10 +55,10 @@ object ApiEndpoints {
       )
 
   def setLoggerConfiguration(
-    rootPath: String
+    rootPath: Iterable[String] = Iterable.empty
   ): Endpoint[(String, LogLevel), Domain.Error, Domain.LoggerConfiguration, None] =
     Endpoint
-      .put(literal(rootPath) / literal("logger") / string("name"))
+      .put(rootPathCodec(rootPath) / literal("logger") / string("name"))
       .in[LogLevel]
       .out[Domain.LoggerConfiguration]
       .outErrors[Domain.Error](
@@ -55,6 +66,6 @@ object ApiEndpoints {
         HttpCodec.error[Domain.Error.NotFound](Status.NotFound)
       )
 
-  def doc(rootPath: String): Doc =
+  def doc(rootPath: Iterable[String] = Iterable.empty): Doc =
     getLoggerConfigurations(rootPath).doc + getLoggerConfiguration(rootPath).doc + setLoggerConfiguration(rootPath).doc
 }

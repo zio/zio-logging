@@ -21,12 +21,12 @@ import zio.http.endpoint.Routes
 
 object ApiHandlers {
 
-  def getLoggerConfigurations(rootPath: String) =
+  def getLoggerConfigurations(rootPath: Iterable[String] = Iterable.empty) =
     ApiEndpoints
       .getLoggerConfigurations(rootPath)
       .implement(_ => LoggerService.getLoggerConfigurations().mapError(_ => Domain.Error.Internal()))
 
-  def getLoggerConfiguration(rootPath: String) =
+  def getLoggerConfiguration(rootPath: Iterable[String] = Iterable.empty) =
     ApiEndpoints
       .getLoggerConfiguration(rootPath)
       .implement { name =>
@@ -36,13 +36,13 @@ object ApiHandlers {
         }
       }
 
-  def setLoggerConfigurations(rootPath: String) =
+  def setLoggerConfigurations(rootPath: Iterable[String] = Iterable.empty) =
     ApiEndpoints
       .setLoggerConfiguration(rootPath)
       .implement { case (name, logLevel) =>
         LoggerService.setLoggerConfiguration(name, logLevel).mapError(_ => Domain.Error.Internal())
       }
 
-  def routes(rootPath: String): Routes[LoggerService, Domain.Error, None] =
+  def routes(rootPath: Iterable[String] = Iterable.empty): Routes[LoggerService, Domain.Error, None] =
     getLoggerConfigurations(rootPath) ++ getLoggerConfiguration(rootPath) ++ setLoggerConfigurations(rootPath)
 }

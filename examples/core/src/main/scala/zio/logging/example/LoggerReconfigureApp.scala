@@ -96,7 +96,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
     }
   }
 
-  val httpApp = ApiHandlers.routes("example").toApp[LoggerService]
+  val httpApp = ApiHandlers.routes("example" :: Nil).toApp[LoggerService]
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {

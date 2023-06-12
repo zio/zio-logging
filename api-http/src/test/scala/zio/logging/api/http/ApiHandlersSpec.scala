@@ -27,7 +27,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
   def spec = suite("ApiHandlersSpec")(
     test("get all") {
 
-      val routes = ApiHandlers.routes("example")
+      val routes = ApiHandlers.routes("example" :: Nil)
 
       val request = Request.get(URL.decode("/example/logger").toOption.get)
 
@@ -39,7 +39,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
       )
     }.provideLayer(loggerService),
     test("get") {
-      val routes  = ApiHandlers.routes("example")
+      val routes  = ApiHandlers.routes("example" :: Nil)
       val request = Request.get(URL.decode("/example/logger/example.Service").toOption.get)
 
       for {
@@ -53,7 +53,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
 
       import Domain.logLevelSchema
 
-      val routes = ApiHandlers.routes("example")
+      val routes = ApiHandlers.routes("example" :: Nil)
 
       for {
         request  <- ZIO.attempt(
