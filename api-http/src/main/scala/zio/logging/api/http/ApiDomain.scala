@@ -18,7 +18,7 @@ package zio.logging.api.http
 import zio.LogLevel
 import zio.schema.{ DeriveSchema, Schema }
 
-object Domain {
+object ApiDomain {
 
   sealed trait Error {
     def message: String
@@ -36,16 +36,19 @@ object Domain {
 
   implicit val logLevelSchema: Schema[LogLevel] = {
     val levelToLabel: Map[LogLevel, String] = LogLevel.levels.map(level => (level, level.label)).toMap
-    val labelToLevel: Map[String, LogLevel] = LogLevel.levels.map(level => (level.label, level)).toMap
+    val labelToLevel: Map[String, LogLevel] = levelToLabel.map(_.swap)
 
     Schema[String]
       .transformOrFail[LogLevel](v => labelToLevel.get(v).toRight("Failed"), v => levelToLabel.get(v).toRight("Failed"))
   }
 
-  final case class LoggerConfiguration(name: String, logLevel: LogLevel)
+  final case class LoggerConfig(name: String, logLevel: LogLevel)
 
-  object LoggerConfiguration {
-    implicit val schema: Schema[LoggerConfiguration] = DeriveSchema.gen[LoggerConfiguration]
+  object LoggerConfig {
+    implicit val schema: Schema[LoggerConfig] = DeriveSchema.gen[LoggerConfig]
+
+    def from(value: LoggerService.LoggerConfig): LoggerConfig =
+      LoggerConfig(value.name, value.logLevel)
   }
 
 }

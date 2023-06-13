@@ -19,24 +19,26 @@ import zio.{ LogLevel, ZIO }
 
 trait LoggerService {
 
-  def getLoggerConfigurations(): ZIO[Any, Throwable, List[Domain.LoggerConfiguration]]
+  def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]]
 
-  def getLoggerConfiguration(name: String): ZIO[Any, Throwable, Option[Domain.LoggerConfiguration]]
+  def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]]
 
-  def setLoggerConfiguration(name: String, logLevel: LogLevel): ZIO[Any, Throwable, Domain.LoggerConfiguration]
+  def setLoggerConfig(name: String, logLevel: LogLevel): ZIO[Any, Throwable, LoggerService.LoggerConfig]
 }
 
 object LoggerService {
 
-  def getLoggerConfigurations(): ZIO[LoggerService, Throwable, List[Domain.LoggerConfiguration]] =
-    ZIO.serviceWithZIO[LoggerService](_.getLoggerConfigurations())
+  final case class LoggerConfig(name: String, logLevel: LogLevel)
 
-  def getLoggerConfiguration(name: String): ZIO[LoggerService, Throwable, Option[Domain.LoggerConfiguration]] =
-    ZIO.serviceWithZIO[LoggerService](_.getLoggerConfiguration(name))
+  def getLoggerConfigs(): ZIO[LoggerService, Throwable, List[LoggerService.LoggerConfig]] =
+    ZIO.serviceWithZIO[LoggerService](_.getLoggerConfigs())
 
-  def setLoggerConfiguration(
+  def getLoggerConfig(name: String): ZIO[LoggerService, Throwable, Option[LoggerService.LoggerConfig]] =
+    ZIO.serviceWithZIO[LoggerService](_.getLoggerConfig(name))
+
+  def setLoggerConfig(
     name: String,
     logLevel: LogLevel
-  ): ZIO[LoggerService, Throwable, Domain.LoggerConfiguration] =
-    ZIO.serviceWithZIO[LoggerService](_.setLoggerConfiguration(name, logLevel))
+  ): ZIO[LoggerService, Throwable, LoggerService.LoggerConfig] =
+    ZIO.serviceWithZIO[LoggerService](_.setLoggerConfig(name, logLevel))
 }

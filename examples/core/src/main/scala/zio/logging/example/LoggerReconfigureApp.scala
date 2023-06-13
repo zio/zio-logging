@@ -19,7 +19,7 @@ import zio.logging.internal.ReconfigurableLogger
 import zio.logging.{ ConsoleLoggerConfig, LogAnnotation }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 import zio.http.Server
-import zio.logging.api.http.{ ApiHandlers, Domain, LoggerService }
+import zio.logging.api.http.{ ApiHandlers, ApiDomain, LoggerService }
 
 import java.util.UUID
 
@@ -82,17 +82,19 @@ object LoggerReconfigureApp extends ZIOAppDefault {
 
   val loggerService = ZLayer.succeed {
     new LoggerService {
-      override def getLoggerConfigurations(): ZIO[Any, Throwable, List[Domain.LoggerConfiguration]] =
-        ZIO.succeed(Domain.LoggerConfiguration("root", LogLevel.Info) :: Nil)
+      override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]] =
+        ZIO.succeed(LoggerService.LoggerConfig("root", LogLevel.Info) :: Nil)
 
-      override def getLoggerConfiguration(name: String): ZIO[Any, Throwable, Option[Domain.LoggerConfiguration]] =
-        ZIO.succeed(Some(Domain.LoggerConfiguration(name, LogLevel.Info)))
+      override def getLoggerConfig(
+        name: String
+      ): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]] =
+        ZIO.succeed(Some(LoggerService.LoggerConfig(name, LogLevel.Info)))
 
-      override def setLoggerConfiguration(
+      override def setLoggerConfig(
         name: String,
         logLevel: LogLevel
-      ): ZIO[Any, Throwable, Domain.LoggerConfiguration] =
-        ZIO.succeed(Domain.LoggerConfiguration(name, logLevel))
+      ): ZIO[Any, Throwable, LoggerService.LoggerConfig] =
+        ZIO.succeed(LoggerService.LoggerConfig(name, logLevel))
     }
   }
 

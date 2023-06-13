@@ -10,51 +10,47 @@ object ApiHandlersSpec extends ZIOSpecDefault {
 
   val loggerService = ZLayer.succeed {
     new LoggerService {
-      override def getLoggerConfigurations(): ZIO[Any, Throwable, List[Domain.LoggerConfiguration]] =
-        ZIO.succeed(Domain.LoggerConfiguration("root", LogLevel.Info) :: Nil)
+      override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]] =
+        ZIO.succeed(LoggerService.LoggerConfig("root", LogLevel.Info) :: Nil)
 
-      override def getLoggerConfiguration(name: String): ZIO[Any, Throwable, Option[Domain.LoggerConfiguration]] =
-        ZIO.succeed(Some(Domain.LoggerConfiguration(name, LogLevel.Info)))
+      override def getLoggerConfig(
+        name: String
+      ): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]] =
+        ZIO.succeed(Some(LoggerService.LoggerConfig(name, LogLevel.Info)))
 
-      override def setLoggerConfiguration(
+      override def setLoggerConfig(
         name: String,
         logLevel: LogLevel
-      ): ZIO[Any, Throwable, Domain.LoggerConfiguration] =
-        ZIO.succeed(Domain.LoggerConfiguration(name, logLevel))
+      ): ZIO[Any, Throwable, LoggerService.LoggerConfig] =
+        ZIO.succeed(LoggerService.LoggerConfig(name, logLevel))
     }
   }
 
   def spec = suite("ApiHandlersSpec")(
     test("get all") {
-
       val routes = ApiHandlers.routes("example" :: Nil)
 
-      val request = Request.get(URL.decode("/example/logger").toOption.get)
-
       for {
+        request  <- ZIO.attempt(Request.get(URL.decode("/example/logger").toOption.get))
         response <- routes.toApp.runZIO(request)
-        content  <- HttpCodec.content[List[Domain.LoggerConfiguration]].decodeResponse(response)
+        content  <- HttpCodec.content[List[ApiDomain.LoggerConfig]].decodeResponse(response)
       } yield assertTrue(response.status.isSuccess) && assertTrue(
-        content == List(Domain.LoggerConfiguration("root", LogLevel.Info))
+        content == List(ApiDomain.LoggerConfig("root", LogLevel.Info))
       )
-    }.provideLayer(loggerService),
+    },
     test("get") {
-      val routes  = ApiHandlers.routes("example" :: Nil)
-      val request = Request.get(URL.decode("/example/logger/example.Service").toOption.get)
-
-      for {
-        response <- routes.toApp.runZIO(request)
-        content  <- HttpCodec.content[Domain.LoggerConfiguration].decodeResponse(response)
-      } yield assertTrue(response.status.isSuccess) && assertTrue(
-        content == Domain.LoggerConfiguration("example.Service", LogLevel.Info)
-      )
-    }.provideLayer(loggerService),
-    test("set") {
-
-      import Domain.logLevelSchema
-
       val routes = ApiHandlers.routes("example" :: Nil)
-
+      for {
+        request  <- ZIO.attempt(Request.get(URL.decode("/example/logger/example.Service").toOption.get))
+        response <- routes.toApp.runZIO(request)
+        content  <- HttpCodec.content[ApiDomain.LoggerConfig].decodeResponse(response)
+      } yield assertTrue(response.status.isSuccess) && assertTrue(
+        content == ApiDomain.LoggerConfig("example.Service", LogLevel.Info)
+      )
+    },
+    test("set") {
+      import ApiDomain.logLevelSchema
+      val routes = ApiHandlers.routes("example" :: Nil)
       for {
         request  <- ZIO.attempt(
                       Request
@@ -64,11 +60,11 @@ object ApiHandlersSpec extends ZIOSpecDefault {
                         )
                     )
         response <- routes.toApp.runZIO(request)
-        content  <- HttpCodec.content[Domain.LoggerConfiguration].decodeResponse(response)
+        content  <- HttpCodec.content[ApiDomain.LoggerConfig].decodeResponse(response)
       } yield assertTrue(response.status.isSuccess) && assertTrue(
-        content == Domain.LoggerConfiguration("example.Service", LogLevel.Warning)
+        content == ApiDomain.LoggerConfig("example.Service", LogLevel.Warning)
       )
-    }.provideLayer(loggerService)
-  )
+    }
+  ).provideLayer(loggerService)
 
 }

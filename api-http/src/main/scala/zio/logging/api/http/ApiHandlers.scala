@@ -21,28 +21,36 @@ import zio.http.endpoint.Routes
 
 object ApiHandlers {
 
-  def getLoggerConfigurations(rootPath: Iterable[String] = Iterable.empty) =
+  def getLoggerConfigs(rootPath: Seq[String] = Seq.empty) =
     ApiEndpoints
-      .getLoggerConfigurations(rootPath)
-      .implement(_ => LoggerService.getLoggerConfigurations().mapError(_ => Domain.Error.Internal()))
+      .getLoggerConfigs(rootPath)
+      .implement(_ =>
+        LoggerService
+          .getLoggerConfigs()
+          .map(_.map(ApiDomain.LoggerConfig.from))
+          .mapError(_ => ApiDomain.Error.Internal())
+      )
 
-  def getLoggerConfiguration(rootPath: Iterable[String] = Iterable.empty) =
+  def getLoggerConfig(rootPath: Seq[String] = Seq.empty) =
     ApiEndpoints
-      .getLoggerConfiguration(rootPath)
+      .getLoggerConfig(rootPath)
       .implement { name =>
-        LoggerService.getLoggerConfiguration(name).mapError(_ => Domain.Error.Internal()).flatMap {
-          case Some(r) => ZIO.succeed(r)
-          case _       => ZIO.fail(Domain.Error.NotFound())
+        LoggerService.getLoggerConfig(name).mapError(_ => ApiDomain.Error.Internal()).flatMap {
+          case Some(r) => ZIO.succeed(ApiDomain.LoggerConfig.from(r))
+          case _       => ZIO.fail(ApiDomain.Error.NotFound())
         }
       }
 
-  def setLoggerConfigurations(rootPath: Iterable[String] = Iterable.empty) =
+  def setLoggerConfigs(rootPath: Seq[String] = Seq.empty) =
     ApiEndpoints
-      .setLoggerConfiguration(rootPath)
+      .setLoggerConfig(rootPath)
       .implement { case (name, logLevel) =>
-        LoggerService.setLoggerConfiguration(name, logLevel).mapError(_ => Domain.Error.Internal())
+        LoggerService
+          .setLoggerConfig(name, logLevel)
+          .map(ApiDomain.LoggerConfig.from)
+          .mapError(_ => ApiDomain.Error.Internal())
       }
 
-  def routes(rootPath: Iterable[String] = Iterable.empty): Routes[LoggerService, Domain.Error, None] =
-    getLoggerConfigurations(rootPath) ++ getLoggerConfiguration(rootPath) ++ setLoggerConfigurations(rootPath)
+  def routes(rootPath: Seq[String] = Seq.empty): Routes[LoggerService, ApiDomain.Error, None] =
+    getLoggerConfigs(rootPath) ++ getLoggerConfig(rootPath) ++ setLoggerConfigs(rootPath)
 }

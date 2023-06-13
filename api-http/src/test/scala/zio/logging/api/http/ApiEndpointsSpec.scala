@@ -9,7 +9,7 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
 
   def spec = suite("ApiEndpointsSpec")(
     test("rootPathCodec") {
-      def testRootPathCodec(rootPath: Iterable[String], expected: PathCodec[Unit]) =
+      def testRootPathCodec(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(ApiEndpoints.rootPathCodec(rootPath).encodeRequest(()).url == expected.encodeRequest(()).url)
 
       testRootPathCodec(Nil, HttpCodec.empty) && testRootPathCodec(
@@ -17,11 +17,11 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
         literal("example")
       ) && testRootPathCodec("v1" :: "example" :: Nil, literal("v1") / literal("example"))
     },
-    test("getLoggerConfigurations") {
+    test("getLoggerConfigs") {
 
-      def testPath(rootPath: Iterable[String], expected: PathCodec[Unit]) =
+      def testPath(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(
-          ApiEndpoints.getLoggerConfigurations(rootPath).input.encodeRequest(()).url == expected.encodeRequest(()).url
+          ApiEndpoints.getLoggerConfigs(rootPath).input.encodeRequest(()).url == expected.encodeRequest(()).url
         )
 
       testPath(Nil, literal("logger")) && testPath(
@@ -29,11 +29,11 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
         literal("example") / literal("logger")
       )
     },
-    test("getLoggerConfiguration") {
+    test("getLoggerConfig") {
 
-      def testPath(rootPath: Iterable[String], expected: PathCodec[Unit]) =
+      def testPath(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(
-          ApiEndpoints.getLoggerConfiguration(rootPath).input.encodeRequest("my-logger").url == expected
+          ApiEndpoints.getLoggerConfig(rootPath).input.encodeRequest("my-logger").url == expected
             .encodeRequest(())
             .url
         )
@@ -43,12 +43,12 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
         literal("example") / literal("logger") / literal("my-logger")
       )
     },
-    test("setLoggerConfigurations") {
+    test("setLoggerConfigs") {
 
-      def testPath(rootPath: Iterable[String], expected: PathCodec[Unit]) =
+      def testPath(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(
           ApiEndpoints
-            .setLoggerConfiguration(rootPath)
+            .setLoggerConfig(rootPath)
             .input
             .encodeRequest(("my-logger", LogLevel.Info))
             .url == expected
