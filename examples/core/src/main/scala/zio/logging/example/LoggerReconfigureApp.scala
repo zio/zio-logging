@@ -16,10 +16,10 @@
 package zio.logging.example
 
 import zio.logging.internal.ReconfigurableLogger
-import zio.logging.{ ConsoleLoggerConfig, LogAnnotation }
+import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LogFilter }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
-import zio.http.Server
-import zio.logging.api.http.{ ApiHandlers, ApiDomain, LoggerService }
+import zio.http._
+import zio.logging.api.http.{ ApiHandlers, LoggerService }
 
 import java.util.UUID
 
@@ -50,18 +50,115 @@ object LoggerReconfigureApp extends ZIOAppDefault {
       } yield ()
     }
 
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> configuredLogger(
+//  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+//    Runtime.removeDefaultLoggers >>> configuredLogger(
+//      for {
+//        info <- Random.nextBoolean
+//        cfg = Map(
+//          "logger/format" -> logFormat,
+//          "logger/filter/rootLevel" -> (if (info) LogLevel.Info.label else LogLevel.Debug.label)
+//        )
+//        _ <- Console.printLine(cfg.mkString(", ")).orDie
+//        config <- ConfigProvider.fromMap(cfg, "/").nested("logger").load(ConsoleLoggerConfig.config)
+//      } yield config
+//    )
+
+  class ConfigurableLogger[+Output](logger: ReconfigurableLogger[String, Output, LogFilter.LogLevelByNameConfig])
+      extends ZLogger[String, Output]
+      with LoggerService {
+
+    val rootName = "root"
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Output = logger.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+
+    override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]] =
+      ZIO.attempt {
+        val currentConfig = logger.config
+
+        LoggerService.LoggerConfig(rootName, currentConfig.rootLevel) :: currentConfig.mappings
+          .map(LoggerService.LoggerConfig.tupled)
+          .toList
+      }
+
+    override def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]] =
+      ZIO.attempt {
+        val currentConfig = logger.config
+
+        if (name == rootName) { Some(LoggerService.LoggerConfig(rootName, currentConfig.rootLevel)) }
+        else {
+          currentConfig.mappings.collectFirst {
+            case (n, l) if n == name => LoggerService.LoggerConfig(n, l)
+          }
+        }
+      }
+
+    override def setLoggerConfig(name: String, logLevel: LogLevel): ZIO[Any, Throwable, LoggerService.LoggerConfig] =
+      ZIO.attempt {
+        val currentConfig = logger.config
+
+        val newConfig = if (name == rootName) {
+          currentConfig.withRootLevel(logLevel)
+        } else {
+          currentConfig.withMapping(name, logLevel)
+        }
+
+        logger.reconfigureIfChanged(newConfig)
+
+        LoggerService.LoggerConfig(name, logLevel)
+      }
+  }
+
+  def configuredLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+    ZLayer.scoped {
       for {
-        info   <- Random.nextBoolean
-        cfg     = Map(
-                    "logger/format"           -> logFormat,
-                    "logger/filter/rootLevel" -> (if (info) LogLevel.Info.label else LogLevel.Debug.label)
-                  )
-        _      <- Console.printLine(cfg.mkString(", ")).orDie
-        config <- ConfigProvider.fromMap(cfg, "/").nested("logger").load(ConsoleLoggerConfig.config)
-      } yield config
-    )
+        consoleLoggerConfig <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+        filterConfig        <- ZIO.succeed {
+                                 consoleLoggerConfig.filter
+                                   .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
+                                   .config
+                               }
+        logger              <- ZIO.succeed {
+                                 val logger = ReconfigurableLogger[String, Any, LogFilter.LogLevelByNameConfig](
+                                   filterConfig,
+                                   config => {
+                                     val filter = LogFilter.logLevelByName(config)
+
+                                     filter.filter(consoleLoggerConfig.format.toLogger.map { line =>
+                                       try java.lang.System.out.println(line)
+                                       catch {
+                                         case t: VirtualMachineError => throw t
+                                         case _: Throwable           => ()
+                                       }
+                                     })
+                                   }
+                                 )
+
+                                 new ConfigurableLogger[Any](logger)
+                               }
+
+        _ <- ZIO.withLoggerScoped(logger)
+      } yield ()
+    }
+
+  val configProvider: ConfigProvider = ConfigProvider.fromMap(
+    Map(
+      "logger/format"                              -> logFormat,
+      "logger/filter/rootLevel"                    -> LogLevel.Info.label,
+      "logger/filter/mappings/zio.logging.example" -> LogLevel.Debug.label
+    ),
+    "/"
+  )
+
+  override val bootstrap: ZLayer[Any, Config.Error, Unit] =
+    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> configuredLogger()
 
   def exec() =
     for {
@@ -80,25 +177,46 @@ object LoggerReconfigureApp extends ZIOAppDefault {
       _       <- ZIO.logDebug("Done") @@ LogAnnotation.TraceId(traceId)
     } yield ()
 
-  val loggerService = ZLayer.succeed {
-    new LoggerService {
-      override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]] =
-        ZIO.succeed(LoggerService.LoggerConfig("root", LogLevel.Info) :: Nil)
+//  val loggerService = ZLayer.succeed {
+//    new LoggerService {
+//      override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]] =
+//        ZIO.succeed(LoggerService.LoggerConfig("root", LogLevel.Info) :: Nil)
+//
+//      override def getLoggerConfig(
+//        name: String
+//      ): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]] =
+//        ZIO.succeed(Some(LoggerService.LoggerConfig(name, LogLevel.Info)))
+//
+//      override def setLoggerConfig(
+//        name: String,
+//        logLevel: LogLevel
+//      ): ZIO[Any, Throwable, LoggerService.LoggerConfig] =
+//        ZIO.succeed(LoggerService.LoggerConfig(name, logLevel))
+//    }
+//  }
 
-      override def getLoggerConfig(
-        name: String
-      ): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]] =
-        ZIO.succeed(Some(LoggerService.LoggerConfig(name, LogLevel.Info)))
+  val loggerService: ZLayer[Any, Throwable, LoggerService] =
+    ZLayer.fromZIO {
+      for {
+        fiberRefs <- ZIO.getFiberRefs
 
-      override def setLoggerConfig(
-        name: String,
-        logLevel: LogLevel
-      ): ZIO[Any, Throwable, LoggerService.LoggerConfig] =
-        ZIO.succeed(LoggerService.LoggerConfig(name, logLevel))
+        loggerService <- ZIO.attempt {
+                           val loggers = fiberRefs.getOrDefault(FiberRef.currentLoggers)
+                           loggers.collectFirst { case logger: ConfigurableLogger[_] =>
+                             logger
+                           }.get
+                         }
+
+      } yield loggerService
     }
-  }
 
   val httpApp = ApiHandlers.routes("example" :: Nil).toApp[LoggerService]
+
+  //    Handler
+//      .html(ApiEndpoints.doc("example" :: Nil).toHtml)
+//      .toHttp
+//    .whenPathEq("/example")
+//    .withDefaultErrorResponse
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {
@@ -107,3 +225,16 @@ object LoggerReconfigureApp extends ZIOAppDefault {
     } yield ExitCode.success).provide(loggerService ++ Server.default)
 
 }
+
+/*
+
+ curl 'http://localhost:8080/example/logger'
+
+ curl 'http://localhost:8080/example/logger/root'
+
+ curl 'http://localhost:8080/example/logger/root'
+
+ curl --location --request PUT 'http://localhost:8080/example/logger/root' --header 'Content-Type: application/json' --data-raw '"WARN"'
+
+ curl --location --request PUT 'http://localhost:8080/example/logger/zio.logging.example' --header 'Content-Type: application/json' --data-raw '"WARN"'
+ */

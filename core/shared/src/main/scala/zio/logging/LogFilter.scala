@@ -247,7 +247,17 @@ object LogFilter {
    * @param rootLevel Minimum log level for the root node
    * @param mappings  List of mappings, nesting defined by dot-separated strings
    */
-  final case class LogLevelByNameConfig(rootLevel: LogLevel, mappings: Map[String, LogLevel])
+  final case class LogLevelByNameConfig(rootLevel: LogLevel, mappings: Map[String, LogLevel]) {
+
+    def withRootLevel(rootLevel: LogLevel): LogLevelByNameConfig =
+      LogLevelByNameConfig(rootLevel, mappings)
+
+    def withMapping(name: String, level: LogLevel): LogLevelByNameConfig =
+      LogLevelByNameConfig(rootLevel, mappings + (name -> level))
+
+    def withMappings(mappings: Map[String, LogLevel]): LogLevelByNameConfig =
+      LogLevelByNameConfig(rootLevel, mappings)
+  }
 
   object LogLevelByNameConfig {
 
@@ -259,6 +269,8 @@ object LogFilter {
         LogLevelByNameConfig(rootLevel, mappings)
       }
     }
+
+    implicit val equal: Equal[LogLevelByNameConfig] = Equal.default
   }
 
   def apply[M, V](
@@ -353,42 +365,10 @@ object LogFilter {
     val mappingsSorted = mappings.map(splitNameByDotAndLevel.tupled).sorted(nameLevelOrdering)
     val nameGroup      = group.map(splitNameByDot)
 
-    @tailrec
-    def globStarCompare(l: List[String], m: List[String]): Boolean =
-      (l, m) match {
-        case (_, Nil)           => true
-        case (Nil, _)           => false
-        case (l @ (_ :: ls), m) =>
-          // try a regular, routesCompare or check if skipping paths (globstar pattern) results in a matching path
-          l.startsWith(m) || compareRoutes(l, m) || globStarCompare(ls, m)
-      }
-
-    @tailrec
-    def anystringCompare(l: String, m: List[String]): Boolean = m match {
-      case mh :: ms =>
-        val startOfMh = l.indexOfSlice(mh)
-        if (startOfMh >= 0) anystringCompare(l.drop(startOfMh + mh.size), ms)
-        else false
-      case Nil      => l.isEmpty()
-    }
-
-    @tailrec
-    def compareRoutes(l: List[String], m: List[String]): Boolean =
-      (l, m) match {
-        case (_, Nil)                                  => true
-        case (Nil, _)                                  => false
-        case (_ :: ls, "*" :: ms)                      => compareRoutes(ls, ms)
-        case (l, "**" :: ms)                           => globStarCompare(l, ms)
-        case (lh :: ls, mh :: ms) if !mh.contains("*") =>
-          lh == mh && compareRoutes(ls, ms)
-        case (l @ (lh :: ls), m @ (mh :: ms))          =>
-          anystringCompare(lh, mh.split('*').toList) && compareRoutes(ls, ms)
-      }
-
     logLevelByGroup[M, List[String]](
       rootLevel,
       nameGroup,
-      (l, m) => l.startsWith(m) || compareRoutes(l, m),
+      nameMatcher,
       mappingsSorted: _*
     )
   }
@@ -426,6 +406,43 @@ object LogFilter {
 
   def logLevelByName[M](config: LogLevelByNameConfig): LogFilter[M] =
     logLevelByGroup[M](LogGroup.loggerName, config)
+
+  private[logging] val nameMatcher: (List[String], List[String]) => Boolean = (l, m) => {
+
+    @tailrec
+    def globStarCompare(l: List[String], m: List[String]): Boolean =
+      (l, m) match {
+        case (_, Nil)           => true
+        case (Nil, _)           => false
+        case (l @ (_ :: ls), m) =>
+          // try a regular, routesCompare or check if skipping paths (globstar pattern) results in a matching path
+          l.startsWith(m) || compareRoutes(l, m) || globStarCompare(ls, m)
+      }
+
+    @tailrec
+    def anystringCompare(l: String, m: List[String]): Boolean = m match {
+      case mh :: ms =>
+        val startOfMh = l.indexOfSlice(mh)
+        if (startOfMh >= 0) anystringCompare(l.drop(startOfMh + mh.size), ms)
+        else false
+      case Nil      => l.isEmpty()
+    }
+
+    @tailrec
+    def compareRoutes(l: List[String], m: List[String]): Boolean =
+      (l, m) match {
+        case (_, Nil)                                  => true
+        case (Nil, _)                                  => false
+        case (_ :: ls, "*" :: ms)                      => compareRoutes(ls, ms)
+        case (l, "**" :: ms)                           => globStarCompare(l, ms)
+        case (lh :: ls, mh :: ms) if !mh.contains("*") =>
+          lh == mh && compareRoutes(ls, ms)
+        case (lh :: ls, mh :: ms)                      =>
+          anystringCompare(lh, mh.split('*').toList) && compareRoutes(ls, ms)
+      }
+
+    l.startsWith(m) || compareRoutes(l, m)
+  }
 
   private[logging] val splitNameByDotAndLevel: (String, LogLevel) => (List[String], LogLevel) = (name, level) =>
     splitNameByDot(name) -> level

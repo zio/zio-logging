@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
 
+  def config: Config
+
   def reconfigure(config: Config): Unit
 
   def reconfigureIfChanged(config: Config): Boolean
@@ -30,18 +32,20 @@ private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] ex
 private[logging] object ReconfigurableLogger {
 
   def apply[M, O, C: Equal](
-    config: C,
+    initialConfig: C,
     makeLogger: C => ZLogger[M, O]
   ): ReconfigurableLogger[M, O, C] =
     new ReconfigurableLogger[M, O, C] {
 
-      private val configureLogger: AtomicReference[(C, ZLogger[M, O])] = {
-        val logger = makeLogger(config)
-        new AtomicReference[(C, ZLogger[M, O])]((config, logger))
+      private val configuredLogger: AtomicReference[(C, ZLogger[M, O])] = {
+        val logger = makeLogger(initialConfig)
+        new AtomicReference[(C, ZLogger[M, O])]((initialConfig, logger))
       }
 
+      override def config: C = configuredLogger.get()._1
+
       override def reconfigureIfChanged(config: C): Boolean = {
-        val currentConfig = configureLogger.get()._1
+        val currentConfig = configuredLogger.get()._1
         if (currentConfig !== config) {
           reconfigure(config)
           true
@@ -50,7 +54,7 @@ private[logging] object ReconfigurableLogger {
 
       override def reconfigure(config: C): Unit = {
         val logger = makeLogger(config)
-        configureLogger.set((config, logger))
+        configuredLogger.set((config, logger))
       }
 
       override def apply(
@@ -63,7 +67,7 @@ private[logging] object ReconfigurableLogger {
         spans: List[LogSpan],
         annotations: Map[String, String]
       ): O =
-        configureLogger.get()._2.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        configuredLogger.get()._2.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
     }
 
   def make[E, M, O, C: Equal](
