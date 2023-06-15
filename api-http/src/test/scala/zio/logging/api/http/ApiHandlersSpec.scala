@@ -4,25 +4,26 @@ import zio.{ ZIO, ZLayer }
 import zio.http._
 import zio.http.codec._
 import zio.LogLevel
+import zio.logging.LoggerConfigurer
 import zio.test._
 
 object ApiHandlersSpec extends ZIOSpecDefault {
 
-  val loggerService = ZLayer.succeed {
-    new LoggerService {
-      override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerService.LoggerConfig]] =
-        ZIO.succeed(LoggerService.LoggerConfig("root", LogLevel.Info) :: Nil)
+  val loggerConfigurer = ZLayer.succeed {
+    new LoggerConfigurer {
+      override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerConfigurer.LoggerConfig]] =
+        ZIO.succeed(LoggerConfigurer.LoggerConfig("root", LogLevel.Info) :: Nil)
 
       override def getLoggerConfig(
         name: String
-      ): ZIO[Any, Throwable, Option[LoggerService.LoggerConfig]] =
-        ZIO.succeed(Some(LoggerService.LoggerConfig(name, LogLevel.Info)))
+      ): ZIO[Any, Throwable, Option[LoggerConfigurer.LoggerConfig]] =
+        ZIO.succeed(Some(LoggerConfigurer.LoggerConfig(name, LogLevel.Info)))
 
       override def setLoggerConfig(
         name: String,
         logLevel: LogLevel
-      ): ZIO[Any, Throwable, LoggerService.LoggerConfig] =
-        ZIO.succeed(LoggerService.LoggerConfig(name, logLevel))
+      ): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
+        ZIO.succeed(LoggerConfigurer.LoggerConfig(name, logLevel))
     }
   }
 
@@ -65,6 +66,6 @@ object ApiHandlersSpec extends ZIOSpecDefault {
         content == ApiDomain.LoggerConfig("example.Service", LogLevel.Warning)
       )
     }
-  ).provideLayer(loggerService)
+  ).provideLayer(loggerConfigurer)
 
 }

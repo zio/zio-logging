@@ -16,6 +16,7 @@
 package zio.logging.api.http
 
 import zio.LogLevel
+import zio.logging.LoggerConfigurer
 import zio.schema.{ DeriveSchema, Schema }
 
 object ApiDomain {
@@ -47,7 +48,7 @@ object ApiDomain {
   object LoggerConfig {
     implicit val schema: Schema[LoggerConfig] = DeriveSchema.gen[LoggerConfig]
 
-    def from(value: LoggerService.LoggerConfig): LoggerConfig =
+    def from(value: LoggerConfigurer.LoggerConfig): LoggerConfig =
       LoggerConfig(value.name, value.logLevel)
   }
 
