@@ -16,7 +16,6 @@
 package zio.logging.example
 
 import zio.http.HttpAppMiddleware.basicAuth
-import zio.logging.internal.ReconfigurableLogger
 import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 import zio.http._
@@ -25,48 +24,6 @@ import zio.logging.api.http.ApiHandlers
 import java.util.UUID
 
 object LoggerReconfigureApp extends ZIOAppDefault {
-
-  class Configurer(logger: ReconfigurableLogger[_, _, LogFilter.LogLevelByNameConfig]) extends LoggerConfigurer {
-
-    val rootName = "root"
-
-    override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerConfigurer.LoggerConfig]] =
-      ZIO.attempt {
-        val currentConfig = logger.config
-
-        LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel) :: currentConfig.mappings
-          .map(LoggerConfigurer.LoggerConfig.tupled)
-          .toList
-      }
-
-    override def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerConfigurer.LoggerConfig]] =
-      ZIO.attempt {
-        val currentConfig = logger.config
-
-        if (name == rootName) {
-          Some(LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel))
-        } else {
-          currentConfig.mappings.collectFirst {
-            case (n, l) if n == name => LoggerConfigurer.LoggerConfig(n, l)
-          }
-        }
-      }
-
-    override def setLoggerConfig(name: String, logLevel: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
-      ZIO.attempt {
-        val currentConfig = logger.config
-
-        val newConfig = if (name == rootName) {
-          currentConfig.withRootLevel(logLevel)
-        } else {
-          currentConfig.withMapping(name, logLevel)
-        }
-
-        logger.reconfigureIfChanged(newConfig)
-
-        LoggerConfigurer.LoggerConfig(name, logLevel)
-      }
-  }
 
   def configurableLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
@@ -77,24 +34,19 @@ object LoggerReconfigureApp extends ZIOAppDefault {
                                    .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
                                    .config
                                }
-        logger              <- ZIO.succeed {
-                                 val logger = ReconfigurableLogger[String, Any, LogFilter.LogLevelByNameConfig](
-                                   filterConfig,
-                                   config => {
-                                     val filter = LogFilter.logLevelByName(config)
 
-                                     filter.filter(consoleLoggerConfig.format.toLogger.map { line =>
-                                       try java.lang.System.out.println(line)
-                                       catch {
-                                         case t: VirtualMachineError => throw t
-                                         case _: Throwable           => ()
-                                       }
-                                     })
-                                   }
-                                 )
-
-                                 ConfigurableLogger(logger, new Configurer(logger))
-                               }
+        logger <- ZIO.succeed {
+                    ConfigurableLogger.make(
+                      consoleLoggerConfig.format.toLogger.map { line =>
+                        try java.lang.System.out.println(line)
+                        catch {
+                          case t: VirtualMachineError => throw t
+                          case _: Throwable           => ()
+                        }
+                      },
+                      filterConfig
+                    )
+                  }
 
         _ <- ZIO.withLoggerScoped(logger)
       } yield ()

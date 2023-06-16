@@ -764,6 +764,13 @@ object LogFormat {
 
     def parse(pattern: String): Either[Parser.ParserError[String], Pattern] =
       syntax.parseString(pattern)
+
+    val config: Config[Pattern] = Config.string.mapOrFail { value =>
+      Pattern.parse(value) match {
+        case Right(p) => Right(p)
+        case Left(_)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Pattern, but found ${value}"))
+      }
+    }
   }
 
   private val NL = System.lineSeparator()
