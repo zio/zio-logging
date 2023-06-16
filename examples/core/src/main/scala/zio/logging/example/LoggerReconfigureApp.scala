@@ -26,24 +26,6 @@ import java.util.UUID
 
 object LoggerReconfigureApp extends ZIOAppDefault {
 
-  class Logger[+Output](logger: ReconfigurableLogger[String, Output, LogFilter.LogLevelByNameConfig])
-      extends ConfigurableLogger[String, Output] {
-
-    override val configurer: LoggerConfigurer = new Configurer(logger)
-
-    override def apply(
-      trace: Trace,
-      fiberId: FiberId,
-      logLevel: LogLevel,
-      message: () => String,
-      cause: Cause[Any],
-      context: FiberRefs,
-      spans: List[LogSpan],
-      annotations: Map[String, String]
-    ): Output = logger.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-
-  }
-
   class Configurer(logger: ReconfigurableLogger[_, _, LogFilter.LogLevelByNameConfig]) extends LoggerConfigurer {
 
     val rootName = "root"
@@ -111,7 +93,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
                                    }
                                  )
 
-                                 new Logger[Any](logger)
+                                 ConfigurableLogger(logger, new Configurer(logger))
                                }
 
         _ <- ZIO.withLoggerScoped(logger)

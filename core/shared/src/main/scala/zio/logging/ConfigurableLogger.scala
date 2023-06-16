@@ -1,6 +1,6 @@
 package zio.logging
 
-import zio.{ FiberRef, LogLevel, ZIO, ZLayer, ZLogger }
+import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, ZIO, ZLayer, ZLogger }
 
 trait LoggerConfigurer {
 
@@ -45,4 +45,27 @@ object LoggerConfigurer {
 trait ConfigurableLogger[-Message, +Output] extends ZLogger[Message, Output] {
 
   def configurer: LoggerConfigurer
+}
+
+object ConfigurableLogger {
+
+  def apply[Message, Output](
+    logger: ZLogger[Message, Output],
+    loggerConfigurer: LoggerConfigurer
+  ): ConfigurableLogger[Message, Output] =
+    new ConfigurableLogger[Message, Output] {
+
+      override val configurer: LoggerConfigurer = loggerConfigurer
+
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => Message,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Output = logger.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+    }
 }
