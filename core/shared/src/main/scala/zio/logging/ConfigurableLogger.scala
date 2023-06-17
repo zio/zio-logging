@@ -92,7 +92,7 @@ object ConfigurableLogger {
 
     val reconfigurableLogger = ReconfigurableLogger[Message, Option[Output], LogFilter.LogLevelByNameConfig](
       filterConfig,
-      config => {
+      (config, _) => {
         val filter = LogFilter.logLevelByName(config)
 
         filter.filter(logger)

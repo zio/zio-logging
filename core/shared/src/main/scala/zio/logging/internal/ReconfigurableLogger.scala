@@ -33,27 +33,30 @@ private[logging] object ReconfigurableLogger {
 
   def apply[M, O, C: Equal](
     initialConfig: C,
-    makeLogger: C => ZLogger[M, O]
+    makeLogger: (C, Option[ZLogger[M, O]]) => ZLogger[M, O]
   ): ReconfigurableLogger[M, O, C] =
     new ReconfigurableLogger[M, O, C] {
 
       private val configuredLogger: AtomicReference[(C, ZLogger[M, O])] = {
-        val logger = makeLogger(initialConfig)
+        val logger = makeLogger(initialConfig, None)
         new AtomicReference[(C, ZLogger[M, O])]((initialConfig, logger))
       }
 
       override def config: C = configuredLogger.get()._1
 
       override def reconfigureIfChanged(config: C): Boolean = {
-        val currentConfig = configuredLogger.get()._1
+        val (currentConfig, currentLogger) = configuredLogger.get()
         if (currentConfig !== config) {
           reconfigure(config)
+          val logger = makeLogger(config, Some(currentLogger))
+          configuredLogger.set((config, logger))
           true
         } else false
       }
 
       override def reconfigure(config: C): Unit = {
-        val logger = makeLogger(config)
+        val currentLogger = configuredLogger.get()._2
+        val logger        = makeLogger(config, Some(currentLogger))
         configuredLogger.set((config, logger))
       }
 
@@ -72,15 +75,15 @@ private[logging] object ReconfigurableLogger {
 
   def make[E, M, O, C: Equal](
     loadConfig: => ZIO[Any, E, C],
-    makeLogger: C => ZLogger[M, O],
-    interval: Duration = 10.seconds
+    makeLogger: (C, Option[ZLogger[M, O]]) => ZLogger[M, O],
+    updateLogger: Schedule[Any, Any, Any] = Schedule.fixed(10.seconds)
   ): ZIO[Scope, E, ReconfigurableLogger[M, O, C]] =
     for {
       config <- loadConfig
       logger  = ReconfigurableLogger[M, O, C](config, makeLogger)
       _      <- loadConfig.map { newConfig =>
                   logger.reconfigureIfChanged(newConfig)
-                }.scheduleFork(Schedule.fixed(interval))
+                }.scheduleFork(updateLogger)
     } yield logger
 
 }

@@ -15,13 +15,13 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
         logger <- ReconfigurableLogger
                     .make[Config.Error, String, Any, ConsoleLoggerConfig](
                       ZIO.config(ConsoleLoggerConfig.config.nested(configPath)),
-                      config =>
+                      (config, _) =>
                         config.format.toLogger.map { line =>
                           zio.Unsafe.unsafe { implicit u =>
                             Runtime.default.unsafe.run(queue.offer(line))
                           }
                         }.filter(config.filter),
-                      200.millis
+                      Schedule.fixed(200.millis)
                     )
         _      <- ZIO.withLoggerScoped(logger)
       } yield ()
