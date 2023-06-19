@@ -20,10 +20,10 @@ object ApiHandlersSpec extends ZIOSpecDefault {
         ZIO.succeed(Some(LoggerConfigurer.LoggerConfig(name, LogLevel.Info)))
 
       override def setLoggerConfig(
-        name: String,
-        logLevel: LogLevel
+                                    name: String,
+                                    level: LogLevel
       ): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
-        ZIO.succeed(LoggerConfigurer.LoggerConfig(name, logLevel))
+        ZIO.succeed(LoggerConfigurer.LoggerConfig(name, level))
     }
   }
 

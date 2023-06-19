@@ -43,13 +43,13 @@ object ApiDomain {
       .transformOrFail[LogLevel](v => labelToLevel.get(v).toRight("Failed"), v => levelToLabel.get(v).toRight("Failed"))
   }
 
-  final case class LoggerConfig(name: String, logLevel: LogLevel)
+  final case class LoggerConfig(name: String, level: LogLevel)
 
   object LoggerConfig {
     implicit val schema: Schema[LoggerConfig] = DeriveSchema.gen[LoggerConfig]
 
     def from(value: LoggerConfigurer.LoggerConfig): LoggerConfig =
-      LoggerConfig(value.name, value.logLevel)
+      LoggerConfig(value.name, value.level)
   }
 
 }

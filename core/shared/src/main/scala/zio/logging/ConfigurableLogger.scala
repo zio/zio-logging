@@ -24,12 +24,12 @@ trait LoggerConfigurer {
 
   def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerConfigurer.LoggerConfig]]
 
-  def setLoggerConfig(name: String, logLevel: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig]
+  def setLoggerConfig(name: String, level: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig]
 }
 
 object LoggerConfigurer {
 
-  final case class LoggerConfig(name: String, logLevel: LogLevel)
+  final case class LoggerConfig(name: String, level: LogLevel)
 
   def getLoggerConfigs(): ZIO[LoggerConfigurer, Throwable, List[LoggerConfigurer.LoggerConfig]] =
     ZIO.serviceWithZIO[LoggerConfigurer](_.getLoggerConfigs())
@@ -144,19 +144,19 @@ object ConfigurableLogger {
         }
       }
 
-    override def setLoggerConfig(name: String, logLevel: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
+    override def setLoggerConfig(name: String, level: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
       ZIO.attempt {
         val currentConfig = logger.config
 
         val newConfig = if (name == rootName) {
-          currentConfig.withRootLevel(logLevel)
+          currentConfig.withRootLevel(level)
         } else {
-          currentConfig.withMapping(name, logLevel)
+          currentConfig.withMapping(name, level)
         }
 
         logger.reconfigureIfChanged(newConfig)
 
-        LoggerConfigurer.LoggerConfig(name, logLevel)
+        LoggerConfigurer.LoggerConfig(name, level)
       }
   }
 

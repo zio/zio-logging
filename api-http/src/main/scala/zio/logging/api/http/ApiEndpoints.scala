@@ -34,14 +34,11 @@ object ApiEndpoints {
 
   def getLoggerConfigs(
     rootPath: Seq[String] = Seq.empty
-  ): Endpoint[Unit, ApiDomain.Error, List[ApiDomain.LoggerConfig], None] =
+  ): Endpoint[Unit, ApiDomain.Error.Internal, List[ApiDomain.LoggerConfig], None] =
     Endpoint
       .get(rootPathCodec(rootPath) / literal("logger"))
       .out[List[ApiDomain.LoggerConfig]]
-      .outErrors[ApiDomain.Error](
-        HttpCodec.error[ApiDomain.Error.Internal](Status.InternalServerError),
-        HttpCodec.error[ApiDomain.Error.NotFound](Status.NotFound)
-      )
+      .outError[ApiDomain.Error.Internal](Status.InternalServerError)
 
   def getLoggerConfig(
     rootPath: Seq[String] = Seq.empty
@@ -56,15 +53,12 @@ object ApiEndpoints {
 
   def setLoggerConfig(
     rootPath: Seq[String] = Seq.empty
-  ): Endpoint[(String, LogLevel), ApiDomain.Error, ApiDomain.LoggerConfig, None] =
+  ): Endpoint[(String, LogLevel), ApiDomain.Error.Internal, ApiDomain.LoggerConfig, None] =
     Endpoint
       .put(rootPathCodec(rootPath) / literal("logger") / string("name"))
       .in[LogLevel]
       .out[ApiDomain.LoggerConfig]
-      .outErrors[ApiDomain.Error](
-        HttpCodec.error[ApiDomain.Error.Internal](Status.InternalServerError),
-        HttpCodec.error[ApiDomain.Error.NotFound](Status.NotFound)
-      )
+      .outError[ApiDomain.Error.Internal](Status.InternalServerError)
 
   def doc(rootPath: Seq[String] = Seq.empty): Doc =
     getLoggerConfigs(rootPath).doc + getLoggerConfig(rootPath).doc + setLoggerConfig(rootPath).doc
