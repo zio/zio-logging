@@ -126,9 +126,9 @@ object ConfigurableLogger {
       ZIO.attempt {
         val currentConfig = logger.config
 
-        LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel) :: currentConfig.mappings
-          .map(LoggerConfigurer.LoggerConfig.tupled)
-          .toList
+        LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel) :: currentConfig.mappings.map { case (n, l) =>
+          LoggerConfigurer.LoggerConfig(n, l)
+        }.toList
       }
 
     override def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerConfigurer.LoggerConfig]] =

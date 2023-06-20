@@ -1,13 +1,14 @@
 package zio.logging.api.http
 
 import zio.LogLevel
-import zio.http.codec._
 import zio.http.codec.PathCodec.literal
+import zio.http.codec._
 import zio.test._
+import zio.Scope
 
 object ApiEndpointsSpec extends ZIOSpecDefault {
 
-  def spec = suite("ApiEndpointsSpec")(
+  def spec: Spec[Environment with TestEnvironment with Scope,Any] = suite("ApiEndpointsSpec")(
     test("rootPathCodec") {
       def testRootPathCodec(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(ApiEndpoints.rootPathCodec(rootPath).encodeRequest(()).url == expected.encodeRequest(()).url)

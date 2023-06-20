@@ -1,15 +1,15 @@
 package zio.logging.api.http
 
-import zio.{ ZIO, ZLayer }
 import zio.http._
 import zio.http.codec._
-import zio.LogLevel
 import zio.logging.LoggerConfigurer
 import zio.test._
+import zio.{LogLevel, ZIO, ZLayer}
+import zio.ULayer
 
 object ApiHandlersSpec extends ZIOSpecDefault {
 
-  val loggerConfigurer = ZLayer.succeed {
+  val loggerConfigurer: ULayer[LoggerConfigurer] = ZLayer.succeed {
     new LoggerConfigurer {
       override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerConfigurer.LoggerConfig]] =
         ZIO.succeed(LoggerConfigurer.LoggerConfig("root", LogLevel.Info) :: Nil)
@@ -27,7 +27,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
     }
   }
 
-  def spec = suite("ApiHandlersSpec")(
+  def spec: Spec[Any,Serializable] = suite("ApiHandlersSpec")(
     test("get all") {
       val routes = ApiHandlers.routes("example" :: Nil)
 
