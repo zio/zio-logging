@@ -16,10 +16,10 @@
 package zio.logging.example
 
 import zio.http.HttpAppMiddleware.basicAuth
-import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer }
-import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 import zio.http._
 import zio.logging.api.http.ApiHandlers
+import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer }
+import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
@@ -67,7 +67,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
     Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> configurableLogger()
 
-  def exec() =
+  def exec(): ZIO[Any, Nothing, Unit] =
     for {
       ok      <- Random.nextBoolean
       traceId <- ZIO.succeed(UUID.randomUUID())
@@ -84,7 +84,8 @@ object LoggerReconfigureApp extends ZIOAppDefault {
       _       <- ZIO.logDebug("Done") @@ LogAnnotation.TraceId(traceId)
     } yield ()
 
-  val httpApp = ApiHandlers.routes("example" :: Nil).toApp[LoggerConfigurer] @@ basicAuth("admin", "admin")
+  val httpApp: Http[LoggerConfigurer, Response, Request, Response] =
+    ApiHandlers.routes("example" :: Nil).toApp[LoggerConfigurer] @@ basicAuth("admin", "admin")
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {

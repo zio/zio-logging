@@ -19,37 +19,38 @@ import zio.ZIO
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint.Routes
 import zio.logging.LoggerConfigurer
+import zio.logging.api.http.ApiDomain.Error
 
 object ApiHandlers {
 
-  def getLoggerConfigs(rootPath: Seq[String] = Seq.empty) =
+  def getLoggerConfigs(rootPath: Seq[String] = Seq.empty): Routes[LoggerConfigurer, Error.Internal, None] =
     ApiEndpoints
       .getLoggerConfigs(rootPath)
       .implement(_ =>
         LoggerConfigurer
           .getLoggerConfigs()
           .map(_.map(ApiDomain.LoggerConfig.from))
-          .mapError(_ => ApiDomain.Error.Internal())
+          .mapError(_ => Error.Internal())
       )
 
-  def getLoggerConfig(rootPath: Seq[String] = Seq.empty) =
+  def getLoggerConfig(rootPath: Seq[String] = Seq.empty): Routes[LoggerConfigurer, Error, None] =
     ApiEndpoints
       .getLoggerConfig(rootPath)
       .implement { name =>
-        LoggerConfigurer.getLoggerConfig(name).mapError(_ => ApiDomain.Error.Internal()).flatMap {
+        LoggerConfigurer.getLoggerConfig(name).mapError(_ => Error.Internal()).flatMap {
           case Some(r) => ZIO.succeed(ApiDomain.LoggerConfig.from(r))
-          case _       => ZIO.fail(ApiDomain.Error.NotFound())
+          case _       => ZIO.fail(Error.NotFound())
         }
       }
 
-  def setLoggerConfigs(rootPath: Seq[String] = Seq.empty) =
+  def setLoggerConfigs(rootPath: Seq[String] = Seq.empty): Routes[LoggerConfigurer, Error.Internal, None] =
     ApiEndpoints
       .setLoggerConfig(rootPath)
       .implement { case (name, logLevel) =>
         LoggerConfigurer
           .setLoggerConfig(name, logLevel)
           .map(ApiDomain.LoggerConfig.from)
-          .mapError(_ => ApiDomain.Error.Internal())
+          .mapError(_ => Error.Internal())
       }
 
   def routes(rootPath: Seq[String] = Seq.empty): Routes[LoggerConfigurer, ApiDomain.Error, None] =

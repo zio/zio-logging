@@ -17,8 +17,8 @@ package zio.logging.api.http
 
 import zio._
 import zio.http._
-import zio.http.codec.{ Doc, HttpCodec, PathCodec }
 import zio.http.codec.PathCodec.{ literal, string }
+import zio.http.codec.{ Doc, HttpCodec, PathCodec }
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint._
 
