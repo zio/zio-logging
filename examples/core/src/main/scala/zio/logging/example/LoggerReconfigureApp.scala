@@ -18,7 +18,7 @@ package zio.logging.example
 import zio.http.HttpAppMiddleware.basicAuth
 import zio.http._
 import zio.logging.api.http.ApiHandlers
-import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer }
+import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer, LoggerLayers }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
@@ -98,8 +98,6 @@ object LoggerReconfigureApp extends ZIOAppDefault {
 /*
 
  curl -u "admin:admin" 'http://localhost:8080/example/logger'
-
- curl -u "admin:admin" 'http://localhost:8080/example/logger/root'
 
  curl -u "admin:admin" 'http://localhost:8080/example/logger/root'
 
