@@ -8,7 +8,7 @@ import zio.Scope
 
 object ApiEndpointsSpec extends ZIOSpecDefault {
 
-  def spec: Spec[Environment with TestEnvironment with Scope,Any] = suite("ApiEndpointsSpec")(
+  def spec: Spec[Environment with TestEnvironment with Scope, Any] = suite("ApiEndpointsSpec")(
     test("rootPathCodec") {
       def testRootPathCodec(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(ApiEndpoints.rootPathCodec(rootPath).encodeRequest(()).url == expected.encodeRequest(()).url)

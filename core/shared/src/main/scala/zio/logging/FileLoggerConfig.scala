@@ -97,4 +97,10 @@ object FileLoggerConfig {
     l.filter === r.filter
   }
 
+  def load(configPath: String = "logger"): ZIO[Any, Config.Error, FileLoggerConfig] =
+    ZIO.config(FileLoggerConfig.config.nested(configPath))
+
+  def make(configPath: String = "logger"): ZLayer[Any, Config.Error, FileLoggerConfig] =
+    ZLayer.fromZIO(load(configPath))
+
 }

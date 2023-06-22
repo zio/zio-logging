@@ -25,32 +25,23 @@ import java.util.UUID
 
 object LoggerReconfigureApp extends ZIOAppDefault {
 
-  def configurableLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
-    ZLayer.scoped {
-      for {
-        consoleLoggerConfig <- ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
-        filterConfig        <- ZIO.succeed {
-                                 consoleLoggerConfig.filter
-                                   .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
-                                   .config
-                               }
+  def configurableLogger(configPath: String = "logger") = {
+    import LoggerLayers._
 
-        logger <- ZIO.succeed {
-                    ConfigurableLogger.make(
-                      consoleLoggerConfig.format.toLogger.map { line =>
-                        try java.lang.System.out.println(line)
-                        catch {
-                          case t: VirtualMachineError => throw t
-                          case _: Throwable           => ()
-                        }
-                      },
-                      filterConfig
-                    )
-                  }
+    ConsoleLoggerConfig.make(configPath).flatMap { env =>
+      val consoleLoggerConfig = env.get[ConsoleLoggerConfig]
 
-        _ <- ZIO.withLoggerScoped(logger)
-      } yield ()
+      makeSystemOutLogger(
+        consoleLoggerConfig.format.toLogger
+      ).project { logger =>
+        val filterConfig = consoleLoggerConfig.filter
+          .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
+          .config
+
+        ConfigurableLogger.make(logger, filterConfig)
+      }.install
     }
+  }
 
   val logFormat =
     "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %kv{trace_id} %kv{user_id} %cause}"

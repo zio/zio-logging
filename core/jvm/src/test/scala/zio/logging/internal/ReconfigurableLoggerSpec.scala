@@ -14,7 +14,7 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
       for {
         logger <- ReconfigurableLogger
                     .make[Config.Error, String, Any, ConsoleLoggerConfig](
-                      ZIO.config(ConsoleLoggerConfig.config.nested(configPath)),
+                      ConsoleLoggerConfig.load(configPath),
                       (config, _) =>
                         config.format.toLogger.map { line =>
                           zio.Unsafe.unsafe { implicit u =>

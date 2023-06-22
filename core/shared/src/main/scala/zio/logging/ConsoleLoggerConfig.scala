@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.prelude._
-import zio.{ Config, LogLevel }
+import zio.{ Config, LogLevel, ZIO, ZLayer }
 
 final case class ConsoleLoggerConfig(format: LogFormat, filter: LogFilter[String])
 
@@ -38,4 +38,11 @@ object ConsoleLoggerConfig {
   implicit val equal: Equal[ConsoleLoggerConfig] = Equal.make { (l, r) =>
     l.format == r.format && l.filter === r.filter
   }
+
+  def load(configPath: String = "logger"): ZIO[Any, Config.Error, ConsoleLoggerConfig] =
+    ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+
+  def make(configPath: String = "logger"): ZLayer[Any, Config.Error, ConsoleLoggerConfig] =
+    ZLayer.fromZIO(load(configPath))
+
 }

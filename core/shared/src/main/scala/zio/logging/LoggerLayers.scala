@@ -26,35 +26,61 @@ import java.nio.file.Path
 object LoggerLayers {
 
   def makeConsoleErrLogger(config: ConsoleLoggerConfig): ULayer[ZLogger[String, Any]] =
-    makePrintStreamLogger(config.format.toLogger, java.lang.System.err, config.filter)
+    makeSystemErrLogger(config.format.toLogger).project(logger => FilteredLogger(logger, config.filter))
+
+  def makeConsoleErrLogger: ZLayer[ConsoleLoggerConfig, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[ConsoleLoggerConfig].flatMap { env =>
+      makeConsoleErrLogger(env.get[ConsoleLoggerConfig])
+    }
 
   def makeConsoleErrJsonLogger(config: ConsoleLoggerConfig): ULayer[ZLogger[String, Any]] =
-    makePrintStreamLogger(config.format.toJsonLogger, java.lang.System.err, config.filter)
+    makeSystemErrLogger(config.format.toJsonLogger).project(logger => FilteredLogger(logger, config.filter))
+
+  def makeConsoleErrJsonLogger: ZLayer[ConsoleLoggerConfig, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[ConsoleLoggerConfig].flatMap { env =>
+      makeConsoleErrJsonLogger(env.get[ConsoleLoggerConfig])
+    }
 
   def makeConsoleLogger(config: ConsoleLoggerConfig): ULayer[ZLogger[String, Any]] =
-    makePrintStreamLogger(config.format.toLogger, java.lang.System.out, config.filter)
+    makeSystemOutLogger(config.format.toLogger).project(logger => FilteredLogger(logger, config.filter))
+
+  def makeConsoleLogger: ZLayer[ConsoleLoggerConfig, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[ConsoleLoggerConfig].flatMap { env =>
+      makeConsoleLogger(env.get[ConsoleLoggerConfig])
+    }
 
   def makeConsoleJsonLogger(config: ConsoleLoggerConfig): ULayer[ZLogger[String, Any]] =
-    makePrintStreamLogger(config.format.toJsonLogger, java.lang.System.out, config.filter)
+    makeSystemOutLogger(config.format.toJsonLogger).project(logger => FilteredLogger(logger, config.filter))
+
+  def makeConsoleJsonLogger: ZLayer[ConsoleLoggerConfig, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[ConsoleLoggerConfig].flatMap { env =>
+      makeConsoleJsonLogger(env.get[ConsoleLoggerConfig])
+    }
+
+  def makeSystemOutLogger(
+    logger: ZLogger[String, String]
+  ): ULayer[ZLogger[String, Any]] = makePrintStreamLogger(logger, java.lang.System.out)
+
+  def makeSystemErrLogger(
+    logger: ZLogger[String, String]
+  ): ULayer[ZLogger[String, Any]] = makePrintStreamLogger(logger, java.lang.System.err)
 
   def makePrintStreamLogger(
     logger: ZLogger[String, String],
-    stream: PrintStream,
-    logFilter: LogFilter[String]
-  ): ULayer[ZLogger[String, Any]] = ZLayer.succeed(printStreamLogger(logger, stream, logFilter))
+    stream: PrintStream
+  ): ULayer[ZLogger[String, Any]] = ZLayer.succeed(printStreamLogger(logger, stream))
 
   private def printStreamLogger(
     logger: ZLogger[String, String],
-    stream: PrintStream,
-    logFilter: LogFilter[String]
+    stream: PrintStream
   ): ZLogger[String, Any] = {
-    val stringLogger = logFilter.filter(logger.map { line =>
+    val stringLogger = logger.map { line =>
       try stream.println(line)
       catch {
         case t: VirtualMachineError => throw t
         case _: Throwable           => ()
       }
-    })
+    }
     stringLogger
   }
 
@@ -63,12 +89,11 @@ object LoggerLayers {
   ): ZLayer[Scope, Nothing, ZLogger[String, Any]] = makeFileAsyncLogger(
     config.destination,
     config.format.toJsonLogger,
-    config.filter,
     config.charset,
     config.autoFlushBatchSize,
     config.bufferedIOSize,
     config.rollingPolicy
-  )
+  ).project(logger => FilteredLogger(logger, config.filter))
 
   def makeFileAsyncLogger(
     config: FileLoggerConfig
@@ -76,17 +101,15 @@ object LoggerLayers {
     makeFileAsyncLogger(
       config.destination,
       config.format.toLogger,
-      config.filter,
       config.charset,
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    )
+    ).project(logger => FilteredLogger(logger, config.filter))
 
   def makeFileAsyncLogger(
     destination: Path,
     logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
@@ -98,7 +121,6 @@ object LoggerLayers {
     } yield fileWriterAsyncLogger(
       destination,
       logger,
-      logFilter,
       charset,
       autoFlushBatchSize,
       bufferedIOSize,
@@ -110,7 +132,6 @@ object LoggerLayers {
   private def fileWriterAsyncLogger(
     destination: Path,
     logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
@@ -120,7 +141,7 @@ object LoggerLayers {
     val logWriter =
       new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
 
-    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
+    val stringLogger: ZLogger[String, Any] = logger.map { (line: String) =>
       zio.Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe.run(queue.offer(ZIO.succeed {
           try logWriter.writeln(line)
@@ -130,7 +151,7 @@ object LoggerLayers {
           }
         }))
       }
-    })
+    }
     stringLogger
   }
 
@@ -138,41 +159,37 @@ object LoggerLayers {
     makeFileLogger(
       config.destination,
       config.format.toJsonLogger,
-      config.filter,
       config.charset,
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    )
+    ).project(logger => FilteredLogger(logger, config.filter))
 
   def makeFileLogger(config: FileLoggerConfig): ULayer[ZLogger[String, Any]] =
     makeFileLogger(
       config.destination,
       config.format.toLogger,
-      config.filter,
       config.charset,
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    )
+    ).project(logger => FilteredLogger(logger, config.filter))
 
   def makeFileLogger(
     destination: Path,
     logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
     rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
   ): ULayer[ZLogger[String, Any]] =
     ZLayer.succeed(
-      fileWriterLogger(destination, logger, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
+      fileWriterLogger(destination, logger, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
     )
 
   private def fileWriterLogger(
     destination: Path,
     logger: ZLogger[String, String],
-    logFilter: LogFilter[String],
     charset: Charset,
     autoFlushBatchSize: Int,
     bufferedIOSize: Option[Int],
@@ -181,13 +198,13 @@ object LoggerLayers {
     val logWriter =
       new zio.logging.internal.FileWriter(destination, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
 
-    val stringLogger: ZLogger[String, Any] = logFilter.filter(logger.map { (line: String) =>
+    val stringLogger: ZLogger[String, Any] = logger.map { (line: String) =>
       try logWriter.writeln(line)
       catch {
         case t: VirtualMachineError => throw t
         case _: Throwable           => ()
       }
-    })
+    }
 
     stringLogger
   }

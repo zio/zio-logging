@@ -4,7 +4,7 @@ import zio.http._
 import zio.http.codec._
 import zio.logging.LoggerConfigurer
 import zio.test._
-import zio.{LogLevel, ZIO, ZLayer}
+import zio.{ LogLevel, ZIO, ZLayer }
 import zio.ULayer
 
 object ApiHandlersSpec extends ZIOSpecDefault {
@@ -27,7 +27,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
     }
   }
 
-  def spec: Spec[Any,Serializable] = suite("ApiHandlersSpec")(
+  def spec: Spec[Any, Serializable] = suite("ApiHandlersSpec")(
     test("get all") {
       val routes = ApiHandlers.routes("example" :: Nil)
 
