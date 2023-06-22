@@ -95,6 +95,11 @@ object LoggerLayers {
     config.rollingPolicy
   ).project(logger => FilteredLogger(logger, config.filter))
 
+  def makeFileAsyncJsonLogger: ZLayer[FileLoggerConfig with Scope, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[FileLoggerConfig].flatMap { env =>
+      makeFileAsyncJsonLogger(env.get[FileLoggerConfig])
+    }
+
   def makeFileAsyncLogger(
     config: FileLoggerConfig
   ): ZLayer[Scope, Nothing, ZLogger[String, Any]] =
@@ -106,6 +111,11 @@ object LoggerLayers {
       config.bufferedIOSize,
       config.rollingPolicy
     ).project(logger => FilteredLogger(logger, config.filter))
+
+  def makeFileAsyncLogger: ZLayer[FileLoggerConfig with Scope, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[FileLoggerConfig].flatMap { env =>
+      makeFileAsyncLogger(env.get[FileLoggerConfig])
+    }
 
   def makeFileAsyncLogger(
     destination: Path,
@@ -165,6 +175,11 @@ object LoggerLayers {
       config.rollingPolicy
     ).project(logger => FilteredLogger(logger, config.filter))
 
+  def makeFileJsonLogger: ZLayer[FileLoggerConfig, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[FileLoggerConfig].flatMap { env =>
+      makeFileJsonLogger(env.get[FileLoggerConfig])
+    }
+
   def makeFileLogger(config: FileLoggerConfig): ULayer[ZLogger[String, Any]] =
     makeFileLogger(
       config.destination,
@@ -174,6 +189,11 @@ object LoggerLayers {
       config.bufferedIOSize,
       config.rollingPolicy
     ).project(logger => FilteredLogger(logger, config.filter))
+
+  def makeFileLogger: ZLayer[FileLoggerConfig, Nothing, ZLogger[String, Any]] =
+    ZLayer.environment[FileLoggerConfig].flatMap { env =>
+      makeFileLogger(env.get[FileLoggerConfig])
+    }
 
   def makeFileLogger(
     destination: Path,
