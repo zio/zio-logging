@@ -28,19 +28,34 @@ object LoggerReconfigureApp extends ZIOAppDefault {
   def configurableLogger(configPath: String = "logger") = {
     import LoggerLayers._
 
-    ConsoleLoggerConfig.make(configPath).flatMap { env =>
-      val consoleLoggerConfig = env.get[ConsoleLoggerConfig]
+//    ConsoleLoggerConfig.make(configPath).flatMap { env =>
+//      val consoleLoggerConfig = env.get[ConsoleLoggerConfig]
+//
+//      makeSystemOutLogger(
+//        consoleLoggerConfig.format.toLogger
+//      ).project { logger =>
+//        val filterConfig = consoleLoggerConfig.filter
+//          .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
+//          .config
+//
+//        ConfigurableLogger.make(logger, filterConfig)
+//      }.install
+//    }
 
-      makeSystemOutLogger(
-        consoleLoggerConfig.format.toLogger
-      ).project { logger =>
-        val filterConfig = consoleLoggerConfig.filter
-          .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
-          .config
+    ConsoleLoggerConfig
+      .load(configPath)
+      .flatMap { consoleLoggerConfig =>
+        makeSystemOutLogger(
+          consoleLoggerConfig.format.toLogger
+        ).map { logger =>
+          val filterConfig = consoleLoggerConfig.filter
+            .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
+            .config
 
-        ConfigurableLogger.make(logger, filterConfig)
-      }.install
-    }
+          ConfigurableLogger.make(logger, filterConfig)
+        }
+      }
+      .install
   }
 
   val logFormat =
