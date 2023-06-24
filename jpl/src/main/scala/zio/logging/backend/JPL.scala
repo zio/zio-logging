@@ -147,30 +147,37 @@ object JPL {
     loggerName: Trace => String,
     getJPLogger: String => System.Logger
   ): ZLogger[String, Unit] =
-    new ZLogger[String, Unit] {
-      override def apply(
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => String,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ): Unit = {
-        val jpLoggerName = annotations.getOrElse(
-          JPL.loggerNameAnnotationKey,
-          annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
-        )
-        val jpLogger     = getJPLogger(jpLoggerName)
-        if (isLogLevelEnabled(jpLogger, logLevel)) {
-          val appender = logAppender(jpLogger, logLevel)
+    JplLogger(format, loggerName, getJPLogger)
 
-          format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-          appender.closeLogEntry()
-        }
-        ()
+  private[logging] case class JplLogger(
+    format: LogFormat,
+    loggerName: Trace => String,
+    getJPLogger: String => System.Logger
+  ) extends ZLogger[String, Unit] {
+
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Unit = {
+      val jpLoggerName = annotations.getOrElse(
+        JPL.loggerNameAnnotationKey,
+        annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
+      )
+      val jpLogger     = getJPLogger(jpLoggerName)
+      if (isLogLevelEnabled(jpLogger, logLevel)) {
+        val appender = logAppender(jpLogger, logLevel)
+
+        format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        appender.closeLogEntry()
       }
+      ()
     }
+  }
 
 }

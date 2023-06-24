@@ -256,32 +256,36 @@ object SLF4J {
     // as in some program failure cases it may happen, that program exit sooner then log message will be logged (#616)
     LoggerFactory.getLogger("zio-slf4j-logger")
 
-    new ZLogger[String, Unit] {
-      override def apply(
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => String,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ): Unit = {
-        val slf4jLoggerName = annotations.getOrElse(
-          SLF4J.loggerNameAnnotationKey,
-          annotations.getOrElse(logging.loggerNameAnnotationKey, loggerName(trace))
-        )
-        val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
-        val slf4jMarkerName = annotations.get(SLF4J.logMarkerNameAnnotationKey)
-        val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
-        if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
-          val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
+    Slf4jLogger(format, loggerName)
+  }
 
-          format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-          appender.closeLogEntry()
-        }
-        ()
+  private[logging] case class Slf4jLogger(format: LogFormat, loggerName: Trace => String)
+      extends ZLogger[String, Unit] {
+
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Unit = {
+      val slf4jLoggerName = annotations.getOrElse(
+        SLF4J.loggerNameAnnotationKey,
+        annotations.getOrElse(logging.loggerNameAnnotationKey, loggerName(trace))
+      )
+      val slf4jLogger     = LoggerFactory.getLogger(slf4jLoggerName)
+      val slf4jMarkerName = annotations.get(SLF4J.logMarkerNameAnnotationKey)
+      val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
+      if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
+        val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
+
+        format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+        appender.closeLogEntry()
       }
+      ()
     }
   }
 
