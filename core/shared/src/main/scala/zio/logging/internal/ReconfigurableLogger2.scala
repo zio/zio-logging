@@ -22,9 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 private[logging] sealed trait ReconfigurableLogger2[-Message, +Output, Config] extends ZLogger[Message, Output] {
 
-  def config: Config
-
-  def underlying: ZLogger[Message, Output]
+  def get: (Config, ZLogger[Message, Output])
 
   private[logging] def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit
 }
@@ -40,9 +38,7 @@ private[logging] object ReconfigurableLogger2 {
 
     new ReconfigurableLogger2[Message, Output, Config] {
 
-      override def config: Config = configuredLogger.get()._1
-
-      override def underlying: ZLogger[Message, Output] = configuredLogger.get()._2
+      override def get: (Config, ZLogger[Message, Output]) = configuredLogger.get()
 
       override private[logging] def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit =
         configuredLogger.set((config, logger.asInstanceOf[ZLogger[Message, Output]]))
@@ -71,9 +67,9 @@ private[logging] object ReconfigurableLogger2 {
       initialLogger       <- makeLogger(initialConfig, None)
       reconfigurableLogger = ReconfigurableLogger2[M, O, C](initialConfig, initialLogger)
       _                   <- loadConfig.flatMap { newConfig =>
-                               val currentConfig = reconfigurableLogger.config
+                               val (currentConfig, currentLogger) = reconfigurableLogger.get
                                if (currentConfig !== newConfig) {
-                                 makeLogger(newConfig, Some(reconfigurableLogger.underlying)).map { newLogger =>
+                                 makeLogger(newConfig, Some(currentLogger)).map { newLogger =>
                                    reconfigurableLogger.set(newConfig, newLogger)
                                  }.unit
                                } else ZIO.unit

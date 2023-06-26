@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.logging.internal.ReconfigurableLogger
+import zio.logging.internal.{ ReconfigurableLogger, ReconfigurableLogger2 }
 import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, ZIO, ZLayer, ZLogger }
 
 trait LoggerConfigurer {
@@ -155,6 +155,86 @@ object ConfigurableLogger {
         }
 
         logger.reconfigureIfChanged(newConfig)
+
+        LoggerConfigurer.LoggerConfig(name, level)
+      }
+  }
+
+  def make2[Message, Output](
+    logger: ZLogger[Message, Output],
+    filterConfig: LogFilter.LogLevelByNameConfig
+  ): ConfigurableLogger[Message, Option[Output]] = {
+
+    val initialLogger = LogFilter.logLevelByName(filterConfig).filter(logger)
+
+    val reconfigurableLogger = ReconfigurableLogger2[Message, Option[Output], LogFilter.LogLevelByNameConfig](
+      filterConfig,
+      initialLogger
+    )
+
+    new ConfigurableLogger[Message, Option[Output]] {
+
+      override val configurer: LoggerConfigurer =
+        Configurer2(filterConfig => LogFilter.logLevelByName(filterConfig).filter(logger), reconfigurableLogger)
+
+      override def apply(
+        trace: Trace,
+        fiberId: FiberId,
+        logLevel: LogLevel,
+        message: () => Message,
+        cause: Cause[Any],
+        context: FiberRefs,
+        spans: List[LogSpan],
+        annotations: Map[String, String]
+      ): Option[Output] =
+        reconfigurableLogger.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
+    }
+  }
+
+  private case class Configurer2[M, O](
+    makeLogger: LogFilter.LogLevelByNameConfig => ZLogger[M, O],
+    logger: ReconfigurableLogger2[M, Option[O], LogFilter.LogLevelByNameConfig]
+  ) extends LoggerConfigurer {
+    import zio.prelude._
+
+    private val rootName = "root"
+
+    override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerConfigurer.LoggerConfig]] =
+      ZIO.attempt {
+        val currentConfig = logger.get._1
+
+        LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel) :: currentConfig.mappings.map { case (n, l) =>
+          LoggerConfigurer.LoggerConfig(n, l)
+        }.toList
+      }
+
+    override def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerConfigurer.LoggerConfig]] =
+      ZIO.attempt {
+        val currentConfig = logger.get._1
+
+        if (name == rootName) {
+          Some(LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel))
+        } else {
+          currentConfig.mappings.collectFirst {
+            case (n, l) if n == name => LoggerConfigurer.LoggerConfig(n, l)
+          }
+        }
+      }
+
+    override def setLoggerConfig(name: String, level: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
+      ZIO.attempt {
+        val currentConfig = logger.get._1
+
+        val newConfig = if (name == rootName) {
+          currentConfig.withRootLevel(level)
+        } else {
+          currentConfig.withMapping(name, level)
+        }
+
+        if (currentConfig !== newConfig) {
+          val newLogger = makeLogger(newConfig)
+          logger.set(newConfig, newLogger)
+        }
 
         LoggerConfigurer.LoggerConfig(name, level)
       }

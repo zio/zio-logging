@@ -15,63 +15,47 @@
  */
 package zio.logging.example
 
-import zio.http.HttpAppMiddleware.basicAuth
-import zio.http._
-import zio.logging.api.http.ApiHandlers
+import zio.logging.internal.ReconfigurableLogger2
 import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer, LoggerLayers }
-import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
+import zio.{ Config, ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object LoggerReconfigureApp extends ZIOAppDefault {
 
-  def configurableLogger(configPath: String = "logger") = {
-    import LoggerLayers._
-
-//    ConsoleLoggerConfig.make(configPath).flatMap { env =>
-//      val consoleLoggerConfig = env.get[ConsoleLoggerConfig]
-//
-//      makeSystemOutLogger(
-//        consoleLoggerConfig.format.toLogger
-//      ).project { logger =>
-//        val filterConfig = consoleLoggerConfig.filter
-//          .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
-//          .config
-//
-//        ConfigurableLogger.make(logger, filterConfig)
-//      }.install
-//    }
-
-    ConsoleLoggerConfig
-      .load(configPath)
-      .flatMap { consoleLoggerConfig =>
-        makeSystemOutLogger(
-          consoleLoggerConfig.format.toLogger
-        ).map { logger =>
-          val filterConfig = consoleLoggerConfig.filter
-            .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
-            .config
-
-          ConfigurableLogger.make(logger, filterConfig)
-        }
-      }
-      .install
-  }
-
   val logFormat =
     "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %kv{trace_id} %kv{user_id} %cause}"
 
-  val configProvider: ConfigProvider = ConfigProvider.fromMap(
-    Map(
-      "logger/format"                              -> logFormat,
-      "logger/filter/rootLevel"                    -> LogLevel.Info.label,
-      "logger/filter/mappings/zio.logging.example" -> LogLevel.Debug.label
-    ),
-    "/"
-  )
+  def configuredLogger(
+    loadConfig: => ZIO[Any, Config.Error, ConsoleLoggerConfig]
+  ) = {
+    import LoggerLayers._
+    ZLayer.scoped {
+      ReconfigurableLogger2
+        .make[Config.Error, String, Any, ConsoleLoggerConfig](
+          loadConfig,
+          (config, _) =>
+            makeSystemOutLogger(config.format.toLogger).map { logger =>
+              config.filter.filter(logger)
+            },
+          Schedule.fixed(500.millis)
+        )
+        .flatMap(logger => ZIO.withLoggerScoped(logger))
+    }
+  }
 
-  override val bootstrap: ZLayer[Any, Config.Error, Unit] =
-    Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> configurableLogger()
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+    Runtime.removeDefaultLoggers >>> configuredLogger(
+      for {
+        info   <- Random.nextBoolean
+        cfg     = Map(
+                    "logger/format"           -> logFormat,
+                    "logger/filter/rootLevel" -> (if (info) LogLevel.Info.label else LogLevel.Debug.label)
+                  )
+        _      <- Console.printLine(cfg.mkString(", ")).orDie
+        config <- ConfigProvider.fromMap(cfg, "/").nested("logger").load(ConsoleLoggerConfig.config)
+      } yield config
+    )
 
   def exec(): ZIO[Any, Nothing, Unit] =
     for {
@@ -90,25 +74,9 @@ object LoggerReconfigureApp extends ZIOAppDefault {
       _       <- ZIO.logDebug("Done") @@ LogAnnotation.TraceId(traceId)
     } yield ()
 
-  val httpApp: Http[LoggerConfigurer, Response, Request, Response] =
-    ApiHandlers.routes("example" :: Nil).toApp[LoggerConfigurer] @@ basicAuth("admin", "admin")
-
   override def run: ZIO[Scope, Any, ExitCode] =
-    (for {
-      _ <- Server.serve(httpApp).fork
+    for {
       _ <- exec().repeat(Schedule.fixed(500.millis))
-    } yield ExitCode.success).provide(LoggerConfigurer.layer ++ Server.default)
+    } yield ExitCode.success
 
 }
-
-/*
-
- curl -u "admin:admin" 'http://localhost:8080/example/logger'
-
- curl -u "admin:admin" 'http://localhost:8080/example/logger/root'
-
- curl -u "admin:admin" --location --request PUT 'http://localhost:8080/example/logger/root' --header 'Content-Type: application/json' --data-raw '"WARN"'
-
- curl -u "admin:admin" --location --request PUT 'http://localhost:8080/example/logger/zio.logging.example' --header 'Content-Type: application/json' --data-raw '"WARN"'
-
- */
