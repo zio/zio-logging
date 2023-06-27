@@ -15,9 +15,8 @@
  */
 package zio.logging
 
-import zio.Tag
-import zio.{ Queue, Runtime, Scope, UIO, ULayer, ZIO, ZLayer, ZLogger }
 import zio.metrics.Metric
+import zio.{ Queue, Runtime, Scope, Tag, UIO, ULayer, ZIO, ZLayer, ZLogger }
 
 import java.io.PrintStream
 import java.nio.charset.Charset
@@ -327,30 +326,12 @@ object LoggerLayers {
       }
   }
 
-//  implicit final class ZLoggerZIOScopedLayerOps[-RIn, +E, ROut <: ZLogger[String, Any]: Tag](
-//    private val self: ZIO[Scope with RIn, E, ROut]
-//  ) {
-//
-//    def install: ZLayer[RIn, E, Unit] =
-//      ZLayer.scoped[RIn] {
-//        self.flatMap { logger =>
-//          ZIO.withLoggerScoped(logger)
-//        }
-//      }
-//
-//    def installScoped: ZLayer[Scope with RIn, E, Unit] =
-//      ZLayer.fromZIO(self.flatMap { logger =>
-//        ZIO.withLoggerScoped(logger)
-//      })
-//
-//  }
-
   implicit final class ZLoggerZIOLayerOps[-RIn, +E, ROut <: ZLogger[String, Any]: Tag](
     private val self: ZIO[RIn, E, ROut]
   ) {
 
-    def install[RIn2 <: RIn]: ZLayer[RIn2, E, Unit] =
-      ZLayer.scoped[RIn2] {
+    def install: ZLayer[RIn, E, Unit] =
+      ZLayer.scoped[RIn] {
         self.flatMap { logger =>
           ZIO.withLoggerScoped(logger)
         }

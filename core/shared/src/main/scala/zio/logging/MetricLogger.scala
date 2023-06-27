@@ -15,8 +15,8 @@
  */
 package zio.logging
 
-import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, Unsafe, ZLogger }
 import zio.metrics.{ Metric, MetricLabel }
+import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, Unsafe, ZLogger }
 
 final case class MetricLogger(counter: Metric.Counter[Long], logLevelLabel: String) extends ZLogger[String, Unit] {
 

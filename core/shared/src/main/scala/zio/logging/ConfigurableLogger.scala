@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.logging.internal.{ ReconfigurableLogger, ReconfigurableLogger2 }
+import zio.logging.internal.ReconfigurableLogger
 import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, ZIO, ZLayer, ZLogger }
 
 trait LoggerConfigurer {
@@ -90,84 +90,9 @@ object ConfigurableLogger {
     filterConfig: LogFilter.LogLevelByNameConfig
   ): ConfigurableLogger[Message, Option[Output]] = {
 
-    val reconfigurableLogger = ReconfigurableLogger[Message, Option[Output], LogFilter.LogLevelByNameConfig](
-      filterConfig,
-      (config, _) => {
-        val filter = LogFilter.logLevelByName(config)
-
-        filter.filter(logger)
-      }
-    )
-
-    new ConfigurableLogger[Message, Option[Output]] {
-
-      override val configurer: LoggerConfigurer = Configurer(reconfigurableLogger)
-
-      override def apply(
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => Message,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ): Option[Output] =
-        reconfigurableLogger.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-    }
-  }
-
-  private case class Configurer(logger: ReconfigurableLogger[_, _, LogFilter.LogLevelByNameConfig])
-      extends LoggerConfigurer {
-
-    private val rootName = "root"
-
-    override def getLoggerConfigs(): ZIO[Any, Throwable, List[LoggerConfigurer.LoggerConfig]] =
-      ZIO.attempt {
-        val currentConfig = logger.config
-
-        LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel) :: currentConfig.mappings.map { case (n, l) =>
-          LoggerConfigurer.LoggerConfig(n, l)
-        }.toList
-      }
-
-    override def getLoggerConfig(name: String): ZIO[Any, Throwable, Option[LoggerConfigurer.LoggerConfig]] =
-      ZIO.attempt {
-        val currentConfig = logger.config
-
-        if (name == rootName) {
-          Some(LoggerConfigurer.LoggerConfig(rootName, currentConfig.rootLevel))
-        } else {
-          currentConfig.mappings.collectFirst {
-            case (n, l) if n == name => LoggerConfigurer.LoggerConfig(n, l)
-          }
-        }
-      }
-
-    override def setLoggerConfig(name: String, level: LogLevel): ZIO[Any, Throwable, LoggerConfigurer.LoggerConfig] =
-      ZIO.attempt {
-        val currentConfig = logger.config
-
-        val newConfig = if (name == rootName) {
-          currentConfig.withRootLevel(level)
-        } else {
-          currentConfig.withMapping(name, level)
-        }
-
-        logger.reconfigureIfChanged(newConfig)
-
-        LoggerConfigurer.LoggerConfig(name, level)
-      }
-  }
-
-  def make2[Message, Output](
-    logger: ZLogger[Message, Output],
-    filterConfig: LogFilter.LogLevelByNameConfig
-  ): ConfigurableLogger[Message, Option[Output]] = {
-
     val initialLogger = LogFilter.logLevelByName(filterConfig).filter(logger)
 
-    val reconfigurableLogger = ReconfigurableLogger2[Message, Option[Output], LogFilter.LogLevelByNameConfig](
+    val reconfigurableLogger = ReconfigurableLogger[Message, Option[Output], LogFilter.LogLevelByNameConfig](
       filterConfig,
       initialLogger
     )
@@ -175,7 +100,7 @@ object ConfigurableLogger {
     new ConfigurableLogger[Message, Option[Output]] {
 
       override val configurer: LoggerConfigurer =
-        Configurer2(filterConfig => LogFilter.logLevelByName(filterConfig).filter(logger), reconfigurableLogger)
+        Configurer(filterConfig => LogFilter.logLevelByName(filterConfig).filter(logger), reconfigurableLogger)
 
       override def apply(
         trace: Trace,
@@ -191,9 +116,9 @@ object ConfigurableLogger {
     }
   }
 
-  private case class Configurer2[M, O](
+  private case class Configurer[M, O](
     makeLogger: LogFilter.LogLevelByNameConfig => ZLogger[M, O],
-    logger: ReconfigurableLogger2[M, Option[O], LogFilter.LogLevelByNameConfig]
+    logger: ReconfigurableLogger[M, Option[O], LogFilter.LogLevelByNameConfig]
   ) extends LoggerConfigurer {
     import zio.prelude._
 

@@ -38,7 +38,7 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
             .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
             .config
 
-          ConfigurableLogger.make2(logger, filterConfig)
+          ConfigurableLogger.make(logger, filterConfig)
         }
       }
       .install

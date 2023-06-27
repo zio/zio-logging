@@ -9,25 +9,28 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
   def configuredLogger(
     queue: zio.Queue[String],
     configPath: String = "logger"
-  ): ZLayer[Any, Config.Error, Unit] =
+  ): ZLayer[Any, Config.Error, Unit] = {
     ZLayer.scoped {
       for {
         logger <- ReconfigurableLogger
-                    .make[Config.Error, String, Any, ConsoleLoggerConfig](
+                    .make[Any, Config.Error, String, Any, ConsoleLoggerConfig](
                       ConsoleLoggerConfig.load(configPath),
                       (config, _) =>
-                        config.format.toLogger.map { line =>
-                          zio.Unsafe.unsafe { implicit u =>
-                            Runtime.default.unsafe.run(queue.offer(line))
-                          }
-                        }.filter(config.filter),
+                        ZIO.succeed {
+                          config.format.toLogger.map { line =>
+                            zio.Unsafe.unsafe { implicit u =>
+                              Runtime.default.unsafe.run(queue.offer(line))
+                            }
+                          }.filter(config.filter)
+                        },
                       Schedule.fixed(200.millis)
                     )
         _      <- ZIO.withLoggerScoped(logger)
       } yield ()
     }
+  }
 
-  val spec: Spec[Environment, Any] = suite("ReconfigurableLogger")(
+  val spec: Spec[Environment, Any] = suite("ReconfigurableLogger2")(
     test("log with changed config") {
 
       val initialProperties = Map(

@@ -22,68 +22,58 @@ import java.util.concurrent.atomic.AtomicReference
 
 private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
 
-  def config: Config
+  def get: (Config, ZLogger[Message, Output])
 
-  def reconfigure(config: Config): Unit
-
-  def reconfigureIfChanged(config: Config): Boolean
+  private[logging] def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit
 }
 
 private[logging] object ReconfigurableLogger {
 
-  def apply[M, O, C: Equal](
-    initialConfig: C,
-    makeLogger: (C, Option[ZLogger[M, O]]) => ZLogger[M, O]
-  ): ReconfigurableLogger[M, O, C] =
-    new ReconfigurableLogger[M, O, C] {
+  def apply[Message, Output, Config](
+    config: Config,
+    logger: ZLogger[Message, Output]
+  ): ReconfigurableLogger[Message, Output, Config] = {
+    val configuredLogger: AtomicReference[(Config, ZLogger[Message, Output])] =
+      new AtomicReference[(Config, ZLogger[Message, Output])]((config, logger))
 
-      private val configuredLogger: AtomicReference[(C, ZLogger[M, O])] = {
-        val logger = makeLogger(initialConfig, None)
-        new AtomicReference[(C, ZLogger[M, O])]((initialConfig, logger))
-      }
+    new ReconfigurableLogger[Message, Output, Config] {
 
-      override def config: C = configuredLogger.get()._1
+      override def get: (Config, ZLogger[Message, Output]) = configuredLogger.get()
 
-      override def reconfigureIfChanged(config: C): Boolean = {
-        val (currentConfig, currentLogger) = configuredLogger.get()
-        if (currentConfig !== config) {
-          reconfigure(config)
-          val logger = makeLogger(config, Some(currentLogger))
-          configuredLogger.set((config, logger))
-          true
-        } else false
-      }
-
-      override def reconfigure(config: C): Unit = {
-        val currentLogger = configuredLogger.get()._2
-        val logger        = makeLogger(config, Some(currentLogger))
-        configuredLogger.set((config, logger))
-      }
+      override private[logging] def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit =
+        configuredLogger.set((config, logger.asInstanceOf[ZLogger[Message, Output]]))
 
       override def apply(
         trace: Trace,
         fiberId: FiberId,
         logLevel: LogLevel,
-        message: () => M,
+        message: () => Message,
         cause: Cause[Any],
         context: FiberRefs,
         spans: List[LogSpan],
         annotations: Map[String, String]
-      ): O =
+      ): Output =
         configuredLogger.get()._2.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
     }
+  }
 
-  def make[E, M, O, C: Equal](
+  def make[R, E, M, O, C: Equal](
     loadConfig: => ZIO[Any, E, C],
-    makeLogger: (C, Option[ZLogger[M, O]]) => ZLogger[M, O],
-    updateLogger: Schedule[Any, Any, Any] = Schedule.fixed(10.seconds)
-  ): ZIO[Scope, E, ReconfigurableLogger[M, O, C]] =
+    makeLogger: (C, Option[ZLogger[M, O]]) => ZIO[R, E, ZLogger[M, O]],
+    updateLogger: Schedule[R, Any, Any] = Schedule.fixed(10.seconds)
+  ): ZIO[R, E, ReconfigurableLogger[M, O, C]] =
     for {
-      config <- loadConfig
-      logger  = ReconfigurableLogger[M, O, C](config, makeLogger)
-      _      <- loadConfig.map { newConfig =>
-                  logger.reconfigureIfChanged(newConfig)
-                }.scheduleFork(updateLogger)
-    } yield logger
+      initialConfig       <- loadConfig
+      initialLogger       <- makeLogger(initialConfig, None)
+      reconfigurableLogger = ReconfigurableLogger[M, O, C](initialConfig, initialLogger)
+      _                   <- loadConfig.flatMap { newConfig =>
+                               val (currentConfig, currentLogger) = reconfigurableLogger.get
+                               if (currentConfig !== newConfig) {
+                                 makeLogger(newConfig, Some(currentLogger)).map { newLogger =>
+                                   reconfigurableLogger.set(newConfig, newLogger)
+                                 }.unit
+                               } else ZIO.unit
+                             }.schedule(updateLogger).forkDaemon
+    } yield reconfigurableLogger
 
 }
