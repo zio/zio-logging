@@ -17,20 +17,7 @@ package zio.logging.backend
 
 import zio.logging.internal.LogAppender
 import zio.logging.{ LogFormat, LoggerNameExtractor }
-import zio.{
-  Cause,
-  FiberFailure,
-  FiberId,
-  FiberRefs,
-  LogLevel,
-  LogSpan,
-  Runtime,
-  Trace,
-  ZIOAspect,
-  ZLayer,
-  ZLogger,
-  logging
-}
+import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZLayer, ZLogger, logging }
 
 object JPL {
 
@@ -46,27 +33,10 @@ object JPL {
   )
 
   /**
-   * log aspect annotation key for JPL logger name
-   */
-  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
-  val loggerNameAnnotationKey = "jpl_logger_name"
-
-  /**
    * default log format for JPL logger
    */
   val logFormatDefault: LogFormat =
-    LogFormat.allAnnotations(excludeKeys =
-      Set(JPL.loggerNameAnnotationKey, logging.loggerNameAnnotationKey)
-    ) + LogFormat.line + LogFormat.cause
-
-  /**
-   * JPL logger name aspect, by this aspect is possible to change default logger name (default logger name is extracted from [[Trace]])
-   *
-   * annotation key: [[JPL.loggerNameAnnotationKey]]
-   */
-  @deprecated("use zio.logging.loggerName", "2.1.8")
-  def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    ZIOAspect.annotated(loggerNameAnnotationKey, value)
+    LogFormat.allAnnotations(excludeKeys = Set(logging.loggerNameAnnotationKey)) + LogFormat.line + LogFormat.cause
 
   private[backend] def getLoggerName(default: String = "zio-jpl-logger"): Trace => String =
     trace => LoggerNameExtractor.trace(trace, FiberRefs.empty, Map.empty).getOrElse(default)
@@ -165,10 +135,7 @@ object JPL {
       spans: List[LogSpan],
       annotations: Map[String, String]
     ): Unit = {
-      val jpLoggerName = annotations.getOrElse(
-        JPL.loggerNameAnnotationKey,
-        annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
-      )
+      val jpLoggerName = annotations.getOrElse(zio.logging.loggerNameAnnotationKey, loggerName(trace))
       val jpLogger     = getJPLogger(jpLoggerName)
       if (isLogLevelEnabled(jpLogger, logLevel)) {
         val appender = logAppender(jpLogger, logLevel)

@@ -881,10 +881,6 @@ object LogFormat {
       }
     }
 
-  @deprecated("use LogFormat.filter", "2.1.2")
-  def ifCauseNonEmpty(format: LogFormat): LogFormat =
-    format.filter(LogFilter.causeNonEmpty)
-
   def label(label: => String, value: LogFormat): LogFormat = LabelFormat(label, value)
 
   val newLine: LogFormat = text(NL)

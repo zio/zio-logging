@@ -62,48 +62,6 @@ package object logging {
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
-  @deprecated("use zio.logging.consoleLogger", "2.1.10")
-  def console(
-    format: LogFormat = LogFormat.colored,
-    logLevel: LogLevel = LogLevel.Info
-  ): ZLayer[Any, Nothing, Unit] =
-    console(format, LogFilter.logLevel(logLevel))
-
-  @deprecated("use zio.logging.consoleLogger", "2.1.10")
-  def console(
-    format: LogFormat,
-    logFilter: LogFilter[String]
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleLogger(ConsoleLoggerConfig(format, logFilter))
-
-  @deprecated("use zio.logging.consoleErrLogger", "2.1.10")
-  def consoleErr(
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleErr(format, LogFilter.logLevel(logLevel))
-
-  @deprecated("use zio.logging.consoleErrLogger", "2.1.10")
-  def consoleErr(
-    format: LogFormat,
-    logFilter: LogFilter[String]
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleErrLogger(ConsoleLoggerConfig(format, logFilter))
-
-  @deprecated("use zio.logging.consoleErrJsonLogger", "2.1.10")
-  def consoleErrJson(
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleErrJson(format, LogFilter.logLevel(logLevel))
-
-  @deprecated("use zio.logging.consoleErrJsonLogger", "2.1.10")
-  def consoleErrJson(
-    format: LogFormat,
-    logFilter: LogFilter[String]
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleErrJsonLogger(ConsoleLoggerConfig(format, logFilter))
-
   def consoleErrLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(makeConsoleErrLogger(config))
 
@@ -126,20 +84,6 @@ package object logging {
       } yield ()
     }
 
-  @deprecated("use zio.logging.consoleJsonLogger", "2.1.10")
-  def consoleJson(
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleJson(format, LogFilter.logLevel(logLevel))
-
-  @deprecated("use zio.logging.consoleJsonLogger", "2.1.10")
-  def consoleJson(
-    format: LogFormat,
-    logFilter: LogFilter[String]
-  ): ZLayer[Any, Nothing, Unit] =
-    consoleJsonLogger(ConsoleLoggerConfig(format, logFilter))
-
   def consoleJsonLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(makeConsoleJsonLogger(config))
 
@@ -161,134 +105,6 @@ package object logging {
         _      <- ZIO.withLoggerScoped(makeConsoleLogger(config))
       } yield ()
     }
-
-  @deprecated("use zio.logging.fileLogger", "2.1.10")
-  def file(
-    destination: Path,
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info,
-    charset: Charset = StandardCharsets.UTF_8,
-    autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None,
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
-  ): ZLayer[Any, Nothing, Unit] =
-    file(destination, format, LogFilter.logLevel(logLevel), charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
-
-  @deprecated("use zio.logging.fileLogger", "2.1.10")
-  def file(
-    destination: Path,
-    format: LogFormat,
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int],
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
-  ): ZLayer[Any, Nothing, Unit] =
-    fileLogger(
-      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
-    )
-
-  @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
-  def fileAsync(
-    destination: Path,
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info,
-    charset: Charset = StandardCharsets.UTF_8,
-    autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None,
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
-  ): ZLayer[Any, Nothing, Unit] =
-    fileAsync(
-      destination,
-      format,
-      LogFilter.logLevel(logLevel),
-      charset,
-      autoFlushBatchSize,
-      bufferedIOSize,
-      rollingPolicy
-    )
-
-  @deprecated("use zio.logging.fileAsyncLogger", "2.1.10")
-  def fileAsync(
-    destination: Path,
-    format: LogFormat,
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int],
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
-  ): ZLayer[Any, Nothing, Unit] =
-    fileAsyncLogger(
-      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
-    )
-
-  @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
-  def fileJson(
-    destination: Path,
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info,
-    charset: Charset = StandardCharsets.UTF_8,
-    autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None,
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
-  ): ZLayer[Any, Nothing, Unit] =
-    fileJson(
-      destination,
-      format,
-      LogFilter.logLevel(logLevel),
-      charset,
-      autoFlushBatchSize,
-      bufferedIOSize,
-      rollingPolicy
-    )
-
-  @deprecated("use zio.logging.fileJsonLogger", "2.1.10")
-  def fileJson(
-    destination: Path,
-    format: LogFormat,
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int],
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
-  ): ZLayer[Any, Nothing, Unit] =
-    fileJsonLogger(
-      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
-    )
-
-  @deprecated("use zio.logging.fileAsyncJsonLogger", "2.1.10")
-  def fileAsyncJson(
-    destination: Path,
-    format: LogFormat = LogFormat.default,
-    logLevel: LogLevel = LogLevel.Info,
-    charset: Charset = StandardCharsets.UTF_8,
-    autoFlushBatchSize: Int = 1,
-    bufferedIOSize: Option[Int] = None,
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
-  ): ZLayer[Any, Nothing, Unit] =
-    fileAsyncJson(
-      destination,
-      format,
-      LogFilter.logLevel(logLevel),
-      charset,
-      autoFlushBatchSize,
-      bufferedIOSize,
-      rollingPolicy
-    )
-
-  @deprecated("use zio.logging.fileAsyncJsonLogger", "2.1.10")
-  def fileAsyncJson(
-    destination: Path,
-    format: LogFormat,
-    logFilter: LogFilter[String],
-    charset: Charset,
-    autoFlushBatchSize: Int,
-    bufferedIOSize: Option[Int],
-    rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy]
-  ): ZLayer[Any, Nothing, Unit] =
-    fileAsyncJsonLogger(
-      FileLoggerConfig(destination, format, logFilter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy)
-    )
 
   def fileAsyncJsonLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     ZLayer.scoped(makeFileAsyncJsonLogger(config))
