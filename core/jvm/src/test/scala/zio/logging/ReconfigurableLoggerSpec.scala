@@ -1,6 +1,5 @@
-package zio.logging.internal
+package zio.logging
 
-import zio.logging.{ ConsoleLoggerConfig, _ }
 import zio.test._
 import zio.{ Chunk, Config, ConfigProvider, LogLevel, Queue, Runtime, Schedule, ZIO, ZLayer, _ }
 
@@ -9,7 +8,7 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
   def configuredLogger(
     queue: zio.Queue[String],
     configPath: String = "logger"
-  ): ZLayer[Any, Config.Error, Unit] = {
+  ): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
         logger <- ReconfigurableLogger
@@ -28,7 +27,6 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
         _      <- ZIO.withLoggerScoped(logger)
       } yield ()
     }
-  }
 
   val spec: Spec[Environment, Any] = suite("ReconfigurableLogger2")(
     test("log with changed config") {

@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package zio.logging.internal
+package zio.logging
 
 import zio._
 import zio.prelude._
 
 import java.util.concurrent.atomic.AtomicReference
 
-private[logging] sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
+sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Message, Output] {
 
   def get: (Config, ZLogger[Message, Output])
 
-  private[logging] def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit
+  def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit
 }
 
 private[logging] object ReconfigurableLogger {
@@ -40,7 +40,7 @@ private[logging] object ReconfigurableLogger {
 
       override def get: (Config, ZLogger[Message, Output]) = configuredLogger.get()
 
-      override private[logging] def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit =
+      override def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit =
         configuredLogger.set((config, logger.asInstanceOf[ZLogger[Message, Output]]))
 
       override def apply(
@@ -58,7 +58,7 @@ private[logging] object ReconfigurableLogger {
   }
 
   def make[R, E, M, O, C: Equal](
-    loadConfig: => ZIO[Any, E, C],
+    loadConfig: => ZIO[R, E, C],
     makeLogger: (C, Option[ZLogger[M, O]]) => ZIO[R, E, ZLogger[M, O]],
     updateLogger: Schedule[R, Any, Any] = Schedule.fixed(10.seconds)
   ): ZIO[R, E, ReconfigurableLogger[M, O, C]] =

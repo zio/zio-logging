@@ -15,7 +15,6 @@
  */
 package zio.logging
 
-import zio.logging.internal.ReconfigurableLogger
 import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, ZIO, ZLayer, ZLogger }
 
 trait LoggerConfigurer {

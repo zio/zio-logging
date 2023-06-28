@@ -15,8 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.internal.ReconfigurableLogger
-import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LoggerLayers }
+import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LoggerLayers, ReconfigurableLogger }
 import zio.{ Config, ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
