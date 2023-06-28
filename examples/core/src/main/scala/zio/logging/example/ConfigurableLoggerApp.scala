@@ -18,16 +18,21 @@ package zio.logging.example
 import zio.http.HttpAppMiddleware.basicAuth
 import zio.http._
 import zio.logging.api.http.ApiHandlers
-import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LogFilter, LoggerConfigurer, LoggerLayers }
+import zio.logging.{
+  ConfigurableLogger,
+  ConsoleLoggerConfig,
+  LogAnnotation,
+  LogFilter,
+  LoggerConfigurer,
+  makeSystemOutLogger
+}
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object ConfigurableLoggerApp extends ZIOAppDefault {
 
-  def configurableLogger(configPath: String = "logger") = {
-    import LoggerLayers._
-
+  def configurableLogger(configPath: String = "logger") =
     ConsoleLoggerConfig
       .load(configPath)
       .flatMap { consoleLoggerConfig =>
@@ -42,7 +47,6 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
         }
       }
       .install
-  }
 
   val logFormat =
     "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %kv{trace_id} %kv{user_id} %cause}"

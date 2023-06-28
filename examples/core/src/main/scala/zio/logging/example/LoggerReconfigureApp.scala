@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LoggerLayers, ReconfigurableLogger }
+import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, ReconfigurableLogger, makeSystemOutLogger }
 import zio.{ Config, ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
@@ -27,8 +27,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
 
   def configuredLogger(
     loadConfig: => ZIO[Any, Config.Error, ConsoleLoggerConfig]
-  ) = {
-    import LoggerLayers._
+  ) =
     ReconfigurableLogger
       .make[Any, Config.Error, String, Any, ConsoleLoggerConfig](
         loadConfig,
@@ -39,7 +38,6 @@ object LoggerReconfigureApp extends ZIOAppDefault {
         Schedule.fixed(500.millis)
       )
       .install
-  }
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> configuredLogger(

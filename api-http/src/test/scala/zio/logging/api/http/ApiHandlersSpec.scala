@@ -4,8 +4,7 @@ import zio.http._
 import zio.http.codec._
 import zio.logging.LoggerConfigurer
 import zio.test._
-import zio.{ LogLevel, ZIO, ZLayer }
-import zio.ULayer
+import zio.{ LogLevel, ULayer, ZIO, ZLayer }
 
 object ApiHandlersSpec extends ZIOSpecDefault {
 

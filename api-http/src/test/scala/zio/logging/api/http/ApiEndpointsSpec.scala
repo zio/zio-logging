@@ -1,10 +1,9 @@
 package zio.logging.api.http
 
-import zio.LogLevel
 import zio.http.codec.PathCodec.literal
 import zio.http.codec._
 import zio.test._
-import zio.Scope
+import zio.{ LogLevel, Scope }
 
 object ApiEndpointsSpec extends ZIOSpecDefault {
 
