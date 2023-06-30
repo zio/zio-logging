@@ -27,7 +27,7 @@ sealed trait ReconfigurableLogger[-Message, +Output, Config] extends ZLogger[Mes
   def set[M <: Message, O >: Output](config: Config, logger: ZLogger[M, O]): Unit
 }
 
-private[logging] object ReconfigurableLogger {
+object ReconfigurableLogger {
 
   def apply[Message, Output, Config](
     config: Config,
