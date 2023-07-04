@@ -59,11 +59,12 @@ package object logging extends LoggerLayers {
       self @@ key(value)
   }
 
-  implicit final class ZLoggerOps[M, O](private val self: ZLogger[M, O]) {
+
+  implicit final class ZLoggerOps[-Message, +Output](private val self: ZLogger[Message, Output]) {
 
     /**
      * Returns a version of logger that only logs messages when this filter is satisfied
      */
-    def filter(filter: LogFilter[M]): ZLogger[M, Option[O]] = FilteredLogger(self, filter)
+    def filter[M <: Message](filter: LogFilter[M]): ZLogger[M, Option[Output]] = FilteredLogger(self, filter)
   }
 }

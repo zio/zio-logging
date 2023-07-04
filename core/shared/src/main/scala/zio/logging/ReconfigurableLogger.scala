@@ -61,7 +61,7 @@ object ReconfigurableLogger {
     loadConfig: => ZIO[R, E, C],
     makeLogger: (C, Option[ZLogger[M, O]]) => ZIO[R, E, ZLogger[M, O]],
     updateLogger: Schedule[R, Any, Any] = Schedule.fixed(10.seconds)
-  ): ZIO[R, E, ReconfigurableLogger[M, O, C]] =
+  ): ZIO[R with Scope, E, ReconfigurableLogger[M, O, C]] =
     for {
       initialConfig       <- loadConfig
       initialLogger       <- makeLogger(initialConfig, None)
@@ -73,7 +73,7 @@ object ReconfigurableLogger {
                                    reconfigurableLogger.set(newConfig, newLogger)
                                  }.unit
                                } else ZIO.unit
-                             }.schedule(updateLogger).forkDaemon
+                             }.schedule(updateLogger).forkScoped
     } yield reconfigurableLogger
 
 }

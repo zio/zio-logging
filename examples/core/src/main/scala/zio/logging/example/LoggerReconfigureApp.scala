@@ -27,7 +27,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
 
   def configuredLogger(
     loadConfig: => ZIO[Any, Config.Error, ConsoleLoggerConfig]
-  ) =
+  ): ZLayer[Any, Config.Error, Unit] =
     ReconfigurableLogger
       .make[Any, Config.Error, String, Any, ConsoleLoggerConfig](
         loadConfig,
@@ -37,7 +37,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
           },
         Schedule.fixed(500.millis)
       )
-      .install
+      .installUnscoped
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> configuredLogger(
