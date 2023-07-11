@@ -33,7 +33,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
         loadConfig,
         (config, _) =>
           makeSystemOutLogger(config.format.toLogger).map { logger =>
-            config.filter.filter(logger)
+            config.toFilter.filter(logger)
           },
         Schedule.fixed(500.millis)
       )

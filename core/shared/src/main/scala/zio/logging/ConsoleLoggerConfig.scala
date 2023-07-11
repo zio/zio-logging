@@ -16,21 +16,26 @@
 package zio.logging
 
 import zio.prelude._
-import zio.{ Config, LogLevel, ZIO, ZLayer }
+import zio.{ Config, ZIO, ZLayer }
 
-final case class ConsoleLoggerConfig(format: LogFormat, filter: LogFilter[String])
+final case class ConsoleLoggerConfig(
+  format: LogFormat,
+  filter: LogFilter.LogLevelByNameConfig
+) {
+  def toFilter[M]: LogFilter[M] = filter.toFilter
+}
 
 object ConsoleLoggerConfig {
 
-  val default: ConsoleLoggerConfig = ConsoleLoggerConfig(LogFormat.default, LogFilter.logLevel(LogLevel.Info))
+  val default: ConsoleLoggerConfig = ConsoleLoggerConfig(LogFormat.default, LogFilter.LogLevelByNameConfig.default)
 
   val config: Config[ConsoleLoggerConfig] = {
     val formatConfig = LogFormat.config.nested("format").withDefault(LogFormat.default)
     val filterConfig = LogFilter.LogLevelByNameConfig.config.nested("filter")
-    (formatConfig ++ filterConfig).map { case (format, filterConfig) =>
+    (formatConfig ++ filterConfig).map { case (format, filter) =>
       ConsoleLoggerConfig(
         format,
-        LogFilter.logLevelByName(filterConfig)
+        filter
       )
     }
   }

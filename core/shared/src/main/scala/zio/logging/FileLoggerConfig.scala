@@ -26,12 +26,14 @@ import scala.util.{ Failure, Success, Try }
 final case class FileLoggerConfig(
   destination: Path,
   format: LogFormat,
-  filter: LogFilter[String],
+  filter: LogFilter.LogLevelByNameConfig,
   charset: Charset = StandardCharsets.UTF_8,
   autoFlushBatchSize: Int = 1,
   bufferedIOSize: Option[Int] = None,
   rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
-)
+) {
+  def toFilter[M]: LogFilter[M] = filter.toFilter
+}
 
 object FileLoggerConfig {
 
@@ -74,11 +76,11 @@ object FileLoggerConfig {
     val rollingPolicyConfig      = FileRollingPolicy.config.nested("rollingPolicy").optional
 
     (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig ++ rollingPolicyConfig).map {
-      case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
+      case (path, format, filter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
         FileLoggerConfig(
           path,
           format,
-          LogFilter.logLevelByName(filterConfig),
+          filter,
           charset,
           autoFlushBatchSize,
           bufferedIOSize,

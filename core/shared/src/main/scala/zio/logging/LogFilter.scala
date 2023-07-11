@@ -257,9 +257,16 @@ object LogFilter {
 
     def withMappings(mappings: Map[String, LogLevel]): LogLevelByNameConfig =
       LogLevelByNameConfig(rootLevel, mappings)
+
+    def toFilter[M]: LogFilter[M] = LogFilter.logLevelByName(this)
   }
 
   object LogLevelByNameConfig {
+
+    def apply(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogLevelByNameConfig =
+      LogLevelByNameConfig(rootLevel, mappings.toMap)
+
+    val default: LogLevelByNameConfig = LogLevelByNameConfig(LogLevel.Info, Map.empty[String, LogLevel])
 
     val config: Config[LogLevelByNameConfig] = {
       val rootLevelConfig = Config.logLevel.nested("rootLevel").withDefault(LogLevel.Info)

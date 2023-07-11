@@ -14,7 +14,7 @@ class FilterBenchmarks {
   val runtime = Runtime.default
 
   val unfilteredLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig(LogFormat.default, LogFilter.acceptAll))
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger).install
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
     val loggerNameGroup: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
@@ -37,40 +37,45 @@ class FilterBenchmarks {
         }
       }
     )
-    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig(LogFormat.default, filter))
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
+      .map(logger => FilteredLogger(logger, filter))
+      .install
   }
 
-  val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> consoleLogger(
-      ConsoleLoggerConfig(
-        LogFormat.default,
-        LogFilter.logLevelByName(
-          LogLevel.Debug,
-          "a.b.c" -> LogLevel.Info,
-          "a.b.d" -> LogLevel.Warning,
-          "e"     -> LogLevel.Info,
-          "f.g"   -> LogLevel.Error,
-          "f"     -> LogLevel.Info
-        )
+  val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] = {
+    val filter = LogFilter
+      .LogLevelByNameConfig(
+        LogLevel.Debug,
+        "a.b.c" -> LogLevel.Info,
+        "a.b.d" -> LogLevel.Warning,
+        "e"     -> LogLevel.Info,
+        "f.g"   -> LogLevel.Error,
+        "f"     -> LogLevel.Info
       )
-    )
+      .toFilter
 
-  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> consoleLogger(
-      ConsoleLoggerConfig(
-        LogFormat.default,
-        LogFilter
-          .logLevelByName(
-            LogLevel.Debug,
-            "a.b.c" -> LogLevel.Info,
-            "a.b.d" -> LogLevel.Warning,
-            "e"     -> LogLevel.Info,
-            "f.g"   -> LogLevel.Error,
-            "f"     -> LogLevel.Info
-          )
-          .cached
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
+      .map(logger => FilteredLogger(logger, filter))
+      .install
+  }
+
+  val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] = {
+    val filter = LogFilter
+      .LogLevelByNameConfig(
+        LogLevel.Debug,
+        "a.b.c" -> LogLevel.Info,
+        "a.b.d" -> LogLevel.Warning,
+        "e"     -> LogLevel.Info,
+        "f.g"   -> LogLevel.Error,
+        "f"     -> LogLevel.Info
       )
-    )
+      .toFilter
+      .cached
+
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
+      .map(logger => FilteredLogger(logger, filter))
+      .install
+  }
 
   val names: List[String] = List(
     "a",

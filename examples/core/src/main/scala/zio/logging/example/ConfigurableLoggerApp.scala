@@ -39,11 +39,7 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
         makeSystemOutLogger(
           consoleLoggerConfig.format.toLogger
         ).map { logger =>
-          val filterConfig = consoleLoggerConfig.filter
-            .asInstanceOf[LogFilter.ConfiguredFilter[String, LogFilter.LogLevelByNameConfig]]
-            .config
-
-          ConfigurableLogger.make(logger, filterConfig)
+          ConfigurableLogger.make(logger, consoleLoggerConfig.filter)
         }
       }
       .install

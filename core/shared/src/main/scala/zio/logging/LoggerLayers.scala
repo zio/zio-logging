@@ -83,16 +83,16 @@ private[logging] trait LoggerLayers {
     FileLoggerConfig.load(configPath).flatMap(makeFileLogger).install
 
   def makeConsoleErrLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemErrLogger(config.format.toLogger).map(logger => FilteredLogger(logger, config.filter))
+    makeSystemErrLogger(config.format.toLogger).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeConsoleErrJsonLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemErrLogger(config.format.toJsonLogger).map(logger => FilteredLogger(logger, config.filter))
+    makeSystemErrLogger(config.format.toJsonLogger).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeConsoleLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemOutLogger(config.format.toLogger).map(logger => FilteredLogger(logger, config.filter))
+    makeSystemOutLogger(config.format.toLogger).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeConsoleJsonLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemOutLogger(config.format.toJsonLogger).map(logger => FilteredLogger(logger, config.filter))
+    makeSystemOutLogger(config.format.toJsonLogger).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeSystemOutLogger(
     logger: ZLogger[String, String]
@@ -129,7 +129,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.filter))
+    ).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeFileAsyncLogger(config: FileLoggerConfig): ZIO[Scope, Nothing, FilteredLogger[String, Any]] =
     makeFileAsyncLogger(
@@ -139,7 +139,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.filter))
+    ).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeFileAsyncLogger(
     destination: Path,
@@ -196,7 +196,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.filter))
+    ).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeFileLogger(config: FileLoggerConfig): ZIO[Any, Nothing, FilteredLogger[String, Any]] =
     makeFileLogger(
@@ -206,7 +206,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.filter))
+    ).map(logger => FilteredLogger(logger, config.toFilter))
 
   def makeFileLogger(
     destination: Path,

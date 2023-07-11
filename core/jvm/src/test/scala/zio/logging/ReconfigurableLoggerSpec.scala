@@ -20,7 +20,7 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
                             zio.Unsafe.unsafe { implicit u =>
                               Runtime.default.unsafe.run(queue.offer(line))
                             }
-                          }.filter(config.filter)
+                          }.filter(config.toFilter)
                         },
                       Schedule.fixed(200.millis)
                     )
