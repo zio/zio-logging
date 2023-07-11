@@ -59,7 +59,6 @@ package object logging extends LoggerLayers {
       self @@ key(value)
   }
 
-
   implicit final class ZLoggerOps[-Message, +Output](private val self: ZLogger[Message, Output]) {
 
     /**
