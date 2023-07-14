@@ -15,7 +15,7 @@
  */
 package zio.logging.example
 
-import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, ReconfigurableLogger, makeSystemOutLogger }
+import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, ReconfigurableLogger, _ }
 import zio.{ Config, ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
@@ -31,10 +31,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
     ReconfigurableLogger
       .make[Any, Config.Error, String, Any, ConsoleLoggerConfig](
         loadConfig,
-        (config, _) =>
-          makeSystemOutLogger(config.format.toLogger).map { logger =>
-            config.toFilter.filter(logger)
-          },
+        (config, _) => makeSystemOutLogger(config.format.toLogger).filter(config.filter.toFilter),
         Schedule.fixed(500.millis)
       )
       .installUnscoped

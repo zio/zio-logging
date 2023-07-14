@@ -6,14 +6,13 @@ import zio.{ Chunk, Config, ConfigProvider, LogLevel, Queue, Runtime, Schedule, 
 object ReconfigurableLoggerSpec extends ZIOSpecDefault {
 
   def configuredLogger(
-    queue: zio.Queue[String],
-    configPath: String = "logger"
+    queue: zio.Queue[String]
   ): ZLayer[Any, Config.Error, Unit] =
     ZLayer.scoped {
       for {
         logger <- ReconfigurableLogger
                     .make[Any, Config.Error, String, Any, ConsoleLoggerConfig](
-                      ConsoleLoggerConfig.load(configPath),
+                      ConsoleLoggerConfig.load(),
                       (config, _) =>
                         ZIO.succeed {
                           config.format.toLogger.map { line =>

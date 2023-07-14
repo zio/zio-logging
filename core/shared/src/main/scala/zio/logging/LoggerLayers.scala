@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.metrics.Metric
-import zio.{ Config, Queue, Runtime, Scope, Tag, UIO, ZIO, ZLayer, ZLogger }
+import zio.{ Config, NonEmptyChunk, Queue, Runtime, Scope, Tag, UIO, ZIO, ZLayer, ZLogger }
 
 import java.io.PrintStream
 import java.nio.charset.Charset
@@ -40,59 +40,59 @@ private[logging] trait LoggerLayers {
   def consoleErrJsonLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeConsoleErrJsonLogger(config).install
 
-  def consoleErrJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def consoleErrJsonLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     ConsoleLoggerConfig.load(configPath).flatMap(makeConsoleErrJsonLogger).install
 
-  def consoleErrLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def consoleErrLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     ConsoleLoggerConfig.load(configPath).flatMap(makeConsoleErrLogger).install
 
   def consoleJsonLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeConsoleJsonLogger(config).install
 
-  def consoleJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def consoleJsonLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     ConsoleLoggerConfig.load(configPath).flatMap(makeConsoleJsonLogger).install
 
   def consoleLogger(config: ConsoleLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeConsoleLogger(config).install
 
-  def consoleLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def consoleLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     ConsoleLoggerConfig.load(configPath).flatMap(makeConsoleLogger).install
 
   def fileAsyncJsonLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileAsyncJsonLogger(config).installUnscoped
 
-  def fileAsyncJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def fileAsyncJsonLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileAsyncJsonLogger).installUnscoped
 
   def fileAsyncLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileAsyncLogger(config).installUnscoped
 
-  def fileAsyncLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def fileAsyncLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileAsyncLogger).installUnscoped
 
   def fileJsonLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileJsonLogger(config).install
 
-  def fileJsonLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def fileJsonLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileJsonLogger).install
 
   def fileLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileLogger(config).install
 
-  def fileLogger(configPath: String = "logger"): ZLayer[Any, Config.Error, Unit] =
+  def fileLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileLogger).install
 
   def makeConsoleErrLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemErrLogger(config.format.toLogger).map(logger => FilteredLogger(logger, config.toFilter))
+    makeSystemErrLogger(config.format.toLogger).filter(config.toFilter)
 
   def makeConsoleErrJsonLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemErrLogger(config.format.toJsonLogger).map(logger => FilteredLogger(logger, config.toFilter))
+    makeSystemErrLogger(config.format.toJsonLogger).filter(config.toFilter)
 
   def makeConsoleLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemOutLogger(config.format.toLogger).map(logger => FilteredLogger(logger, config.toFilter))
+    makeSystemOutLogger(config.format.toLogger).filter(config.toFilter)
 
   def makeConsoleJsonLogger(config: ConsoleLoggerConfig): ZIO[Any, Nothing, ZLogger[String, Any]] =
-    makeSystemOutLogger(config.format.toJsonLogger).map(logger => FilteredLogger(logger, config.toFilter))
+    makeSystemOutLogger(config.format.toJsonLogger).filter(config.toFilter)
 
   def makeSystemOutLogger(
     logger: ZLogger[String, String]
@@ -129,7 +129,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.toFilter))
+    ).filter(config.toFilter)
 
   def makeFileAsyncLogger(config: FileLoggerConfig): ZIO[Scope, Nothing, FilteredLogger[String, Any]] =
     makeFileAsyncLogger(
@@ -139,7 +139,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.toFilter))
+    ).filter(config.toFilter)
 
   def makeFileAsyncLogger(
     destination: Path,
@@ -196,7 +196,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.toFilter))
+    ).filter(config.toFilter)
 
   def makeFileLogger(config: FileLoggerConfig): ZIO[Any, Nothing, FilteredLogger[String, Any]] =
     makeFileLogger(
@@ -206,7 +206,7 @@ private[logging] trait LoggerLayers {
       config.autoFlushBatchSize,
       config.bufferedIOSize,
       config.rollingPolicy
-    ).map(logger => FilteredLogger(logger, config.toFilter))
+    ).filter(config.toFilter)
 
   def makeFileLogger(
     destination: Path,
@@ -248,6 +248,9 @@ private[logging] trait LoggerLayers {
   implicit final class ZLoggerZIOLayerOps[RIn, +E, ROut <: ZLogger[String, Any]: Tag](
     private val self: ZIO[RIn, E, ROut]
   ) {
+
+    def filter(filter: LogFilter[String]): ZIO[RIn, E, FilteredLogger[String, Any]] =
+      self.map(logger => FilteredLogger(logger, filter))
 
     def install: ZLayer[RIn, E, Unit] =
       ZLayer.scoped[RIn] {

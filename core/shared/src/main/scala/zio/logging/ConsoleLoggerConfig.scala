@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.prelude._
-import zio.{ Config, ZIO, ZLayer }
+import zio.{ Config, NonEmptyChunk, ZIO, ZLayer }
 
 final case class ConsoleLoggerConfig(
   format: LogFormat,
@@ -44,10 +44,12 @@ object ConsoleLoggerConfig {
     l.format == r.format && l.filter === r.filter
   }
 
-  def load(configPath: String = "logger"): ZIO[Any, Config.Error, ConsoleLoggerConfig] =
-    ZIO.config(ConsoleLoggerConfig.config.nested(configPath))
+  def load(configPath: NonEmptyChunk[String] = loggerConfigPath): ZIO[Any, Config.Error, ConsoleLoggerConfig] =
+    ZIO.config(ConsoleLoggerConfig.config.nested(configPath.head, configPath.tail: _*))
 
-  def make(configPath: String = "logger"): ZLayer[Any, Config.Error, ConsoleLoggerConfig] =
+  def make(
+    configPath: NonEmptyChunk[String] = loggerConfigPath
+  ): ZLayer[Any, Config.Error, ConsoleLoggerConfig] =
     ZLayer.fromZIO(load(configPath))
 
 }

@@ -44,6 +44,8 @@ package object logging extends LoggerLayers {
    */
   val loggerNameAnnotationKey = "logger_name"
 
+  val loggerConfigPath: NonEmptyChunk[String] = NonEmptyChunk("logger")
+
   /**
    * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted from [[Trace]])
    *

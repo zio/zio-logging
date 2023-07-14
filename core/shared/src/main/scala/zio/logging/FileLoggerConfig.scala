@@ -99,10 +99,12 @@ object FileLoggerConfig {
     l.filter === r.filter
   }
 
-  def load(configPath: String = "logger"): ZIO[Any, Config.Error, FileLoggerConfig] =
-    ZIO.config(FileLoggerConfig.config.nested(configPath))
+  def load(configPath: NonEmptyChunk[String] = loggerConfigPath): ZIO[Any, Config.Error, FileLoggerConfig] =
+    ZIO.config(FileLoggerConfig.config.nested(configPath.head, configPath.tail: _*))
 
-  def make(configPath: String = "logger"): ZLayer[Any, Config.Error, FileLoggerConfig] =
+  def make(
+    configPath: NonEmptyChunk[String] = loggerConfigPath
+  ): ZLayer[Any, Config.Error, FileLoggerConfig] =
     ZLayer.fromZIO(load(configPath))
 
 }

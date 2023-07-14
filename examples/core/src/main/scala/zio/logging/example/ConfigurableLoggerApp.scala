@@ -22,8 +22,8 @@ import zio.logging.{
   ConfigurableLogger,
   ConsoleLoggerConfig,
   LogAnnotation,
-  LogFilter,
   LoggerConfigurer,
+  loggerConfigPath,
   makeSystemOutLogger
 }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
@@ -32,7 +32,7 @@ import java.util.UUID
 
 object ConfigurableLoggerApp extends ZIOAppDefault {
 
-  def configurableLogger(configPath: String = "logger") =
+  def configurableLogger(configPath: NonEmptyChunk[String] = loggerConfigPath) =
     ConsoleLoggerConfig
       .load(configPath)
       .flatMap { consoleLoggerConfig =>
