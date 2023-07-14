@@ -38,7 +38,7 @@ class FilterBenchmarks {
       }
     )
     Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
-      .map(logger => FilteredLogger(logger, filter))
+      .filter(filter)
       .install
   }
 
@@ -55,7 +55,7 @@ class FilterBenchmarks {
       .toFilter
 
     Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
-      .map(logger => FilteredLogger(logger, filter))
+      .filter(filter)
       .install
   }
 
@@ -73,7 +73,7 @@ class FilterBenchmarks {
       .cached
 
     Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
-      .map(logger => FilteredLogger(logger, filter))
+      .filter(filter)
       .install
   }
 
