@@ -254,21 +254,40 @@ object LogFormatSpec extends ZIOSpecDefault {
         assertTrue(result == s"test=${annotationValue}")
       }
     },
-    test("spans") {
-      val format = LogFormat.spans
+    test("span") {
+      val format = LogFormat.span("span1")
       check(Gen.alphaNumericString) { span =>
-        val result = format.toLogger(
+        val result  = format.toLogger(
           Trace.empty,
           FiberId.None,
           LogLevel.Info,
           () => "",
           Cause.empty,
           FiberRefs.empty,
-          LogSpan("span1", 0L) :: LogSpan(span, 1L) :: Nil,
+          List(LogSpan("span1", 0L), LogSpan(span, 1L)),
           Map.empty
         )
-        val regex  = s"span1=([0-9]+)ms ${span}=([0-9]+)ms".r
-        assertTrue(regex.matches(result))
+        val regex   = "span1=([0-9]+)ms".r
+        val matches = regex.matches(result)
+        assertTrue(matches)
+      }
+    },
+    test("spans") {
+      val format = LogFormat.spans
+      check(Gen.alphaNumericString) { span =>
+        val result  = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          List(LogSpan("span1", 0L), LogSpan(span, 1L)),
+          Map.empty
+        )
+        val regex   = s"span1=([0-9]+)ms ${span}=([0-9]+)ms".r
+        val matches = regex.matches(result)
+        assertTrue(matches)
       }
     },
     test("enclosing class") {
