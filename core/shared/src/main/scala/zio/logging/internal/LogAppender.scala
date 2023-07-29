@@ -61,7 +61,7 @@ private[logging] trait LogAppender { self =>
 
   def appendKeyValueSeparator(): Unit = ()
 
-  final def appendKeyValues(keyValues: Iterable[(String, String)]): Unit = {
+  def appendKeyValues(keyValues: Iterable[(String, String)]): Unit = {
     val iterator = keyValues.iterator
     while (iterator.hasNext) {
       val (key, value) = iterator.next()

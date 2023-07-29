@@ -681,10 +681,10 @@ object LogFormat {
 
   def allAnnotations(excludeKeys: Set[String]): LogFormat = LogFormat.make {
     (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
-      val keyValues = annotations.filterNot(kv => excludeKeys.contains(kv._1)) ++ fiberRefs
+      val keyValues = annotations.filterNot(kv => excludeKeys.contains(kv._1)).toList ++ fiberRefs
         .get(logContext)
         .map { context =>
-          context.asMap.filterNot(kv => excludeKeys.contains(kv._1))
+          context.asMap.filterNot(kv => excludeKeys.contains(kv._1)).toList
         }
         .getOrElse(Nil)
 
