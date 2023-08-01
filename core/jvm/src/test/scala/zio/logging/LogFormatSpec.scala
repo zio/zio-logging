@@ -1,6 +1,6 @@
 package zio.logging
 
-import zio.test._
+import zio.test.{ Assertion, _ }
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
 
 import java.util.UUID
@@ -257,7 +257,7 @@ object LogFormatSpec extends ZIOSpecDefault {
     test("span") {
       val format = LogFormat.span("span1")
       check(Gen.alphaNumericString) { span =>
-        val result  = format.toLogger(
+        val result = format.toLogger(
           Trace.empty,
           FiberId.None,
           LogLevel.Info,
@@ -267,15 +267,13 @@ object LogFormatSpec extends ZIOSpecDefault {
           List(LogSpan("span1", 0L), LogSpan(span, 1L)),
           Map.empty
         )
-        val regex   = "span1=([0-9]+)ms".r
-        val matches = regex.matches(result)
-        assertTrue(matches)
+        assert(result)(Assertion.matchesRegex("span1=([0-9]+)ms"))
       }
     },
     test("spans") {
       val format = LogFormat.spans
       check(Gen.alphaNumericString) { span =>
-        val result  = format.toLogger(
+        val result = format.toLogger(
           Trace.empty,
           FiberId.None,
           LogLevel.Info,
@@ -285,9 +283,7 @@ object LogFormatSpec extends ZIOSpecDefault {
           List(LogSpan("span1", 0L), LogSpan(span, 1L)),
           Map.empty
         )
-        val regex   = s"span1=([0-9]+)ms ${span}=([0-9]+)ms".r
-        val matches = regex.matches(result)
-        assertTrue(matches)
+        assert(result)(Assertion.matchesRegex(s"span1=([0-9]+)ms ${span}=([0-9]+)ms"))
       }
     },
     test("enclosing class") {
