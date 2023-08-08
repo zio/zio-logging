@@ -59,6 +59,19 @@ private[logging] trait LogAppender { self =>
     finally closeValue()
   }
 
+  def appendKeyValueSeparator(): Unit = ()
+
+  def appendKeyValues(keyValues: Iterable[(String, String)]): Unit = {
+    val iterator = keyValues.iterator
+    while (iterator.hasNext) {
+      val (key, value) = iterator.next()
+      appendKeyValue(key, value)
+      if (iterator.hasNext) {
+        appendKeyValueSeparator()
+      }
+    }
+  }
+
   /**
    * Marks the close of a key for a key/value pair, and the opening of the value.
    */
@@ -95,21 +108,23 @@ private[logging] trait LogAppender { self =>
 }
 private[logging] object LogAppender {
   class Proxy(self: LogAppender) extends LogAppender {
-    def appendCause(cause: Cause[Any]): Unit = self.appendCause(cause)
+    override def appendCause(cause: Cause[Any]): Unit = self.appendCause(cause)
 
-    def appendNumeric[A](numeric: A): Unit = self.appendNumeric(numeric)
+    override def appendKeyValueSeparator(): Unit = self.appendKeyValueSeparator()
 
-    def appendText(text: String): Unit = self.appendText(text)
+    override def appendNumeric[A](numeric: A): Unit = self.appendNumeric(numeric)
 
-    def closeKeyOpenValue(): Unit = self.closeKeyOpenValue()
+    override def appendText(text: String): Unit = self.appendText(text)
 
-    def closeLogEntry(): Unit = self.closeLogEntry()
+    override def closeKeyOpenValue(): Unit = self.closeKeyOpenValue()
 
-    def closeValue(): Unit = self.closeValue()
+    override def closeLogEntry(): Unit = self.closeLogEntry()
 
-    def openKey(): Unit = self.openKey()
+    override def closeValue(): Unit = self.closeValue()
 
-    def openLogEntry(): Unit = self.openLogEntry()
+    override def openKey(): Unit = self.openKey()
+
+    override def openLogEntry(): Unit = self.openLogEntry()
   }
 
   /**
@@ -117,21 +132,23 @@ private[logging] object LogAppender {
    * into text, and passes it to the given text appender function.
    */
   def unstructured(textAppender: String => Any): LogAppender = new LogAppender { self =>
-    def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
+    override def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
 
-    def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
+    override def appendKeyValueSeparator(): Unit = appendText(" ")
 
-    def appendText(text: String): Unit = { textAppender(text); () }
+    override def appendNumeric[A](numeric: A): Unit = appendText(numeric.toString)
 
-    def closeKeyOpenValue(): Unit = appendText("=")
+    override def appendText(text: String): Unit = { textAppender(text); () }
 
-    def closeLogEntry(): Unit = ()
+    override def closeKeyOpenValue(): Unit = appendText("=")
 
-    def closeValue(): Unit = ()
+    override def closeLogEntry(): Unit = ()
 
-    def openKey(): Unit = ()
+    override def closeValue(): Unit = ()
 
-    def openLogEntry(): Unit = ()
+    override def openKey(): Unit = ()
+
+    override def openLogEntry(): Unit = ()
   }
 
   def json(textAppender: String => Any): LogAppender = new LogAppender { self =>
