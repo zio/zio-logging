@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.{ Cause, Chunk, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
+import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
 import scala.annotation.tailrec
 

@@ -662,11 +662,7 @@ object LogFormat {
 
   def annotations(excludeKeys: Set[String]): LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
-      annotations.foreach { case (key, value) =>
-        if (!excludeKeys.contains(key)) {
-          builder.appendKeyValue(key, value)
-        }
-      }
+      builder.appendKeyValues(annotations.filterNot(kv => excludeKeys.contains(kv._1)))
     }
 
   def logAnnotations: LogFormat = logAnnotations(Set.empty)
@@ -676,18 +672,24 @@ object LogFormat {
       fiberRefs
         .get(logContext)
         .foreach { context =>
-          context.asMap.foreach { case (key, value) =>
-            if (!excludeKeys.contains(key)) {
-              builder.appendKeyValue(key, value)
-            }
-          }
+          builder.appendKeyValues(context.asMap.filterNot(kv => excludeKeys.contains(kv._1)))
         }
       ()
     }
 
   def allAnnotations: LogFormat = allAnnotations(Set.empty)
 
-  def allAnnotations(excludeKeys: Set[String]): LogFormat = annotations(excludeKeys) + logAnnotations(excludeKeys)
+  def allAnnotations(excludeKeys: Set[String]): LogFormat = LogFormat.make {
+    (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
+      val keyValues = annotations.filterNot(kv => excludeKeys.contains(kv._1)).toList ++ fiberRefs
+        .get(logContext)
+        .map { context =>
+          context.asMap.filterNot(kv => excludeKeys.contains(kv._1)).toList
+        }
+        .getOrElse(Nil)
+
+      builder.appendKeyValues(keyValues)
+  }
 
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd
@@ -771,7 +773,7 @@ object LogFormat {
     LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
       spans.find(_.label == name).foreach { span =>
         val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
-        builder.appendKeyValue(name, duration)
+        builder.appendKeyValue(name, s"${duration}ms")
       }
     }
 
@@ -780,10 +782,10 @@ object LogFormat {
    */
   def spans: LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
-      spans.foreach { span =>
+      builder.appendKeyValues(spans.map { span =>
         val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
-        builder.appendKeyValue(span.label, duration + "ms")
-      }
+        span.label -> s"${duration}ms"
+      })
     }
 
   def text(value: => String): LogFormat =
