@@ -18,7 +18,7 @@ package zio.logging.slf4j.bridge
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
-import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZLogger }
+import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
 final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
 
