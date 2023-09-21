@@ -55,7 +55,7 @@ inThisBuild(
     zioVersion             := "2.0.17",
     scala212               := "2.12.17",
     scala213               := "2.13.10",
-    scala3                 := "3.3.0"
+    scala3                 := "3.3.1"
   )
 )
 
