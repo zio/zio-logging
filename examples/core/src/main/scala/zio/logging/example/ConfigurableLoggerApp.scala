@@ -30,6 +30,16 @@ import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
+/*
+ curl -u "admin:admin" 'http://localhost:8080/example/logger'
+
+ curl -u "admin:admin" 'http://localhost:8080/example/logger/root'
+
+ curl -u "admin:admin" --location --request PUT 'http://localhost:8080/example/logger/root' --header 'Content-Type: application/json' --data-raw '"WARN"'
+
+ curl -u "admin:admin" --location --request PUT 'http://localhost:8080/example/logger/zio.logging.example' --header 'Content-Type: application/json' --data-raw '"WARN"'
+
+ */
 object ConfigurableLoggerApp extends ZIOAppDefault {
 
   def configurableLogger(configPath: NonEmptyChunk[String] = loggerConfigPath) =
@@ -86,15 +96,3 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
     } yield ExitCode.success).provide(LoggerConfigurer.layer ++ Server.default)
 
 }
-
-/*
-
- curl -u "admin:admin" 'http://localhost:8080/example/logger'
-
- curl -u "admin:admin" 'http://localhost:8080/example/logger/root'
-
- curl -u "admin:admin" --location --request PUT 'http://localhost:8080/example/logger/root' --header 'Content-Type: application/json' --data-raw '"WARN"'
-
- curl -u "admin:admin" --location --request PUT 'http://localhost:8080/example/logger/zio.logging.example' --header 'Content-Type: application/json' --data-raw '"WARN"'
-
- */

@@ -15,7 +15,7 @@
  */
 package zio.logging
 
-import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, ZIO, ZLayer, ZLogger }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZIO, ZLayer, ZLogger }
 
 trait LoggerConfigurer {
 
@@ -44,16 +44,14 @@ object LoggerConfigurer {
 
   val layer: ZLayer[Any, Throwable, LoggerConfigurer] =
     ZLayer.fromZIO {
-      for {
-        fiberRefs <- ZIO.getFiberRefs
-
-        loggerService <- ZIO.attempt {
-                           val loggers = fiberRefs.getOrDefault(FiberRef.currentLoggers)
-                           loggers.collectFirst { case logger: ConfigurableLogger[_, _] =>
-                             logger.configurer
-                           }.getOrElse(throw new RuntimeException("LoggerConfigurer not found"))
-                         }
-      } yield loggerService
+      ZIO.loggers.flatMap { loggers =>
+        loggers.collectFirst { case logger: ConfigurableLogger[_, _] =>
+          logger.configurer
+        } match {
+          case Some(value) => ZIO.succeed(value)
+          case None        => ZIO.fail(new RuntimeException("LoggerConfigurer not found"))
+        }
+      }
     }
 }
 
@@ -63,26 +61,6 @@ trait ConfigurableLogger[-Message, +Output] extends ZLogger[Message, Output] {
 }
 
 object ConfigurableLogger {
-
-//  def apply[Message, Output](
-//    logger: ZLogger[Message, Output],
-//    loggerConfigurer: LoggerConfigurer
-//  ): ConfigurableLogger[Message, Output] =
-//    new ConfigurableLogger[Message, Output] {
-//
-//      override val configurer: LoggerConfigurer = loggerConfigurer
-//
-//      override def apply(
-//        trace: Trace,
-//        fiberId: FiberId,
-//        logLevel: LogLevel,
-//        message: () => Message,
-//        cause: Cause[Any],
-//        context: FiberRefs,
-//        spans: List[LogSpan],
-//        annotations: Map[String, String]
-//      ): Output = logger.apply(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-//    }
 
   def make[Message, Output](
     logger: ZLogger[Message, Output],
