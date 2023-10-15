@@ -200,7 +200,7 @@ lazy val examplesCore = project
     publish / skip := true,
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-metrics-connectors" % zioMetricsConnectorsVersion,
-      "dev.zio" %% "zio-http" % zioHttp,
+      "dev.zio" %% "zio-http"               % zioHttp,
       "dev.zio" %% "zio-config-typesafe"    % zioConfig
     )
   )
