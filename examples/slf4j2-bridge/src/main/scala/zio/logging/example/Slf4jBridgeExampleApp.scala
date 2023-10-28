@@ -31,17 +31,16 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     "SLF4J-LOGGER"      -> LogLevel.Warning
   )
 
+  private val logFormat = LogFormat.label(
+    "name",
+    LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
+  ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+    LogAnnotation.TraceId
+  ) + LogFormat.default
+
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleJsonLogger(
-      ConsoleLoggerConfig(
-        LogFormat.label(
-          "name",
-          LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
-        ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
-          LogAnnotation.TraceId
-        ) + LogFormat.default,
-        logFilterConfig
-      )
+      ConsoleLoggerConfig(logFormat, logFilterConfig)
     ) >+> Slf4jBridge.initialize
 
   private val uuids = List.fill(2)(UUID.randomUUID())

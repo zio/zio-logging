@@ -185,3 +185,11 @@ Expected Console Output:
 15:53:20.688 [ZScheduler-Worker-11] [user=878689e0-da30-49f8-8923-ed915c00db9c, trace_id=71436dd4-22d5-4e06-aaa7-f3ff7b108037] INFO  z.l.e.CustomTracingAnnotationApp Stopping operation
 15:53:20.691 [ZScheduler-Worker-15] [] INFO  z.l.e.CustomTracingAnnotationApp Done
 ```
+
+## Feature changes
+
+### Version 2.2.0
+
+Deprecated log annotation with key `slf4j_logger_name` (`SLF4J.loggerNameAnnotationKey`) removed,
+only common log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`) for logger name is supported now.
+

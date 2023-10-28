@@ -54,8 +54,6 @@ package object logging extends LoggerLayers {
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
-  val removeDefaultLoggers: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers
-
   implicit final class LogAnnotationZIOSyntax[R, E, A](private val self: ZIO[R, E, A]) {
     def logAnnotate[V: Tag](key: LogAnnotation[V], value: V): ZIO[R, E, A] =
       self @@ key(value)
