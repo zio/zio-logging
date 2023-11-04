@@ -298,6 +298,34 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
           val annEscaped = JsonEscape(nonJsonAnnotation)
           assertTrue(result == s"""{"json_annotation":$jsonAnnotation,"nonjson_annotation":"$annEscaped"}""")
         }
+      },
+      test("labeled empty spans") {
+        val format = label("spans", spans)
+        val result = format.toJsonLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == s"""{"spans":null}""")
+      },
+      test("nested labeled empty spans and annotations") {
+        val format = label("data", label("line", line) + label("spans", spans) + label("annotations", allAnnotations))
+        val result = format.toJsonLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "line",
+          Cause.empty,
+          FiberRefs.empty,
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == s"""{"data":{"line":"line","spans":null,"annotations":null}}""")
       }
     )
   )

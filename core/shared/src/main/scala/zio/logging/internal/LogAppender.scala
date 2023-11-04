@@ -231,6 +231,10 @@ private[logging] object LogAppender {
         result.append("}")
       }
 
+      if (result.isEmpty) {
+        result.append("null")
+      }
+
       stack.pop()
       result
     }
