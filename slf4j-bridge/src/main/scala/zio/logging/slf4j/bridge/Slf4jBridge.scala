@@ -18,6 +18,8 @@ package zio.logging.slf4j.bridge
 import org.slf4j.impl.ZioLoggerFactory
 import zio.{ Runtime, ZIO, ZLayer }
 
+import java.util.concurrent.locks.ReentrantLock
+
 object Slf4jBridge {
 
   /**
@@ -46,11 +48,17 @@ object Slf4jBridge {
   def initialize(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
     Runtime.enableCurrentFiber ++ layer(nameAnnotationKey)
 
+  private val initLock: ReentrantLock = new ReentrantLock()
+
   private def layer(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
-          ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey))
+          initLock.lock()
+          try
+            ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey))
+          finally
+            initLock.unlock()
         }
       }
     }

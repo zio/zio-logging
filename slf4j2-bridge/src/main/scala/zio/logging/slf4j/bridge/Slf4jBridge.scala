@@ -17,6 +17,8 @@ package zio.logging.slf4j.bridge
 
 import zio.{ Runtime, ZIO, ZLayer }
 
+import java.util.concurrent.locks.ReentrantLock
+
 object Slf4jBridge {
 
   /**
@@ -29,14 +31,20 @@ object Slf4jBridge {
    */
   def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer
 
+  private val initLock: ReentrantLock = new ReentrantLock()
+
   private def layer: ZLayer[Any, Nothing, Unit] =
     ZLayer {
       ZIO.runtime[Any].flatMap { runtime =>
         ZIO.succeed {
-          org.slf4j.LoggerFactory
-            .getILoggerFactory()
-            .asInstanceOf[LoggerFactory]
-            .attacheRuntime(new ZioLoggerRuntime(runtime))
+          initLock.lock()
+          try
+            org.slf4j.LoggerFactory
+              .getILoggerFactory()
+              .asInstanceOf[LoggerFactory]
+              .attacheRuntime(new ZioLoggerRuntime(runtime))
+          finally
+            initLock.unlock()
         }
       }
     }
