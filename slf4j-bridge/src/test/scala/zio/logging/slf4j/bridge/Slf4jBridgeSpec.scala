@@ -5,8 +5,6 @@ import org.slf4j.impl.StaticMarkerBinder
 import zio.test._
 import zio.{ Cause, Chunk, LogLevel, ZIO, ZIOAspect }
 
-import java.util.UUID
-
 object Slf4jBridgeSpec extends ZIOSpecDefault {
 
   final case class LogEntry(
@@ -20,15 +18,14 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
   override def spec =
     suite("Slf4jBridge")(
       test("parallel init") {
-        val uuids = List.fill(5)(UUID.randomUUID())
         for {
           _ <-
-            ZIO.foreachPar(uuids) { u =>
+            ZIO.foreachPar((1 to 5).toList) { _ =>
               ZIO
-                .succeed(org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER").warn("Test {} {}!", "WARNING", u.toString))
+                .succeed(org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER").warn("Test {}!", "WARNING"))
                 .provide(Slf4jBridge.initialize)
             }
-        } yield assertTrue(true)
+        } yield assertCompletes
       },
       test("logs through slf4j - legacy logger name annotation key") {
         val testFailure = new RuntimeException("test error")
