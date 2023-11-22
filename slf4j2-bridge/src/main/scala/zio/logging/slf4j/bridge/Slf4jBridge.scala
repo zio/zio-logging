@@ -35,7 +35,7 @@ object Slf4jBridge {
     ZLayer {
       for {
         runtime <- ZIO.runtime[Any]
-        _       <- initLock.withPermits(1) {
+        _       <- initLock.withPermit {
                      ZIO.succeed(
                        org.slf4j.LoggerFactory
                          .getILoggerFactory()

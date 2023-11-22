@@ -52,7 +52,7 @@ object Slf4jBridge {
     ZLayer {
       for {
         runtime <- ZIO.runtime[Any]
-        _       <- initLock.withPermits(1) {
+        _       <- initLock.withPermit {
                      ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey)))
                    }
       } yield ()
