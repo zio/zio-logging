@@ -16,7 +16,7 @@
 package zio.logging.slf4j.bridge
 
 import org.slf4j.impl.ZioLoggerFactory
-import zio.{ Runtime, ZIO, ZLayer }
+import zio.{ Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 
 object Slf4jBridge {
 
@@ -46,12 +46,15 @@ object Slf4jBridge {
   def initialize(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
     Runtime.enableCurrentFiber ++ layer(nameAnnotationKey)
 
+  private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
+
   private def layer(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
     ZLayer {
-      ZIO.runtime[Any].flatMap { runtime =>
-        ZIO.succeed {
-          ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey))
-        }
-      }
+      for {
+        runtime <- ZIO.runtime[Any]
+        _       <- initLock.withPermit {
+                     ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey)))
+                   }
+      } yield ()
     }
 }

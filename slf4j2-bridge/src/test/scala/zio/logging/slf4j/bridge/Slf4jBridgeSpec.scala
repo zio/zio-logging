@@ -15,6 +15,16 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
 
   override def spec =
     suite("Slf4jBridge")(
+      test("parallel init") {
+        for {
+          _ <-
+            ZIO.foreachPar((1 to 5).toList) { _ =>
+              ZIO
+                .succeed(org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER").warn("Test {}!", "WARNING"))
+                .provide(Slf4jBridge.initialize)
+            }
+        } yield assertCompletes
+      },
       test("logs through slf4j") {
         val testFailure = new RuntimeException("test error")
         for {

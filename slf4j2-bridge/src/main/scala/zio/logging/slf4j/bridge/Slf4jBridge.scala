@@ -15,7 +15,7 @@
  */
 package zio.logging.slf4j.bridge
 
-import zio.{ Runtime, ZIO, ZLayer }
+import zio.{ Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 
 object Slf4jBridge {
 
@@ -29,15 +29,20 @@ object Slf4jBridge {
    */
   def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer
 
+  private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
+
   private def layer: ZLayer[Any, Nothing, Unit] =
     ZLayer {
-      ZIO.runtime[Any].flatMap { runtime =>
-        ZIO.succeed {
-          org.slf4j.LoggerFactory
-            .getILoggerFactory()
-            .asInstanceOf[LoggerFactory]
-            .attacheRuntime(new ZioLoggerRuntime(runtime))
-        }
-      }
+      for {
+        runtime <- ZIO.runtime[Any]
+        _       <- initLock.withPermit {
+                     ZIO.succeed(
+                       org.slf4j.LoggerFactory
+                         .getILoggerFactory()
+                         .asInstanceOf[LoggerFactory]
+                         .attacheRuntime(new ZioLoggerRuntime(runtime))
+                     )
+                   }
+      } yield ()
     }
 }
