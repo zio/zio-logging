@@ -15,15 +15,14 @@
  */
 package zio.logging.example
 
+import com.typesafe.config.ConfigFactory
+import zio.config.typesafe.TypesafeConfigProvider
 import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, ReconfigurableLogger, _ }
 import zio.{ Config, ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object LoggerReconfigureApp extends ZIOAppDefault {
-
-  val logFormat =
-    "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %kv{trace_id} %kv{user_id} %cause}"
 
   def configuredLogger(
     loadConfig: => ZIO[Any, Config.Error, ConsoleLoggerConfig]
@@ -39,14 +38,11 @@ object LoggerReconfigureApp extends ZIOAppDefault {
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> configuredLogger(
       for {
-        info   <- Random.nextBoolean
-        cfg     = Map(
-                    "logger/format"           -> logFormat,
-                    "logger/filter/rootLevel" -> (if (info) LogLevel.Info.label else LogLevel.Debug.label)
-                  )
-        _      <- Console.printLine(cfg.mkString(", ")).orDie
-        config <- ConfigProvider.fromMap(cfg, "/").nested("logger").load(ConsoleLoggerConfig.config)
-      } yield config
+        config       <- ZIO.succeed(ConfigFactory.load("logger.conf"))
+        _            <- Console.printLine(config.getConfig("logger")).orDie
+        loggerConfig <-
+          TypesafeConfigProvider.fromTypesafeConfig(config).nested("logger").load(ConsoleLoggerConfig.config)
+      } yield loggerConfig
     )
 
   def exec(): ZIO[Any, Nothing, Unit] =
