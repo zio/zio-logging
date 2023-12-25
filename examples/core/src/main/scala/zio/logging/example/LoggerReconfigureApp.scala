@@ -30,7 +30,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
     ReconfigurableLogger
       .make[Any, Config.Error, String, Any, ConsoleLoggerConfig](
         loadConfig,
-        (config, _) => makeSystemOutLogger(config.format.toLogger).filter(config.filter.toFilter),
+        (config, _) => makeConsoleLogger(config),
         Schedule.fixed(500.millis)
       )
       .installUnscoped

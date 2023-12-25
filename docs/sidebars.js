@@ -10,6 +10,7 @@ const sidebars = {
         'log-filter',
         'console-logger',
         'file-logger',
+        'reconfigurable-logger',
         'jpl',
         'slf4j2',
         'slf4j1',
