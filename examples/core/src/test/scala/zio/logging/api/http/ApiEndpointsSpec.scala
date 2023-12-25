@@ -10,9 +10,13 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] = suite("ApiEndpointsSpec")(
     test("rootPathCodec") {
       def testRootPathCodec(rootPath: Seq[String], expected: PathCodec[Unit]) =
-        assertTrue(ApiEndpoints.rootPathCodec(rootPath).encodeRequest(()).url == expected.encodeRequest(()).url)
+        assertTrue(
+          ApiEndpoints.rootPathCodec(rootPath).encode(()).getOrElse(zio.http.Path.empty) == expected
+            .encode(())
+            .getOrElse(zio.http.Path.empty)
+        )
 
-      testRootPathCodec(Nil, HttpCodec.empty) && testRootPathCodec(
+      testRootPathCodec(Nil, PathCodec.empty) && testRootPathCodec(
         "example" :: Nil,
         literal("example")
       ) && testRootPathCodec("v1" :: "example" :: Nil, literal("v1") / literal("example"))
@@ -21,7 +25,9 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
 
       def testPath(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(
-          ApiEndpoints.getLoggerConfigs(rootPath).input.encodeRequest(()).url == expected.encodeRequest(()).url
+          ApiEndpoints.getLoggerConfigs(rootPath).input.encodeRequest(()).path == expected
+            .encode(())
+            .getOrElse(zio.http.Path.empty)
         )
 
       testPath(Nil, literal("logger")) && testPath(
@@ -33,9 +39,9 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
 
       def testPath(rootPath: Seq[String], expected: PathCodec[Unit]) =
         assertTrue(
-          ApiEndpoints.getLoggerConfig(rootPath).input.encodeRequest("my-logger").url == expected
-            .encodeRequest(())
-            .url
+          ApiEndpoints.getLoggerConfig(rootPath).input.encodeRequest("my-logger").path == expected
+            .encode(())
+            .getOrElse(zio.http.Path.empty)
         )
 
       testPath(Nil, literal("logger") / literal("my-logger")) && testPath(
@@ -51,9 +57,9 @@ object ApiEndpointsSpec extends ZIOSpecDefault {
             .setLoggerConfig(rootPath)
             .input
             .encodeRequest(("my-logger", LogLevel.Info))
-            .url == expected
-            .encodeRequest(())
-            .url
+            .path == expected
+            .encode(())
+            .getOrElse(zio.http.Path.empty)
         )
 
       testPath(Nil, literal("logger") / literal("my-logger")) && testPath(

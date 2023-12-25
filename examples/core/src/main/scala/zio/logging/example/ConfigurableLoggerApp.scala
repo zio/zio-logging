@@ -15,7 +15,6 @@
  */
 package zio.logging.example
 
-import zio.http.HttpAppMiddleware.basicAuth
 import zio.http._
 import zio.logging.api.http.ApiHandlers
 import zio.logging.{
@@ -86,8 +85,8 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
       _       <- ZIO.logDebug("Done") @@ LogAnnotation.TraceId(traceId)
     } yield ()
 
-  val httpApp: Http[LoggerConfigurer, Response, Request, Response] =
-    ApiHandlers.routes("example" :: Nil).toApp[LoggerConfigurer] @@ basicAuth("admin", "admin")
+  val httpApp: HttpApp[LoggerConfigurer] =
+    ApiHandlers.routes("example" :: Nil).toHttpApp @@ Middleware.basicAuth("admin", "admin")
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {

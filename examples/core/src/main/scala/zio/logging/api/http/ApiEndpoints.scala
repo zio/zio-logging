@@ -21,30 +21,29 @@ import zio.http.codec.PathCodec.{ literal, string }
 import zio.http.codec.{ Doc, HttpCodec, PathCodec }
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint._
+import zio.logging.api.http.ApiDomain.Error
 
 object ApiEndpoints {
   import ApiDomain.logLevelSchema
 
   def rootPathCodec(rootPath: Seq[String]): PathCodec[Unit] =
     if (rootPath.isEmpty) {
-      HttpCodec.empty
+      PathCodec.empty
     } else {
       rootPath.map(literal).reduce(_ / _)
     }
 
   def getLoggerConfigs(
     rootPath: Seq[String] = Seq.empty
-  ): Endpoint[Unit, ApiDomain.Error.Internal, List[ApiDomain.LoggerConfig], None] =
-    Endpoint
-      .get(rootPathCodec(rootPath) / literal("logger"))
+  ): Endpoint[Unit, Unit, Error.Internal, List[ApiDomain.LoggerConfig], None] =
+    Endpoint(Method.GET / rootPathCodec(rootPath) / literal("logger"))
       .out[List[ApiDomain.LoggerConfig]]
       .outError[ApiDomain.Error.Internal](Status.InternalServerError)
 
   def getLoggerConfig(
     rootPath: Seq[String] = Seq.empty
-  ): Endpoint[String, ApiDomain.Error, ApiDomain.LoggerConfig, None] =
-    Endpoint
-      .get(rootPathCodec(rootPath) / literal("logger") / string("name"))
+  ): Endpoint[String, String, Error, ApiDomain.LoggerConfig, None] =
+    Endpoint(Method.GET / rootPathCodec(rootPath) / literal("logger") / string("name"))
       .out[ApiDomain.LoggerConfig]
       .outErrors[ApiDomain.Error](
         HttpCodec.error[ApiDomain.Error.Internal](Status.InternalServerError),
@@ -53,9 +52,8 @@ object ApiEndpoints {
 
   def setLoggerConfig(
     rootPath: Seq[String] = Seq.empty
-  ): Endpoint[(String, LogLevel), ApiDomain.Error.Internal, ApiDomain.LoggerConfig, None] =
-    Endpoint
-      .put(rootPathCodec(rootPath) / literal("logger") / string("name"))
+  ): Endpoint[String, (String, LogLevel), Error.Internal, ApiDomain.LoggerConfig, None] =
+    Endpoint(Method.PUT / rootPathCodec(rootPath) / literal("logger") / string("name"))
       .in[LogLevel]
       .out[ApiDomain.LoggerConfig]
       .outError[ApiDomain.Error.Internal](Status.InternalServerError)
