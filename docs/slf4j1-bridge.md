@@ -42,7 +42,7 @@ val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridg
 ```
 <br/>
 
-**NOTE** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to
+**NOTE:** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to
 ZIO logging. Enabling both causes circular logging and makes no sense.
 
 

@@ -15,16 +15,11 @@
  */
 package zio.logging.example
 
+import com.typesafe.config.ConfigFactory
+import zio.config.typesafe.TypesafeConfigProvider
 import zio.http._
 import zio.logging.api.http.ApiHandlers
-import zio.logging.{
-  ConfigurableLogger,
-  ConsoleLoggerConfig,
-  LogAnnotation,
-  LoggerConfigurer,
-  loggerConfigPath,
-  makeConsoleLogger
-}
+import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LoggerConfigurer, makeConsoleLogger }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
@@ -41,9 +36,9 @@ import java.util.UUID
  */
 object ConfigurableLoggerApp extends ZIOAppDefault {
 
-  def configurableLogger(configPath: NonEmptyChunk[String] = loggerConfigPath) =
+  def configurableLogger() =
     ConsoleLoggerConfig
-      .load(configPath)
+      .load()
       .flatMap { config =>
         makeConsoleLogger(config).map { logger =>
           ConfigurableLogger.make(logger, config.filter)
@@ -51,17 +46,7 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
       }
       .install
 
-  val logFormat =
-    "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %kv{trace_id} %kv{user_id} %cause}"
-
-  val configProvider: ConfigProvider = ConfigProvider.fromMap(
-    Map(
-      "logger/format"                              -> logFormat,
-      "logger/filter/rootLevel"                    -> LogLevel.Info.label,
-      "logger/filter/mappings/zio.logging.example" -> LogLevel.Debug.label
-    ),
-    "/"
-  )
+  val configProvider: ConfigProvider = TypesafeConfigProvider.fromTypesafeConfig(ConfigFactory.load("logger.conf"))
 
   override val bootstrap: ZLayer[Any, Config.Error, Unit] =
     Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> configurableLogger()

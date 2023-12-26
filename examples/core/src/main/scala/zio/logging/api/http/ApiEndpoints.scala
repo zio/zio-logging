@@ -18,9 +18,10 @@ package zio.logging.api.http
 import zio._
 import zio.http._
 import zio.http.codec.PathCodec.{ literal, string }
-import zio.http.codec.{ Doc, HttpCodec, PathCodec }
+import zio.http.codec.{ HttpCodec, PathCodec }
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint._
+import zio.http.endpoint.openapi.{ OpenAPI, OpenAPIGen }
 import zio.logging.api.http.ApiDomain.Error
 
 object ApiEndpoints {
@@ -58,6 +59,12 @@ object ApiEndpoints {
       .out[ApiDomain.LoggerConfig]
       .outError[ApiDomain.Error.Internal](Status.InternalServerError)
 
-  def doc(rootPath: Seq[String] = Seq.empty): Doc =
-    getLoggerConfigs(rootPath).doc + getLoggerConfig(rootPath).doc + setLoggerConfig(rootPath).doc
+  def openAPI(rootPath: Seq[String] = Seq.empty): OpenAPI =
+    OpenAPIGen.fromEndpoints(
+      title = "Logger Configurations API",
+      version = "1.0",
+      getLoggerConfigs(rootPath),
+      getLoggerConfig(rootPath),
+      setLoggerConfig(rootPath)
+    )
 }

@@ -40,8 +40,7 @@ object LoggerReconfigureApp extends ZIOAppDefault {
       for {
         config       <- ZIO.succeed(ConfigFactory.load("logger.conf"))
         _            <- Console.printLine(config.getConfig("logger")).orDie
-        loggerConfig <-
-          TypesafeConfigProvider.fromTypesafeConfig(config).nested("logger").load(ConsoleLoggerConfig.config)
+        loggerConfig <- ConsoleLoggerConfig.load().withConfigProvider(TypesafeConfigProvider.fromTypesafeConfig(config))
       } yield loggerConfig
     )
 
