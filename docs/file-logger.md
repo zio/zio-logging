@@ -11,7 +11,7 @@ import zio.{ ConfigProvider, Runtime }
 
 val configProvider: ConfigProvider = ???
 
-val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> fileLogger(configPath = "logger")
+val logger = Runtime.removeDefaultLoggers >>> Runtime.setConfigProvider(configProvider) >>> fileLogger()
 ```
 
 logger layer with given configuration:

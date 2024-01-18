@@ -114,20 +114,6 @@ object SLF4JSpec extends ZIOSpecDefault {
         )
       }
     }.provide(loggerTraceAnnotation),
-    test("log all annotations into MDC with custom logger name - legacy") {
-      (startStop() @@ SLF4J.loggerName("my-logger")).map { case (traceId, users) =>
-        val loggerOutput = TestAppender.logOutput
-        startStopAssert(loggerOutput, "my-logger") && assert(loggerOutput.map(_.mdc.get(LogAnnotation.TraceId.name)))(
-          equalTo(
-            Chunk.fill(4)(Some(traceId.toString)) :+ None
-          )
-        ) && assert(loggerOutput.map(_.mdc.get("user")))(
-          equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
-        ) && assert(loggerOutput.map(_.mdc.contains(SLF4J.loggerNameAnnotationKey)))(
-          equalTo(Chunk.fill(5)(false))
-        )
-      }
-    }.provide(loggerDefault),
     test("log all annotations into MDC with custom logger name") {
       (startStop() @@ logging.loggerName("my-logger")).map { case (traceId, users) =>
         val loggerOutput = TestAppender.logOutput
@@ -139,47 +125,6 @@ object SLF4JSpec extends ZIOSpecDefault {
           equalTo(users.flatMap(u => Chunk.fill(2)(Some(u.toString))) :+ None)
         ) && assert(loggerOutput.map(_.mdc.contains(logging.loggerNameAnnotationKey)))(
           equalTo(Chunk.fill(5)(false))
-        )
-      }
-    }.provide(loggerDefault),
-    test("logger name changes - legacy logger name annotation") {
-      val users = Chunk.fill(2)(UUID.randomUUID())
-      for {
-        traceId <- ZIO.succeed(UUID.randomUUID())
-        _        = TestAppender.reset()
-        _       <- ZIO.logInfo("Start") @@ SLF4J.loggerName("root-logger")
-        _       <- ZIO.foreach(users) { uId =>
-                     {
-                       ZIO.logInfo("Starting user operation") *> ZIO.sleep(500.millis) *> ZIO.logInfo(
-                         "Stopping user operation"
-                       )
-                     } @@ ZIOAspect.annotated("user", uId.toString) @@ SLF4J.loggerName("user-logger")
-                   } @@ LogAnnotation.TraceId(traceId) @@ SLF4J.loggerName("user-root-logger")
-        _       <- ZIO.logInfo("Done") @@ SLF4J.loggerName("root-logger")
-      } yield {
-        val loggerOutput = TestAppender.logOutput
-        assertTrue(loggerOutput.forall(_.logLevel == LogLevel.Info)) && assert(loggerOutput.map(_.message))(
-          equalTo(
-            Chunk(
-              "Start",
-              "Starting user operation",
-              "Stopping user operation",
-              "Starting user operation",
-              "Stopping user operation",
-              "Done"
-            )
-          )
-        ) && assert(loggerOutput.map(_.loggerName))(
-          equalTo(
-            Chunk(
-              "root-logger",
-              "user-logger",
-              "user-logger",
-              "user-logger",
-              "user-logger",
-              "root-logger"
-            )
-          )
         )
       }
     }.provide(loggerDefault),
@@ -228,15 +173,6 @@ object SLF4JSpec extends ZIOSpecDefault {
       someError().map { _ =>
         val loggerOutput = TestAppender.logOutput
         someErrorAssert(loggerOutput) && assertTrue(loggerOutput(0).cause.exists(_.getMessage.contains("input < 1")))
-      }
-    }.provide(loggerLineCause),
-    test("log error with cause with custom logger name - legacy") {
-      (someError() @@ SLF4J.loggerName("my-logger")).map { _ =>
-        val loggerOutput = TestAppender.logOutput
-        someErrorAssert(loggerOutput, "my-logger") && assertTrue(
-          loggerOutput(0).cause.exists(_.getMessage.contains("input < 1"))
-        ) &&
-        assertTrue(!loggerOutput(0).mdc.contains(SLF4J.loggerNameAnnotationKey))
       }
     }.provide(loggerLineCause),
     test("log error with cause with custom logger name") {

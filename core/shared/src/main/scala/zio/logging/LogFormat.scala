@@ -31,7 +31,7 @@ import scala.util.Try
  * timestamp.fixed(32) |-| level |-| label("message", quoted(line))
  * }}}
  */
-trait LogFormat { self =>
+sealed trait LogFormat { self =>
   import zio.logging.LogFormat.text
 
   /**
@@ -47,10 +47,7 @@ trait LogFormat { self =>
    * separator between them.
    */
   final def +(other: LogFormat): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
-      self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
-      other.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
-    }
+    LogFormat.ConcatFormat(self, other)
 
   /**
    * Returns a new log format which concats both formats together with a space
@@ -76,51 +73,27 @@ trait LogFormat { self =>
    * Returns a new log format that produces the same as this one, if filter is satisfied
    */
   final def filter[M >: String](filter: LogFilter[M]): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
-      if (filter(trace, fiberId, level, line, cause, context, spans, annotations)) {
-        self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
-      }
-    }
+    LogFormat.FilteredFormat(self, filter)
 
   /**
    * Returns a new log format that produces the same as this one, but with a
    * space-padded, fixed-width output. Be careful using this operator, as it
    * destroys all structure, resulting in purely textual log output.
    */
-  final def fixed(size: Int): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
-      val tempBuilder = new StringBuilder
-      val append      = LogAppender.unstructured { (line: String) =>
-        tempBuilder.append(line)
-        ()
-      }
-      self.unsafeFormat(append)(trace, fiberId, level, line, cause, context, spans, annotations)
-
-      val messageSize = tempBuilder.size
-      if (messageSize < size) {
-        builder.appendText(tempBuilder.take(size).appendAll(Array.fill(size - messageSize)(' ')).toString())
-      } else {
-        builder.appendText(tempBuilder.take(size).toString())
-      }
-    }
+  final def fixed(size: Int): LogFormat = LogFormat.FixedFormat(self, size)
 
   /**
    * Returns a new log format that produces the same as this one, except that
    * log levels are colored according to the specified mapping.
    */
-  final def highlight(fn: LogLevel => LogColor): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
-      builder.appendText(fn(level).ansi)
-      try self.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
-      finally builder.appendText(LogColor.RESET.ansi)
-    }
+  final def highlight(fn: LogLevel => LogColor): LogFormat = LogFormat.HighlightFormat(self, fn)
 
   /**
    * Returns a new log format that produces the same as this one, except that
    * the log output is highlighted.
    */
   final def highlight: LogFormat =
-    highlight(defaultHighlighter(_))
+    highlight(defaultHighlighter)
 
   /**
    * The alphanumeric version of the `|-|` operator.
@@ -192,7 +165,7 @@ trait LogFormat { self =>
     builder.toString()
   }
 
-  private def defaultHighlighter(level: LogLevel) = level match {
+  private val defaultHighlighter: LogLevel => LogColor = {
     case LogLevel.Error   => LogColor.RED
     case LogLevel.Warning => LogColor.YELLOW
     case LogLevel.Info    => LogColor.CYAN
@@ -202,6 +175,223 @@ trait LogFormat { self =>
 }
 
 object LogFormat {
+
+  private[logging] def makeLogger(
+    fn: (
+      LogAppender,
+      Trace,
+      FiberId,
+      LogLevel,
+      () => String,
+      Cause[Any],
+      FiberRefs,
+      List[LogSpan],
+      Map[String, String]
+    ) => Any
+  )(
+    builder: LogAppender
+  ): ZLogger[String, Unit] = new ZLogger[String, Unit] {
+
+    override def apply(
+      trace: Trace,
+      fiberId: FiberId,
+      logLevel: LogLevel,
+      message: () => String,
+      cause: Cause[Any],
+      context: FiberRefs,
+      spans: List[LogSpan],
+      annotations: Map[String, String]
+    ): Unit = {
+      fn(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
+      ()
+    }
+  }
+
+  private[logging] final case class FnFormat(
+    fn: (
+      LogAppender,
+      Trace,
+      FiberId,
+      LogLevel,
+      () => String,
+      Cause[Any],
+      FiberRefs,
+      List[LogSpan],
+      Map[String, String]
+    ) => Any
+  ) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger(fn)(builder)
+  }
+
+  private[logging] final case class ConcatFormat(first: LogFormat, second: LogFormat) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+        first.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+        second.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+        ()
+      }(builder)
+  }
+
+  private[logging] final case class FilteredFormat(format: LogFormat, filter: LogFilter[String]) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+        if (filter(trace, fiberId, level, line, cause, context, spans, annotations)) {
+          format.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+        }
+        ()
+      }(builder)
+  }
+
+  private[logging] final case class HighlightFormat(format: LogFormat, fn: LogLevel => LogColor) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+        builder.appendText(fn(level).ansi)
+        try format.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+        finally builder.appendText(LogColor.RESET.ansi)
+        ()
+      }(builder)
+  }
+
+  private[logging] final case class TextFormat(value: String) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, _, _, _) =>
+        builder.appendText(value)
+      }(builder)
+  }
+
+  private[logging] final case class TimestampFormat(formatter: DateTimeFormatter) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, _, _, _) =>
+        val now   = ZonedDateTime.now()
+        val value = formatter.format(now)
+
+        builder.appendText(value)
+      }(builder)
+  }
+
+  private[logging] final case class LabelFormat(label: String, format: LogFormat) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+        builder.openKey()
+        try builder.appendText(label)
+        finally builder.closeKeyOpenValue()
+
+        try format.unsafeFormat(builder)(trace, fiberId, level, line, cause, context, spans, annotations)
+        finally builder.closeValue()
+      }(builder)
+  }
+
+  private[logging] final case class LoggerNameFormat(
+    loggerNameExtractor: LoggerNameExtractor,
+    loggerNameDefault: String
+  ) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, trace, _, _, _, _, context, _, annotations) =>
+        val loggerName = loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
+        builder.appendText(loggerName)
+      }(builder)
+  }
+
+  private[logging] final case class FixedFormat(format: LogFormat, size: Int) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, trace, fiberId, level, line, cause, context, spans, annotations) =>
+        val tempBuilder = new StringBuilder
+        val append      = LogAppender.unstructured { (line: String) =>
+          tempBuilder.append(line)
+          ()
+        }
+        format.unsafeFormat(append)(trace, fiberId, level, line, cause, context, spans, annotations)
+
+        val messageSize = tempBuilder.size
+        if (messageSize < size) {
+          builder.appendText(tempBuilder.take(size).appendAll(Array.fill(size - messageSize)(' ')).toString())
+        } else {
+          builder.appendText(tempBuilder.take(size).toString())
+        }
+      }(builder)
+  }
+
+  private[logging] final case class AnnotationFormat(name: String) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, _, _, annotations) =>
+        annotations.get(name).foreach { value =>
+          builder.appendKeyValue(name, value)
+        }
+      }(builder)
+  }
+
+  private[logging] final case class AnnotationsFormat(excludeKeys: Set[String]) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, _, _, annotations) =>
+        builder.appendKeyValues(annotations.filterNot(kv => excludeKeys.contains(kv._1)))
+      }(builder)
+  }
+
+  private[logging] final case class LogAnnotationFormat[A](annotation: LogAnnotation[A]) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, fiberRefs, _, _) =>
+        fiberRefs
+          .get(logContext)
+          .foreach { context =>
+            context.get(annotation).foreach { value =>
+              builder.appendKeyValue(annotation.name, annotation.render(value))
+            }
+          }
+      }(builder)
+  }
+
+  private[logging] final case class LogAnnotationsFormat(excludeKeys: Set[String]) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, fiberRefs, _, _) =>
+        fiberRefs
+          .get(logContext)
+          .foreach { context =>
+            builder.appendKeyValues(context.asMap.filterNot(kv => excludeKeys.contains(kv._1)))
+          }
+        ()
+      }(builder)
+  }
+
+  private[logging] final case class AllAnnotationsFormat(excludeKeys: Set[String]) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
+        val keyValues = annotations.filterNot(kv => excludeKeys.contains(kv._1)).toList ++ fiberRefs
+          .get(logContext)
+          .map { context =>
+            context.asMap.filterNot(kv => excludeKeys.contains(kv._1)).toList
+          }
+          .getOrElse(Nil)
+        builder.appendKeyValues(keyValues)
+        ()
+      }(builder)
+  }
+
+  private[logging] final case class AnyAnnotationFormat(name: String) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
+        annotations
+          .get(name)
+          .orElse(
+            fiberRefs
+              .get(logContext)
+              .flatMap(_.get(name))
+          )
+          .foreach { value =>
+            builder.appendKeyValue(name, value)
+          }
+      }(builder)
+  }
+
+  private[logging] final case class SpanFormat(name: String) extends LogFormat {
+    override private[logging] def unsafeFormat(builder: LogAppender): ZLogger[String, Unit] =
+      makeLogger { (builder, _, _, _, _, _, _, spans, _) =>
+        spans.find(_.label == name).foreach { span =>
+          val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
+          builder.appendKeyValue(name, s"${duration}ms")
+        }
+      }(builder)
+  }
 
   /**
    * A `Pattern` is string representation of `LogFormat`
@@ -574,6 +764,13 @@ object LogFormat {
 
     def parse(pattern: String): Either[Parser.ParserError[String], Pattern] =
       syntax.parseString(pattern)
+
+    val config: Config[Pattern] = Config.string.mapOrFail { value =>
+      Pattern.parse(value) match {
+        case Right(p) => Right(p)
+        case Left(_)  => Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Pattern, but found ${value}"))
+      }
+    }
   }
 
   private val NL = System.lineSeparator()
@@ -597,99 +794,39 @@ object LogFormat {
       List[LogSpan],
       Map[String, String]
     ) => Any
-  ): LogFormat = { (builder: LogAppender) =>
-    new ZLogger[String, Unit] {
-      override def apply(
-        trace: Trace,
-        fiberId: FiberId,
-        logLevel: LogLevel,
-        message: () => String,
-        cause: Cause[Any],
-        context: FiberRefs,
-        spans: List[LogSpan],
-        annotations: Map[String, String]
-      ): Unit = {
-        format(builder, trace, fiberId, logLevel, message, cause, context, spans, annotations)
-        ()
-      }
-    }
-  }
+  ): LogFormat = FnFormat(format)
 
   def loggerName(loggerNameExtractor: LoggerNameExtractor, loggerNameDefault: String = "zio-logger"): LogFormat =
-    LogFormat.make { (builder, trace, _, _, _, _, context, _, annotations) =>
-      val loggerName = loggerNameExtractor(trace, context, annotations).getOrElse(loggerNameDefault)
-      builder.appendText(loggerName)
-    }
+    LoggerNameFormat(loggerNameExtractor, loggerNameDefault)
 
   def annotation(name: String): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
-      annotations.get(name).foreach { value =>
-        builder.appendKeyValue(name, value)
-      }
-    }
+    AnnotationFormat(name)
 
   def logAnnotation[A](ann: LogAnnotation[A]): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
-      fiberRefs
-        .get(logContext)
-        .foreach { context =>
-          context.get(ann).foreach { value =>
-            builder.appendKeyValue(ann.name, ann.render(value))
-          }
-        }
-    }
+    LogAnnotationFormat(ann)
 
   def annotation[A](ann: LogAnnotation[A]): LogFormat = logAnnotation(ann)
 
   def anyAnnotation(name: String): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
-      annotations
-        .get(name)
-        .orElse(
-          fiberRefs
-            .get(logContext)
-            .flatMap(_.get(name))
-        )
-        .foreach { value =>
-          builder.appendKeyValue(name, value)
-        }
-    }
+    AnyAnnotationFormat(name)
 
   /**
    * Returns a new log format that appends all annotations to the log output.
    */
-  def annotations: LogFormat = annotations(Set.empty)
+  val annotations: LogFormat = annotations(Set.empty)
 
   def annotations(excludeKeys: Set[String]): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, _, _, annotations) =>
-      builder.appendKeyValues(annotations.filterNot(kv => excludeKeys.contains(kv._1)))
-    }
+    AnnotationsFormat(excludeKeys)
 
-  def logAnnotations: LogFormat = logAnnotations(Set.empty)
+  val logAnnotations: LogFormat = logAnnotations(Set.empty)
 
   def logAnnotations(excludeKeys: Set[String]): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, fiberRefs, _, _) =>
-      fiberRefs
-        .get(logContext)
-        .foreach { context =>
-          builder.appendKeyValues(context.asMap.filterNot(kv => excludeKeys.contains(kv._1)))
-        }
-      ()
-    }
+    LogAnnotationsFormat(excludeKeys)
 
-  def allAnnotations: LogFormat = allAnnotations(Set.empty)
+  val allAnnotations: LogFormat = allAnnotations(Set.empty)
 
-  def allAnnotations(excludeKeys: Set[String]): LogFormat = LogFormat.make {
-    (builder, _, _, _, _, _, fiberRefs, _, annotations) =>
-      val keyValues = annotations.filterNot(kv => excludeKeys.contains(kv._1)).toList ++ fiberRefs
-        .get(logContext)
-        .map { context =>
-          context.asMap.filterNot(kv => excludeKeys.contains(kv._1)).toList
-        }
-        .getOrElse(Nil)
-
-      builder.appendKeyValues(keyValues)
-  }
+  def allAnnotations(excludeKeys: Set[String]): LogFormat =
+    AllAnnotationsFormat(excludeKeys)
 
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd
@@ -744,19 +881,7 @@ object LogFormat {
       }
     }
 
-  @deprecated("use LogFormat.filter", "2.1.2")
-  def ifCauseNonEmpty(format: LogFormat): LogFormat =
-    format.filter(LogFilter.causeNonEmpty)
-
-  def label(label: => String, value: LogFormat): LogFormat =
-    LogFormat.make { (builder, trace, fiberId, logLevel, message, cause, context, spans, annotations) =>
-      builder.openKey()
-      try builder.appendText(label)
-      finally builder.closeKeyOpenValue()
-
-      try value.unsafeFormat(builder)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
-      finally builder.closeValue()
-    }
+  def label(label: => String, value: LogFormat): LogFormat = LabelFormat(label, value)
 
   val newLine: LogFormat = text(NL)
 
@@ -770,17 +895,12 @@ object LogFormat {
    * Returns a new log format that appends the specified span to the log output.
    */
   def span(name: String): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
-      spans.find(_.label == name).foreach { span =>
-        val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
-        builder.appendKeyValue(name, s"${duration}ms")
-      }
-    }
+    SpanFormat(name)
 
   /**
    * Returns a new log format that appends all spans to the log output.
    */
-  def spans: LogFormat =
+  val spans: LogFormat =
     LogFormat.make { (builder, _, _, _, _, _, _, spans, _) =>
       builder.appendKeyValues(spans.map { span =>
         val duration = (java.lang.System.currentTimeMillis() - span.startTime).toString
@@ -788,18 +908,11 @@ object LogFormat {
       })
     }
 
-  def text(value: => String): LogFormat =
-    LogFormat.make { (builder, _, _, _, _, _, _, _, _) =>
-      builder.appendText(value)
-    }
+  def text(value: => String): LogFormat = TextFormat(value)
 
   val timestamp: LogFormat = timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-  def timestamp(formatter: => DateTimeFormatter): LogFormat =
-    text {
-      val now = ZonedDateTime.now()
-      formatter.format(now)
-    }
+  def timestamp(formatter: => DateTimeFormatter): LogFormat = TimestampFormat(formatter)
 
   val default: LogFormat =
     label("timestamp", timestamp.fixed(32)) |-|

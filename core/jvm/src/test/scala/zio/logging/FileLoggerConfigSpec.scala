@@ -52,6 +52,33 @@ object FileLoggerConfigSpec extends ZIOSpecDefault {
         assertTrue(loadedConfig.bufferedIOSize.isEmpty)
       }
     },
+    test("equals config with same sources") {
+
+      val logFormat =
+        "%highlight{%timestamp %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"
+
+      val configProvider: ConfigProvider = ConfigProvider.fromMap(
+        Map(
+          "logger/format"                                              -> logFormat,
+          "logger/path"                                                -> "file:///tmp/test.log",
+          "logger/autoFlushBatchSize"                                  -> "2",
+          "logger/bufferedIOSize"                                      -> "4096",
+          "logger/rollingPolicy/type"                                  -> "TimeBasedRollingPolicy",
+          "logger/filter/rootLevel"                                    -> LogLevel.Info.label,
+          "logger/filter/mappings/zio.logging.example.LivePingService" -> LogLevel.Debug.label
+        ),
+        "/"
+      )
+
+      import zio.prelude._
+      for {
+        c1 <- configProvider.load(ConsoleLoggerConfig.config.nested("logger"))
+        c2 <- configProvider.load(ConsoleLoggerConfig.config.nested("logger"))
+      } yield assertTrue(
+        c1.format == c2.format,
+        c1 === c2
+      )
+    },
     test("fail on invalid charset and filter config") {
       val logFormat =
         "%highlight{%timestamp{yyyy-MM-dd'T'HH:mm:ssZ} %fixed{7}{%level} [%fiberId] %name:%line %message %cause}"

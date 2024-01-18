@@ -14,7 +14,7 @@ class FilterBenchmarks {
   val runtime = Runtime.default
 
   val unfilteredLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig(LogFormat.default, LogFilter.acceptAll))
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger).install
 
   val handWrittenFilteredLogging: ZLayer[Any, Nothing, Unit] = {
     val loggerNameGroup: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
@@ -37,40 +37,45 @@ class FilterBenchmarks {
         }
       }
     )
-    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig(LogFormat.default, filter))
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
+      .filter(filter)
+      .install
   }
 
+  val filterConfig: LogFilter.LogLevelByNameConfig = LogFilter.LogLevelByNameConfig(
+    LogLevel.Debug,
+    "a.b.c" -> LogLevel.Info,
+    "a.b.d" -> LogLevel.Warning,
+    "e"     -> LogLevel.Info,
+    "f.g"   -> LogLevel.Error,
+    "f"     -> LogLevel.Info
+  )
+
   val filterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> consoleLogger(
-      ConsoleLoggerConfig(
-        LogFormat.default,
-        LogFilter.logLevelByName(
-          LogLevel.Debug,
-          "a.b.c" -> LogLevel.Info,
-          "a.b.d" -> LogLevel.Warning,
-          "e"     -> LogLevel.Info,
-          "f.g"   -> LogLevel.Error,
-          "f"     -> LogLevel.Info
-        )
-      )
-    )
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
+      .filter(filterConfig.toFilter)
+      .install
 
   val cachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
-    Runtime.removeDefaultLoggers >>> consoleLogger(
-      ConsoleLoggerConfig(
-        LogFormat.default,
-        LogFilter
-          .logLevelByName(
-            LogLevel.Debug,
-            "a.b.c" -> LogLevel.Info,
-            "a.b.d" -> LogLevel.Warning,
-            "e"     -> LogLevel.Info,
-            "f.g"   -> LogLevel.Error,
-            "f"     -> LogLevel.Info
-          )
-          .cached
+    Runtime.removeDefaultLoggers >>> makeSystemOutLogger(LogFormat.default.toLogger)
+      .filter(filterConfig.toFilter.cached)
+      .install
+
+  val reconfigurableFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> ReconfigurableLogger
+      .make[Any, Nothing, String, Any, ConsoleLoggerConfig](
+        ZIO.succeed(ConsoleLoggerConfig(LogFormat.default, filterConfig)),
+        (config, _) => makeSystemOutLogger(config.format.toLogger).filter(config.toFilter)
       )
-    )
+      .installUnscoped[Any]
+
+  val reconfigurableCachedFilterByLogLevelAndNameLogging: ZLayer[Any, Nothing, Unit] =
+    Runtime.removeDefaultLoggers >>> ReconfigurableLogger
+      .make[Any, Nothing, String, Any, ConsoleLoggerConfig](
+        ZIO.succeed(ConsoleLoggerConfig(LogFormat.default, filterConfig)),
+        (config, _) => makeSystemOutLogger(config.format.toLogger).filter(config.toFilter.cached)
+      )
+      .installUnscoped[Any]
 
   val names: List[String] = List(
     "a",
@@ -108,15 +113,17 @@ class FilterBenchmarks {
   }
 
   /**
-   * 2022/10/28 Initial results
+   * 2023/12/26 Initial results
    *
    * jmh:run -i 3 -wi 3 -f1 -t1 .*FilterBenchmarks.*
    *
-   * Benchmark                                           Mode  Cnt      Score       Error  Units
-   * FilterBenchmarks.cachedFilterByLogLevelAndNameLog  thrpt    3  16623.054 ± 15855.331  ops/s
-   * FilterBenchmarks.filterByLogLevelAndNameLog        thrpt    3  18048.598 ±  3868.976  ops/s
-   * FilterBenchmarks.handWrittenFilterLog              thrpt    3  16352.488 ±  2316.372  ops/s
-   * FilterBenchmarks.noFilteringLog                    thrpt    3  15104.002 ±  3857.108  ops/s
+   *  Benchmark                                                         Mode  Cnt      Score       Error  Units
+   *  FilterBenchmarks.cachedFilterByLogLevelAndNameLog                thrpt    3  14795.547 ±  1372.850  ops/s
+   *  FilterBenchmarks.filterByLogLevelAndNameLog                      thrpt    3  15093.994 ±  1230.494  ops/s
+   *  FilterBenchmarks.handWrittenFilterLog                            thrpt    3  13157.888 ± 10193.287  ops/s
+   *  FilterBenchmarks.noFilteringLog                                  thrpt    3  11043.746 ±   230.514  ops/s
+   *  FilterBenchmarks.reconfigurableCachedFilterByLogLevelAndNameLog  thrpt    3   7532.412 ±   415.760  ops/s
+   *  FilterBenchmarks.reconfigurableFilterByLogLevelAndNameLog        thrpt    3   7482.096 ±   628.534  ops/s
    */
 
   @Benchmark
@@ -134,5 +141,13 @@ class FilterBenchmarks {
   @Benchmark
   def cachedFilterByLogLevelAndNameLog(): Unit =
     testLoggingWith(cachedFilterByLogLevelAndNameLogging)
+
+  @Benchmark
+  def reconfigurableFilterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(reconfigurableFilterByLogLevelAndNameLogging)
+
+  @Benchmark
+  def reconfigurableCachedFilterByLogLevelAndNameLog(): Unit =
+    testLoggingWith(reconfigurableCachedFilterByLogLevelAndNameLogging)
 
 }

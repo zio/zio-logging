@@ -21,39 +21,24 @@ import zio.{ Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 object Slf4jBridge {
 
   /**
-   * log annotation key for slf4j logger name
-   */
-  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
-  val loggerNameAnnotationKey: String = "slf4j_logger_name"
-
-  /**
    * initialize SLF4J bridge
    */
   def initialize: ZLayer[Any, Nothing, Unit] =
-    Runtime.enableCurrentFiber ++ layer(zio.logging.loggerNameAnnotationKey)
+    Runtime.enableCurrentFiber ++ layer
 
   /**
    * initialize SLF4J bridge without `FiberRef` propagation
    */
-  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer(zio.logging.loggerNameAnnotationKey)
-
-  /**
-   * initialize SLF4J bridge, where custom annotation key for logger name may be provided
-   * this is to achieve backward compatibility where [[Slf4jBridge.loggerNameAnnotationKey]] was used
-   *
-   * NOTE: this feature may be removed in future releases
-   */
-  def initialize(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
-    Runtime.enableCurrentFiber ++ layer(nameAnnotationKey)
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer
 
   private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
 
-  private def layer(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
+  private def layer: ZLayer[Any, Nothing, Unit] =
     ZLayer {
       for {
         runtime <- ZIO.runtime[Any]
         _       <- initLock.withPermit {
-                     ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey)))
+                     ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime)))
                    }
       } yield ()
     }

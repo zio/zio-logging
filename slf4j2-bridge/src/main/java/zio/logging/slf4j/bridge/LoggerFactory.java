@@ -28,7 +28,7 @@ final class LoggerFactory implements ILoggerFactory {
 
     private LoggerRuntime runtime = null;
 
-    void attacheRuntime(LoggerRuntime runtime) {
+    void attachRuntime(LoggerRuntime runtime) {
         this.runtime = runtime;
     }
 

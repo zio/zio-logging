@@ -92,3 +92,10 @@ INFO: user=59c114fd-676d-4df9-a5a0-b8e132468fbf trace_id=7d3e3b84-dd3b-44ff-915a
 Oct 28, 2022 1:47:02 PM zio.logging.backend.JPL$$anon$1 $anonfun$closeLogEntry$1
 INFO: Done
 ```
+
+## Feature changes
+
+### Version 2.2.0
+
+Deprecated log annotation with key `jpl_logger_name` (`JPL.loggerNameAnnotationKey`) removed,
+only common log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`) for logger name is supported now.
