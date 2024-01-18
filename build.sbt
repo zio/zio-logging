@@ -236,8 +236,8 @@ lazy val examplesSlf4j2Log4j = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.22.1",
-      "org.apache.logging.log4j" % "log4j-core"        % "2.22.1"
+      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % log4jVersion,
+      "org.apache.logging.log4j" % "log4j-core"        % log4jVersion
     )
   )
 
