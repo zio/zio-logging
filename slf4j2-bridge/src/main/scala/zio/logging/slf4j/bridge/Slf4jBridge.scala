@@ -40,7 +40,7 @@ object Slf4jBridge {
                        org.slf4j.LoggerFactory
                          .getILoggerFactory()
                          .asInstanceOf[LoggerFactory]
-                         .attacheRuntime(new ZioLoggerRuntime(runtime))
+                         .attachRuntime(new ZioLoggerRuntime(runtime))
                      )
                    }
       } yield ()
