@@ -28,7 +28,7 @@ In order to use this library, we need to add the following line in our `build.sb
 
 ```scala
 // ZIO Logging backends
-libraryDependencies += "dev.zio" %% "zio-logging" % "2.1.17"
+libraryDependencies += "dev.zio" %% "zio-logging" % "2.2.0"
 ```
 
 The main module contains the following features: 
@@ -43,10 +43,10 @@ Other modules:
 
     ```scala
     // SLF4j v1 integration
-    libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "2.1.17"
+    libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "2.2.0"
     
     // SLF4j v2 integration
-    libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "2.1.17"
+    libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "2.2.0"
     ```
    When to use this module: you are already using SLF4J logger in some other project, and you like to have same log outputs. 
    See SLF4J [v2](docs/slf4j2.md) or [v1](docs/slf4j1.md) section for more details.
@@ -56,10 +56,10 @@ Other modules:
 
     ```scala
     // Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
-    libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "2.1.17"
+    libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "2.2.0"
     
     // Using ZIO Logging for SLF4j v2 loggers, usually third-party non-ZIO libraries
-    libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "2.1.17"
+    libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "2.2.0"
     ```
 
     When to use this module: you want to use some zio-logger implementation, but also you are using some java library which using SLF4J interface for logging.
@@ -70,7 +70,7 @@ Other modules:
 
     ```scala
     // JPL integration
-    libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "2.1.17"
+    libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "2.2.0"
     ```
 
     When to use this module: you are already using Java Platform/System Logger in some other project, and you like to have same log outputs.
