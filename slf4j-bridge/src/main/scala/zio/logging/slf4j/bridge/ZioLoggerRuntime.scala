@@ -19,9 +19,10 @@ import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
 import org.slf4j.impl.LoggerRuntime
+import zio.logging.LogFilter
 import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
 
   override def log(
     name: String,
@@ -70,7 +71,21 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
 
-  override def isEnabled(name: String, level: Level): Boolean = true
+  override def isEnabled(name: String, level: Level): Boolean = {
+    val logLevel = ZioLoggerRuntime.logLevelMapping(level)
+
+    filter(
+      Trace(name, "", 0),
+      FiberId.None,
+      logLevel,
+      () => "",
+      Cause.empty,
+      FiberRefs.empty,
+      List.empty,
+      Map.empty
+    )
+  }
+
 }
 
 object ZioLoggerRuntime {

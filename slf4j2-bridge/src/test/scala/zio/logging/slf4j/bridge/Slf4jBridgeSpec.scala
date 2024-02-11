@@ -1,5 +1,6 @@
 package zio.logging.slf4j.bridge
 
+import zio.logging.LogFilter
 import zio.test._
 import zio.{ Cause, Chunk, LogLevel, ZIO, ZIOAspect }
 
@@ -137,6 +138,70 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             )
           )
         )
-      }.provide(Slf4jBridge.initializeWithoutFiberRefPropagation)
+      }.provide(Slf4jBridge.initializeWithoutFiberRefPropagation),
+      test("logs through slf4j with filter") {
+        for {
+          _      <- (for {
+                      logger1 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.abc"))
+                      logger2 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger.def"))
+                      logger3 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.test.logger.xyz"))
+                      _       <- ZIO.attempt(logger1.debug("test debug message"))
+                      _       <- ZIO.attempt(logger1.warn("test warn message"))
+                      _       <- ZIO.attempt(logger2.debug("hello2 {} debug", "world"))
+                      _       <- ZIO.attempt(logger2.warn("hello2 {} warn", "world"))
+                      _       <- ZIO.attempt(logger3.info("hello3 {} info", "world"))
+                      _       <- ZIO.attempt(logger3.warn("hello3 {} warn", "world"))
+                    } yield ()).exit
+          output <- ZTestLogger.logOutput
+          lines   = output.map { logEntry =>
+                      LogEntry(
+                        logEntry.spans.map(_.label),
+                        logEntry.logLevel,
+                        logEntry.annotations,
+                        logEntry.message(),
+                        logEntry.cause
+                      )
+                    }
+        } yield assertTrue(
+          lines == Chunk(
+            LogEntry(
+              List("test.abc"),
+              LogLevel.Debug,
+              Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
+              "test debug message",
+              Cause.empty
+            ),
+            LogEntry(
+              List("test.abc"),
+              LogLevel.Warning,
+              Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
+              "test warn message",
+              Cause.empty
+            ),
+            LogEntry(
+              List("test.logger.def"),
+              LogLevel.Warning,
+              Map(zio.logging.loggerNameAnnotationKey -> "test.logger.def"),
+              "hello2 world warn",
+              Cause.empty
+            ),
+            LogEntry(
+              List("test.test.logger.xyz"),
+              LogLevel.Warning,
+              Map(zio.logging.loggerNameAnnotationKey -> "test.test.logger.xyz"),
+              "hello3 world warn",
+              Cause.empty
+            )
+          )
+        )
+      }.provide(
+        Slf4jBridge.initialize(
+          LogFilter.logLevelByName(
+            LogLevel.Debug,
+            "test.logger"      -> LogLevel.Info,
+            "test.test.logger" -> LogLevel.Warning
+          )
+        )
+      )
     ) @@ TestAspect.sequential
 }

@@ -16,6 +16,7 @@
 package zio.logging.slf4j.bridge
 
 import org.slf4j.impl.ZioLoggerFactory
+import zio.logging.LogFilter
 import zio.{ Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 
 object Slf4jBridge {
@@ -23,22 +24,27 @@ object Slf4jBridge {
   /**
    * initialize SLF4J bridge
    */
-  def initialize: ZLayer[Any, Nothing, Unit] =
-    Runtime.enableCurrentFiber ++ layer
+  def initialize: ZLayer[Any, Nothing, Unit] = initialize(LogFilter.acceptAll)
+
+  def initialize(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
 
   /**
    * initialize SLF4J bridge without `FiberRef` propagation
    */
-  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initializeWithoutFiberRefPropagation(
+    LogFilter.acceptAll
+  )
+
+  def initializeWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
 
   private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
 
-  private def layer: ZLayer[Any, Nothing, Unit] =
+  private def layer(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] =
     ZLayer {
       for {
         runtime <- ZIO.runtime[Any]
         _       <- initLock.withPermit {
-                     ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime)))
+                     ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, filter)))
                    }
       } yield ()
     }
