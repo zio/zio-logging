@@ -167,7 +167,7 @@ public abstract class ZioLoggerBase extends MarkerIgnoringBase {
 
     public void info(String format, Object arg1, Object arg2) {
         if (isInfoEnabled()) {
-        logWithArgs(Level.INFO, null, format, arg1, arg2);
+            logWithArgs(Level.INFO, null, format, arg1, arg2);
         }
     }
 
