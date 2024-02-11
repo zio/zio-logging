@@ -26,6 +26,8 @@ public abstract class ZioLoggerBase extends MarkerIgnoringBase {
 
     abstract protected void log(Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable);
 
+    abstract protected boolean isEnabled(String name, Level level);
+
     private void logWithThrowable(Level level, Marker marker, String msg, Throwable t) {
         log(level, marker, msg, null, t);
     }
@@ -54,140 +56,190 @@ public abstract class ZioLoggerBase extends MarkerIgnoringBase {
 
     @Override
     public boolean isTraceEnabled() {
-        return true;
+        return isEnabled(name, Level.TRACE);
     }
 
     @Override
     public boolean isDebugEnabled() {
-        return true;
+        return isEnabled(name, Level.DEBUG);
     }
 
     @Override
     public boolean isErrorEnabled() {
-        return true;
+        return isEnabled(name, Level.ERROR);
     }
 
     @Override
     public boolean isWarnEnabled() {
-        return true;
+        return isEnabled(name, Level.WARN);
     }
 
     @Override
     public boolean isInfoEnabled() {
-        return true;
+        return isEnabled(name, Level.INFO);
     }
 
     @Override
     public void trace(String msg) {
-        logWithThrowable(Level.TRACE, null, msg, null);
+        if (isTraceEnabled()) {
+            logWithThrowable(Level.TRACE, null, msg, null);
+        }
     }
 
     @Override
     public void trace(String format, Object arg) {
-        logWithArg(Level.TRACE, null, format, arg);
+        if (isTraceEnabled()) {
+            logWithArg(Level.TRACE, null, format, arg);
+        }
     }
 
 
     @Override
     public void trace(String format, Object arg1, Object arg2) {
-        logWithArgs(Level.TRACE, null, format, arg1, arg2);
+        if (isTraceEnabled()) {
+            logWithArgs(Level.TRACE, null, format, arg1, arg2);
+        }
     }
 
 
     @Override
     public void trace(String format, Object... arguments) {
-        logWithArgs(Level.TRACE, null, format, arguments);
+        if (isTraceEnabled()) {
+            logWithArgs(Level.TRACE, null, format, arguments);
+        }
     }
 
 
     @Override
     public void trace(String msg, Throwable t) {
-        logWithThrowable(Level.TRACE, null, msg, t);
+        if (isTraceEnabled()) {
+            logWithThrowable(Level.TRACE, null, msg, t);
+        }
     }
 
 
     public void debug(String msg) {
-        logWithThrowable(Level.DEBUG, null, msg, null);
+        if (isDebugEnabled()) {
+            logWithThrowable(Level.DEBUG, null, msg, null);
+        }
     }
 
 
     public void debug(String format, Object arg) {
-        logWithArg(Level.DEBUG, null, format, arg);
+        if (isDebugEnabled()) {
+            logWithArg(Level.DEBUG, null, format, arg);
+        }
     }
 
 
     public void debug(String format, Object arg1, Object arg2) {
-        logWithArgs(Level.DEBUG, null, format, arg1, arg2);
+        if (isDebugEnabled()) {
+            logWithArgs(Level.DEBUG, null, format, arg1, arg2);
+        }
     }
 
 
     public void debug(String format, Object... arguments) {
-        logWithArgs(Level.DEBUG, null, format, arguments);
+        if (isDebugEnabled()) {
+            logWithArgs(Level.DEBUG, null, format, arguments);
+        }
     }
 
 
     public void debug(String msg, Throwable t) {
-        logWithThrowable(Level.DEBUG, null, msg, t);
+        if (isDebugEnabled()) {
+            logWithThrowable(Level.DEBUG, null, msg, t);
+        }
     }
 
 
     public void info(String msg) {
-        logWithThrowable(Level.INFO, null, msg, null);
+        if (isInfoEnabled()) {
+            logWithThrowable(Level.INFO, null, msg, null);
+        }
     }
 
     public void info(String format, Object arg) {
-        logWithArg(Level.INFO, null, format, arg);
+        if (isInfoEnabled()) {
+            logWithArg(Level.INFO, null, format, arg);
+        }
     }
 
     public void info(String format, Object arg1, Object arg2) {
+        if (isInfoEnabled()) {
         logWithArgs(Level.INFO, null, format, arg1, arg2);
+        }
     }
 
     public void info(String format, Object... arguments) {
-        logWithArgs(Level.INFO, null, format, arguments);
+        if (isInfoEnabled()) {
+            logWithArgs(Level.INFO, null, format, arguments);
+        }
     }
 
     public void info(String msg, Throwable t) {
-        logWithThrowable(Level.INFO, null, msg, t);
+        if (isInfoEnabled()) {
+            logWithThrowable(Level.INFO, null, msg, t);
+        }
     }
 
     public void warn(String msg) {
-        logWithThrowable(Level.WARN, null, msg, null);
+        if (isWarnEnabled()) {
+            logWithThrowable(Level.WARN, null, msg, null);
+        }
     }
 
     public void warn(String format, Object arg) {
-        logWithArg(Level.WARN, null, format, arg);
+        if (isWarnEnabled()) {
+            logWithArg(Level.WARN, null, format, arg);
+        }
     }
 
     public void warn(String format, Object arg1, Object arg2) {
-        logWithArgs(Level.WARN, null, format, arg1, arg2);
+        if (isWarnEnabled()) {
+            logWithArgs(Level.WARN, null, format, arg1, arg2);
+        }
     }
 
     public void warn(String format, Object... arguments) {
-        logWithArgs(Level.WARN, null, format, arguments);
+        if (isWarnEnabled()) {
+            logWithArgs(Level.WARN, null, format, arguments);
+        }
     }
 
     public void warn(String msg, Throwable t) {
-        logWithThrowable(Level.WARN, null, msg, t);
+        if (isWarnEnabled()) {
+            logWithThrowable(Level.WARN, null, msg, t);
+        }
     }
 
     public void error(String msg) {
-        logWithThrowable(Level.ERROR, null, msg, null);
+        if (isErrorEnabled()) {
+            logWithThrowable(Level.ERROR, null, msg, null);
+        }
     }
 
     public void error(String format, Object arg) {
-        logWithArg(Level.ERROR, null, format, arg);
+        if (isErrorEnabled()) {
+            logWithArg(Level.ERROR, null, format, arg);
+        }
     }
 
     public void error(String format, Object arg1, Object arg2) {
-        logWithArgs(Level.ERROR, null, format, arg1, arg2);
+        if (isErrorEnabled()) {
+            logWithArgs(Level.ERROR, null, format, arg1, arg2);
+        }
     }
 
     public void error(String format, Object... arguments) {
-        logWithArgs(Level.ERROR, null, format, arguments);
+        if (isErrorEnabled()) {
+            logWithArgs(Level.ERROR, null, format, arguments);
+        }
     }
 
     public void error(String msg, Throwable t) {
-        logWithThrowable(Level.ERROR, null, msg, t);
+        if (isErrorEnabled()) {
+            logWithThrowable(Level.ERROR, null, msg, t);
+        }
     }
 }

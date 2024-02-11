@@ -28,4 +28,6 @@ final class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLogger
     throwable: Throwable
   ): Unit =
     factory.log(name, level, marker, messagePattern, arguments, throwable)
+
+  override protected def isEnabled(name: String, level: Level): Boolean = factory.isEnabled(name, level)
 }

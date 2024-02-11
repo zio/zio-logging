@@ -69,6 +69,8 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
 
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
+
+  override def isEnabled(name: String, level: Level): Boolean = true
 }
 
 object ZioLoggerRuntime {

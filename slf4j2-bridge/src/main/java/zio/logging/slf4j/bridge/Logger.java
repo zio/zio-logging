@@ -40,51 +40,51 @@ final class Logger extends AbstractLogger {
 
     @Override
     public boolean isTraceEnabled() {
-        return true;
+        return factory.isEnabled(name, Level.TRACE);
     }
 
     @Override
     public boolean isTraceEnabled(Marker marker) {
-        return true;
+        return isTraceEnabled();
     }
 
     @Override
     public boolean isDebugEnabled() {
-        return true;
+        return factory.isEnabled(name, Level.DEBUG);
     }
 
     @Override
     public boolean isDebugEnabled(Marker marker) {
-        return true;
+        return isDebugEnabled();
     }
 
     @Override
     public boolean isInfoEnabled() {
-        return true;
+        return factory.isEnabled(name, Level.INFO);
     }
 
     @Override
     public boolean isInfoEnabled(Marker marker) {
-        return true;
+        return isInfoEnabled();
     }
 
     @Override
     public boolean isWarnEnabled() {
-        return true;
+        return factory.isEnabled(name, Level.WARN);
     }
 
     @Override
     public boolean isWarnEnabled(Marker marker) {
-        return true;
+        return isWarnEnabled();
     }
 
     @Override
     public boolean isErrorEnabled() {
-        return true;
+        return factory.isEnabled(name, Level.ERROR);
     }
 
     @Override
     public boolean isErrorEnabled(Marker marker) {
-        return true;
+        return isErrorEnabled();
     }
 }
