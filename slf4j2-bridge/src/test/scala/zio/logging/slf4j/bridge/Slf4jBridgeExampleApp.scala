@@ -22,10 +22,10 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     LogAnnotation.TraceId
   ) + LogFormat.default
 
+  private val loggerConfig = ConsoleLoggerConfig(logFormat, logFilterConfig)
+
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
-      ConsoleLoggerConfig(logFormat, logFilterConfig)
-    ) >+> Slf4jBridge.initialize
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(loggerConfig) >+> Slf4jBridge.initialize(loggerConfig.toFilter)
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
@@ -33,7 +33,9 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     for {
       _ <- ZIO.logInfo("Start")
       _ <- ZIO.foreachPar(uuids) { u =>
-             ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING")) @@ LogAnnotation.UserId(
+             ZIO.succeed(slf4jLogger.info("Test {}!", "INFO")) *> ZIO.succeed(
+               slf4jLogger.warn("Test {}!", "WARNING")
+             ) @@ LogAnnotation.UserId(
                u.toString
              )
            } @@ LogAnnotation.TraceId(UUID.randomUUID())

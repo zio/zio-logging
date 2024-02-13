@@ -39,17 +39,18 @@ object Slf4jBridge {
   private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
 
   private def layer(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] =
-    ZLayer {
-      for {
-        runtime <- ZIO.runtime[Any]
-        _       <- initLock.withPermit {
-                     ZIO.succeed(
-                       org.slf4j.LoggerFactory
-                         .getILoggerFactory()
-                         .asInstanceOf[LoggerFactory]
-                         .attachRuntime(new ZioLoggerRuntime(runtime, filter))
-                     )
-                   }
-      } yield ()
-    }
+    ZLayer(make(filter))
+
+  def make(filter: LogFilter[Any]): ZIO[Any, Nothing, Unit] =
+    for {
+      runtime <- ZIO.runtime[Any]
+      _       <- initLock.withPermit {
+                   ZIO.succeed(
+                     org.slf4j.LoggerFactory
+                       .getILoggerFactory()
+                       .asInstanceOf[LoggerFactory]
+                       .attachRuntime(new ZioLoggerRuntime(runtime, filter))
+                   )
+                 }
+    } yield ()
 }

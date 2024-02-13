@@ -81,7 +81,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
       Cause.empty,
       FiberRefs.empty,
       List.empty,
-      Map.empty
+      Map(zio.logging.loggerNameAnnotationKey -> name)
     )
   }
 
