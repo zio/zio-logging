@@ -16,7 +16,7 @@
 package zio.logging
 
 import zio.prelude.Equal
-import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
+import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, NonEmptyChunk, Trace, ZIO }
 
 import scala.annotation.tailrec
 
@@ -278,6 +278,9 @@ object LogFilter {
     }
 
     implicit val equal: Equal[LogLevelByNameConfig] = Equal.default
+
+    def load(configPath: NonEmptyChunk[String]): ZIO[Any, Config.Error, LogLevelByNameConfig] =
+      ZIO.config(LogLevelByNameConfig.config.nested(configPath.head, configPath.tail: _*))
   }
 
   def apply[M, V](

@@ -200,7 +200,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           )
         )
       }.provide(
-        Slf4jBridge.initialize(
+        Slf4jBridge.init(
           LogFilter.logLevelByName(
             LogLevel.Debug,
             "test.logger"      -> LogLevel.Info,

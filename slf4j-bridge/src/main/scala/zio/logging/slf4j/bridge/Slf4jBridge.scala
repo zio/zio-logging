@@ -17,30 +17,38 @@ package zio.logging.slf4j.bridge
 
 import org.slf4j.impl.ZioLoggerFactory
 import zio.logging.LogFilter
-import zio.{ Runtime, Semaphore, Unsafe, ZIO, ZLayer }
+import zio.{ Config, NonEmptyChunk, Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 
 object Slf4jBridge {
+
+  val logFilterConfigPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath :+ "filter"
 
   /**
    * initialize SLF4J bridge
    */
-  def initialize: ZLayer[Any, Nothing, Unit] = initialize(LogFilter.acceptAll)
+  def initialize: ZLayer[Any, Nothing, Unit] = init(LogFilter.acceptAll)
 
-  def initialize(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
+  def init(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
+
+  def init(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZLayer[Any, Config.Error, Unit] =
+    Runtime.enableCurrentFiber ++ layer(configPath)
 
   /**
    * initialize SLF4J bridge without `FiberRef` propagation
    */
-  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initializeWithoutFiberRefPropagation(
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initWithoutFiberRefPropagation(
     LogFilter.acceptAll
   )
 
-  def initializeWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
+  def initWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
 
   private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
 
   private def layer(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] =
     ZLayer(make(filter))
+
+  private def layer(configPath: NonEmptyChunk[String]): ZLayer[Any, Config.Error, Unit] =
+    ZLayer(make(configPath))
 
   def make(filter: LogFilter[Any]): ZIO[Any, Nothing, Unit] =
     for {
@@ -49,4 +57,8 @@ object Slf4jBridge {
                    ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, filter)))
                  }
     } yield ()
+
+  def make(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZIO[Any, Config.Error, Unit] =
+    LogFilter.LogLevelByNameConfig.load(configPath).flatMap(c => make(c.toFilter))
+
 }

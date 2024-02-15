@@ -25,7 +25,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   private val loggerConfig = ConsoleLoggerConfig(logFormat, logFilterConfig)
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(loggerConfig) >+> Slf4jBridge.initialize(loggerConfig.toFilter)
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(loggerConfig) >+> Slf4jBridge.init(loggerConfig.toFilter)
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
