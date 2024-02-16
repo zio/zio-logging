@@ -170,7 +170,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
       }
     ) @@ TestAspect.sequential
 
-  def filterTest =
+  def filterTest: ZIO[Any, Nothing, TestResult] =
     for {
       _      <- (for {
                   logger1 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.abc"))
