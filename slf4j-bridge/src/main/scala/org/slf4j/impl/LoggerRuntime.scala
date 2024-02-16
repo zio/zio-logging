@@ -28,4 +28,6 @@ trait LoggerRuntime {
     arguments: Array[AnyRef],
     throwable: Throwable
   ): Unit
+
+  def isEnabled(name: String, level: Level): Boolean
 }

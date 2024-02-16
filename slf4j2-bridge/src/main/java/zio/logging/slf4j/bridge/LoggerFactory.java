@@ -38,6 +38,14 @@ final class LoggerFactory implements ILoggerFactory {
         }
     }
 
+    boolean isEnabled(String name, Level level) {
+        if (runtime != null) {
+            return runtime.isEnabled(name, level);
+        } else {
+            return false;
+        }
+    }
+
     @Override
     public org.slf4j.Logger getLogger(String name) {
         return loggers.computeIfAbsent(name, n -> new Logger(n, this));

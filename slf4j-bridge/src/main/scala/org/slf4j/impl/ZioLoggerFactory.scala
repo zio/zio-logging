@@ -39,6 +39,9 @@ class ZioLoggerFactory extends ILoggerFactory {
   ): Unit =
     if (runtime != null) runtime.log(name, level, marker, messagePattern, arguments, throwable)
 
+  private[impl] def isEnabled(name: String, level: Level): Boolean =
+    if (runtime != null) runtime.isEnabled(name, level) else false
+
   override def getLogger(name: String): Logger =
     loggers.getOrElseUpdate(name, new ZioLogger(name, this))
 }

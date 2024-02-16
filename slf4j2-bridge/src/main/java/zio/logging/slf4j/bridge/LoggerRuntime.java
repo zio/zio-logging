@@ -20,4 +20,6 @@ import org.slf4j.event.Level;
 
 interface LoggerRuntime {
     void log(String name, Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable);
+
+    boolean isEnabled(String name, Level level);
 }
