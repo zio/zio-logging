@@ -27,8 +27,16 @@ object Slf4jBridge {
    */
   def initialize: ZLayer[Any, Nothing, Unit] = init(LogFilter.acceptAll)
 
+  /**
+   * initialize SLF4J bridge with `LogFilter`
+   * @param filter Log filter
+   */
   def init(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
 
+  /**
+   * initialize SLF4J bridge with `LogFilter` from configuration
+   * @param configPath configuration path
+   */
   def init(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZLayer[Any, Config.Error, Unit] =
     Runtime.enableCurrentFiber ++ layer(configPath)
 
@@ -39,6 +47,10 @@ object Slf4jBridge {
     LogFilter.acceptAll
   )
 
+  /**
+   * initialize SLF4J bridge with `LogFilter`, without `FiberRef` propagation
+   * @param filter Log filter
+   */
   def initWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
 
   private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
