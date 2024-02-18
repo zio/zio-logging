@@ -38,6 +38,16 @@ import java.util
 object SLF4J {
 
   /**
+   * convert [[zio.Cause]] to [[java.lang.Throwable]] using [[zio.FiberFailure]]
+   */
+  val causeToThrowableDefault: Cause[Any] => Option[Throwable] = cause =>
+    if (cause.isEmpty) {
+      None
+    } else {
+      Some(FiberFailure(cause))
+    }
+
+  /**
    * log annotation key for slf4j marker name
    */
   val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
@@ -79,7 +89,12 @@ object SLF4J {
       case _                => false
     }
 
-  private def logAppender(slf4jLogger: Logger, slf4jMarker: Option[Marker], logLevel: LogLevel): LogAppender =
+  private def logAppender(
+    slf4jLogger: Logger,
+    slf4jMarker: Option[Marker],
+    logLevel: LogLevel,
+    causeToThrowable: Cause[Any] => Option[Throwable]
+  ): LogAppender =
     new LogAppender { self =>
       val message: StringBuilder                 = new StringBuilder()
       val mdc: java.util.HashMap[String, String] = new util.HashMap[String, String]()
@@ -89,13 +104,7 @@ object SLF4J {
        * cause as throwable
        */
       override def appendCause(cause: Cause[Any]): Unit = {
-        if (!cause.isEmpty) {
-          val maybeThrowable = (cause.failures.collect { case t: Throwable => t } ++ cause.defects).headOption
-          maybeThrowable match {
-            case Some(t) => throwable = t
-            case None    => throwable = FiberFailure(cause)
-          }
-        }
+        throwable = causeToThrowable(cause).orNull
         ()
       }
 
@@ -192,9 +201,10 @@ object SLF4J {
    */
   def slf4j(
     format: LogFormat,
-    loggerName: Trace => String
+    loggerName: Trace => String,
+    causeToThrowable: Cause[Any] => Option[Throwable]
   ): ZLayer[Any, Nothing, Unit] =
-    Runtime.addLogger(slf4jLogger(format, loggerName))
+    Runtime.addLogger(slf4jLogger(format, loggerName, causeToThrowable))
 
   /**
    * Use this layer to register an use an Slf4j logger in your app.
@@ -203,7 +213,7 @@ object SLF4J {
   def slf4j(
     format: LogFormat
   ): ZLayer[Any, Nothing, Unit] =
-    slf4j(format, getLoggerName())
+    slf4j(format, getLoggerName(), causeToThrowableDefault)
 
   /**
    * Use this layer to register an use an Slf4j logger in your app.
@@ -214,17 +224,21 @@ object SLF4J {
 
   def slf4jLogger(
     format: LogFormat,
-    loggerName: Trace => String
+    loggerName: Trace => String,
+    causeToThrowable: Cause[Any] => Option[Throwable]
   ): ZLogger[String, Unit] = {
     // get some slf4j logger to invoke slf4j initialisation
     // as in some program failure cases it may happen, that program exit sooner then log message will be logged (#616)
     LoggerFactory.getLogger("zio-slf4j-logger")
 
-    Slf4jLogger(format, loggerName)
+    Slf4jLogger(format, loggerName, causeToThrowable)
   }
 
-  private[logging] case class Slf4jLogger(format: LogFormat, loggerName: Trace => String)
-      extends ZLogger[String, Unit] {
+  private[logging] case class Slf4jLogger(
+    format: LogFormat,
+    loggerName: Trace => String,
+    causeToThrowable: Cause[Any] => Option[Throwable]
+  ) extends ZLogger[String, Unit] {
 
     override def apply(
       trace: Trace,
@@ -241,7 +255,7 @@ object SLF4J {
       val slf4jMarkerName = annotations.get(SLF4J.logMarkerNameAnnotationKey)
       val slf4jMarker     = slf4jMarkerName.map(n => MarkerFactory.getMarker(n))
       if (isLogLevelEnabled(slf4jLogger, slf4jMarker, logLevel)) {
-        val appender = logAppender(slf4jLogger, slf4jMarker, logLevel)
+        val appender = logAppender(slf4jLogger, slf4jMarker, logLevel, causeToThrowable)
 
         format.unsafeFormat(appender)(trace, fiberId, logLevel, message, cause, context, spans, annotations)
         appender.closeLogEntry()
