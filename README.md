@@ -34,7 +34,6 @@ libraryDependencies += "dev.zio" %% "zio-logging" % "2.2.1"
 The main module contains the following features: 
 * [console loggers](docs/console-logger.md)
 * [file loggers](docs/file-logger.md)
-* [reconfigurable logger](docs/reconfigurable-logger.md)
 * [log metrics](docs/metrics.md)
 
 
@@ -123,11 +122,11 @@ Learn more on the [zio-logging homepage](https://zio.dev/zio-logging)!
 
 ## Contributing
 
-For the general guidelines, see ZIO [contributor's guide](https://zio.dev/contributor-guidelines/).
+For the general guidelines, see ZIO [contributor's guide](https://zio.dev/about/contributing).
 
 ## Code of Conduct
 
-See the [Code of Conduct](https://zio.dev/code-of-conduct/)
+See the [Code of Conduct](https://zio.dev/about/code-of-conduct)
 
 ## Support
 
