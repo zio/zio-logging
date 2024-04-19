@@ -122,11 +122,11 @@ Learn more on the [zio-logging homepage](https://zio.dev/zio-logging)!
 
 ## Contributing
 
-For the general guidelines, see ZIO [contributor's guide](https://zio.dev/contributor-guidelines/).
+For the general guidelines, see ZIO [contributor's guide](https://zio.dev/about/contributing).
 
 ## Code of Conduct
 
-See the [Code of Conduct](https://zio.dev/code-of-conduct/)
+See the [Code of Conduct](https://zio.dev/about/code-of-conduct)
 
 ## Support
 
