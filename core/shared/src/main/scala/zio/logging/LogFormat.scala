@@ -763,7 +763,7 @@ object LogFormat {
         .widen[Pattern]
 
     def parse(pattern: String): Either[Parser.ParserError[String], Pattern] =
-      syntax.parseString(pattern)
+      syntax.parseString(pattern).left.map(_.error)
 
     val config: Config[Pattern] = Config.string.mapOrFail { value =>
       Pattern.parse(value) match {
