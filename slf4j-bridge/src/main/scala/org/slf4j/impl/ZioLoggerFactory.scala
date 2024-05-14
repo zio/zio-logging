@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@ class ZioLoggerFactory extends ILoggerFactory {
     throwable: Throwable
   ): Unit =
     if (runtime != null) runtime.log(name, level, marker, messagePattern, arguments, throwable)
+
+  private[impl] def isEnabled(name: String, level: Level): Boolean =
+    if (runtime != null) runtime.isEnabled(name, level) else false
 
   override def getLogger(name: String): Logger =
     loggers.getOrElseUpdate(name, new ZioLogger(name, this))

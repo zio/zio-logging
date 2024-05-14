@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,4 +20,6 @@ import org.slf4j.event.Level;
 
 interface LoggerRuntime {
     void log(String name, Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable);
+
+    boolean isEnabled(String name, Level level);
 }

@@ -3,7 +3,21 @@ package zio.logging
 import zio.logging.test.TestService
 import zio.test.ZTestLogger.LogEntry
 import zio.test._
-import zio.{ Cause, Chunk, Config, ConfigProvider, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZIO, ZLogger }
+import zio.{
+  Cause,
+  Chunk,
+  Config,
+  ConfigProvider,
+  FiberId,
+  FiberRefs,
+  LogLevel,
+  LogSpan,
+  Runtime,
+  Trace,
+  ZIO,
+  ZIOAspect,
+  ZLogger
+}
 
 object LogFilterSpec extends ZIOSpecDefault {
 
@@ -399,6 +413,129 @@ object LogFilterSpec extends ZIOSpecDefault {
           "**"              -> LogLevel.Info
         )
       )
+    },
+    test("log filters by log level and name from same configuration should be equal") {
+
+      val configProvider = ConfigProvider.fromMap(
+        Map(
+          "logger/rootLevel"      -> LogLevel.Debug.label,
+          "logger/mappings/a"     -> LogLevel.Info.label,
+          "logger/mappings/a.b.c" -> LogLevel.Warning.label,
+          "logger/mappings/e.f"   -> LogLevel.Error.label
+        ),
+        "/"
+      )
+
+      import zio.prelude._
+
+      for {
+        f1 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+        f2 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+        f3 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+                .map(_.cached)
+        f4 <- configProvider
+                .load(LogFilter.LogLevelByNameConfig.config.nested("logger"))
+                .map(LogFilter.logLevelByName)
+                .map(_.cached)
+      } yield assertTrue(f1 === f2, f3 === f4)
+    },
+    test("and") {
+
+      val filter = LogFilter.causeNonEmpty.and(LogFilter.logLevel(LogLevel.Info))
+
+      def testFilter(level: LogLevel, cause: Cause[_], expected: Boolean) =
+        assertTrue(
+          filter(
+            Trace.empty,
+            FiberId.None,
+            level,
+            () => "",
+            cause,
+            FiberRefs.empty,
+            List.empty,
+            Map.empty
+          ) == expected
+        )
+
+      testFilter(LogLevel.Info, Cause.fail("fail"), true) && testFilter(
+        LogLevel.Info,
+        Cause.empty,
+        false
+      ) && testFilter(LogLevel.Debug, Cause.fail("fail"), false)
+    },
+    test("or") {
+
+      val filter = LogFilter.causeNonEmpty.or(LogFilter.logLevel(LogLevel.Info))
+
+      def testFilter(level: LogLevel, cause: Cause[_], expected: Boolean) =
+        assertTrue(
+          filter(
+            Trace.empty,
+            FiberId.None,
+            level,
+            () => "",
+            cause,
+            FiberRefs.empty,
+            List.empty,
+            Map.empty
+          ) == expected
+        )
+
+      testFilter(LogLevel.Info, Cause.fail("fail"), true) && testFilter(LogLevel.Info, Cause.empty, true) && testFilter(
+        LogLevel.Debug,
+        Cause.fail("fail"),
+        true
+      ) && testFilter(LogLevel.Debug, Cause.empty, false)
+    },
+    test("not") {
+
+      val filter = LogFilter.causeNonEmpty.and(LogFilter.logLevel(LogLevel.Info)).not
+
+      def testFilter(level: LogLevel, cause: Cause[_], expected: Boolean) =
+        assertTrue(
+          filter(
+            Trace.empty,
+            FiberId.None,
+            level,
+            () => "",
+            cause,
+            FiberRefs.empty,
+            List.empty,
+            Map.empty
+          ) == expected
+        )
+
+      testFilter(LogLevel.Info, Cause.fail("fail"), false) && testFilter(
+        LogLevel.Info,
+        Cause.empty,
+        true
+      ) && testFilter(LogLevel.Debug, Cause.fail("fail"), true)
+    },
+    test("cached") {
+      val logOutputRef = new java.util.concurrent.atomic.AtomicReference[Chunk[LogEntry]](Chunk.empty)
+
+      val filter = LogFilter
+        .logLevelByGroup(
+          LogLevel.Info,
+          LogGroup.loggerName,
+          "zio.logger1"      -> LogLevel.Debug,
+          "zio.logging.test" -> LogLevel.Warning
+        )
+        .cached
+        .asInstanceOf[LogFilter.CachedFilter[String]]
+
+      (for {
+        _   <- ZIO.logDebug("debug") @@ ZIOAspect.annotated(loggerNameAnnotationKey, "zio.logger1")
+        res1 = filter.cache.get(List("zio", "logger1") -> LogLevel.Debug)
+        _   <- ZIO.logDebug("debug") @@ ZIOAspect.annotated(loggerNameAnnotationKey, "zio.logger2")
+        res2 = filter.cache.get(List("zio", "logger2") -> LogLevel.Debug)
+      } yield assertTrue(res1 == true, res2 == false)).provideLayer(testLogger(logOutputRef, filter))
     }
   )
 }

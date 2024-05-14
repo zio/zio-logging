@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,42 +16,61 @@
 package zio.logging.slf4j.bridge
 
 import org.slf4j.impl.ZioLoggerFactory
-import zio.{ Runtime, ZIO, ZLayer }
+import zio.logging.LogFilter
+import zio.{ Config, NonEmptyChunk, Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 
 object Slf4jBridge {
 
-  /**
-   * log annotation key for slf4j logger name
-   */
-  @deprecated("use zio.logging.loggerNameAnnotationKey", "2.1.8")
-  val loggerNameAnnotationKey: String = "slf4j_logger_name"
+  val logFilterConfigPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath :+ "filter"
 
   /**
    * initialize SLF4J bridge
    */
-  def initialize: ZLayer[Any, Nothing, Unit] =
-    Runtime.enableCurrentFiber ++ layer(zio.logging.loggerNameAnnotationKey)
+  def initialize: ZLayer[Any, Nothing, Unit] = init(LogFilter.acceptAll)
+
+  /**
+   * initialize SLF4J bridge with `LogFilter`
+   * @param filter Log filter
+   */
+  def init(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
+
+  /**
+   * initialize SLF4J bridge with `LogFilter` from configuration
+   * @param configPath configuration path
+   */
+  def init(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZLayer[Any, Config.Error, Unit] =
+    Runtime.enableCurrentFiber ++ layer(configPath)
 
   /**
    * initialize SLF4J bridge without `FiberRef` propagation
    */
-  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer(zio.logging.loggerNameAnnotationKey)
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initWithoutFiberRefPropagation(
+    LogFilter.acceptAll
+  )
 
   /**
-   * initialize SLF4J bridge, where custom annotation key for logger name may be provided
-   * this is to achieve backward compatibility where [[Slf4jBridge.loggerNameAnnotationKey]] was used
-   *
-   * NOTE: this feature may be removed in future releases
+   * initialize SLF4J bridge with `LogFilter`, without `FiberRef` propagation
+   * @param filter Log filter
    */
-  def initialize(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
-    Runtime.enableCurrentFiber ++ layer(nameAnnotationKey)
+  def initWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
 
-  private def layer(nameAnnotationKey: String): ZLayer[Any, Nothing, Unit] =
-    ZLayer {
-      ZIO.runtime[Any].flatMap { runtime =>
-        ZIO.succeed {
-          ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, nameAnnotationKey))
-        }
-      }
-    }
+  private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
+
+  private def layer(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] =
+    ZLayer(make(filter))
+
+  private def layer(configPath: NonEmptyChunk[String]): ZLayer[Any, Config.Error, Unit] =
+    ZLayer(make(configPath))
+
+  def make(filter: LogFilter[Any]): ZIO[Any, Nothing, Unit] =
+    for {
+      runtime <- ZIO.runtime[Any]
+      _       <- initLock.withPermit {
+                   ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, filter)))
+                 }
+    } yield ()
+
+  def make(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZIO[Any, Config.Error, Unit] =
+    LogFilter.LogLevelByNameConfig.load(configPath).flatMap(c => make(c.toFilter))
+
 }

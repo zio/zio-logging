@@ -1,7 +1,7 @@
 package zio.logging
 
-import zio.test._
-import zio.{ Cause, FiberId, FiberRefs, LogLevel, Trace }
+import zio.test.{ Assertion, _ }
+import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace }
 
 import java.util.UUID
 
@@ -174,6 +174,27 @@ object LogFormatSpec extends ZIOSpecDefault {
       )
       assertTrue(result == "")
     },
+    test("logAnnotations") {
+      val format = LogFormat.logAnnotations
+      check(Gen.string, Gen.uuid) { (userId, traceId) =>
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty.updatedAs(FiberId.Runtime(0, 0, Trace.empty))(
+            logContext,
+            LogContext.empty
+              .annotate(LogAnnotation.UserId, userId)
+              .annotate(LogAnnotation.TraceId, traceId)
+          ),
+          Nil,
+          Map.empty
+        )
+        assertTrue(result == s"user_id=${userId} trace_id=${traceId}")
+      }
+    },
     test("allAnnotations") {
       val format = LogFormat.allAnnotations
       check(Gen.string) { annotationValue =>
@@ -190,7 +211,7 @@ object LogFormatSpec extends ZIOSpecDefault {
           Nil,
           Map("test" -> annotationValue)
         )
-        assertTrue(result == s"test=${annotationValue}user_id=${annotationValue}")
+        assertTrue(result == s"test=${annotationValue} user_id=${annotationValue}")
       }
     },
     test("allAnnotations with exclusion") {
@@ -211,7 +232,58 @@ object LogFormatSpec extends ZIOSpecDefault {
           Nil,
           Map("test" -> annotationValue, "test2" -> annotationValue)
         )
-        assertTrue(result == s"test=${annotationValue}user_id=${annotationValue}")
+        assertTrue(result == s"test=${annotationValue} user_id=${annotationValue}")
+      }
+    },
+    test("allAnnotations with one value") {
+      val format = LogFormat.allAnnotations(excludeKeys = Set("test2", LogAnnotation.TraceId.name))
+      check(Gen.string) { annotationValue =>
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty.updatedAs(FiberId.Runtime(0, 0, Trace.empty))(
+            logContext,
+            LogContext.empty.annotate(LogAnnotation.TraceId, UUID.randomUUID())
+          ),
+          Nil,
+          Map("test" -> annotationValue, "test2" -> annotationValue)
+        )
+        assertTrue(result == s"test=${annotationValue}")
+      }
+    },
+    test("span") {
+      val format = LogFormat.span("span1")
+      check(Gen.alphaNumericString) { span =>
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          List(LogSpan("span1", 0L), LogSpan(span, 1L)),
+          Map.empty
+        )
+        assert(result)(Assertion.matchesRegex("span1=([0-9]+)ms"))
+      }
+    },
+    test("spans") {
+      val format = LogFormat.spans
+      check(Gen.alphaNumericString) { span =>
+        val result = format.toLogger(
+          Trace.empty,
+          FiberId.None,
+          LogLevel.Info,
+          () => "",
+          Cause.empty,
+          FiberRefs.empty,
+          List(LogSpan("span1", 0L), LogSpan(span, 1L)),
+          Map.empty
+        )
+        assert(result)(Assertion.matchesRegex(s"span1=([0-9]+)ms ${span}=([0-9]+)ms"))
       }
     },
     test("enclosing class") {

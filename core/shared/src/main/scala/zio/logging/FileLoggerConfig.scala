@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package zio.logging
 
 import zio._
+import zio.prelude._
 
 import java.net.URI
 import java.nio.charset.{ Charset, StandardCharsets }
@@ -25,12 +26,14 @@ import scala.util.{ Failure, Success, Try }
 final case class FileLoggerConfig(
   destination: Path,
   format: LogFormat,
-  filter: LogFilter[String],
+  filter: LogFilter.LogLevelByNameConfig,
   charset: Charset = StandardCharsets.UTF_8,
   autoFlushBatchSize: Int = 1,
   bufferedIOSize: Option[Int] = None,
   rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
-)
+) {
+  def toFilter[M]: LogFilter[M] = filter.toFilter
+}
 
 object FileLoggerConfig {
 
@@ -73,11 +76,11 @@ object FileLoggerConfig {
     val rollingPolicyConfig      = FileRollingPolicy.config.nested("rollingPolicy").optional
 
     (pathConfig ++ formatConfig ++ filterConfig ++ charsetConfig ++ autoFlushBatchSizeConfig ++ bufferedIOSizeConfig ++ rollingPolicyConfig).map {
-      case (path, format, filterConfig, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
+      case (path, format, filter, charset, autoFlushBatchSize, bufferedIOSize, rollingPolicy) =>
         FileLoggerConfig(
           path,
           format,
-          LogFilter.logLevelByName(filterConfig),
+          filter,
           charset,
           autoFlushBatchSize,
           bufferedIOSize,
@@ -85,5 +88,23 @@ object FileLoggerConfig {
         )
     }
   }
+
+  implicit val equal: Equal[FileLoggerConfig] = Equal.make { (l, r) =>
+    l.destination == r.destination &&
+    l.charset == r.charset &&
+    l.autoFlushBatchSize == r.autoFlushBatchSize &&
+    l.bufferedIOSize == r.bufferedIOSize &&
+    l.rollingPolicy == r.rollingPolicy &&
+    l.format == r.format &&
+    l.filter === r.filter
+  }
+
+  def load(configPath: NonEmptyChunk[String] = loggerConfigPath): ZIO[Any, Config.Error, FileLoggerConfig] =
+    ZIO.config(FileLoggerConfig.config.nested(configPath.head, configPath.tail: _*))
+
+  def make(
+    configPath: NonEmptyChunk[String] = loggerConfigPath
+  ): ZLayer[Any, Config.Error, FileLoggerConfig] =
+    ZLayer.fromZIO(load(configPath))
 
 }

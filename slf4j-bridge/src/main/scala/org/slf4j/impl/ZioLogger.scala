@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,4 +28,6 @@ final class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLogger
     throwable: Throwable
   ): Unit =
     factory.log(name, level, marker, messagePattern, arguments, throwable)
+
+  override protected def isEnabled(name: String, level: Level): Boolean = factory.isEnabled(name, level)
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ package zio.logging.slf4j.bridge
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
-import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe, ZLogger }
+import zio.logging.LogFilter
+import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
 
   override def log(
     name: String,
@@ -68,6 +69,22 @@ final class ZioLoggerRuntime(runtime: Runtime[Any]) extends LoggerRuntime {
 
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
+
+  override def isEnabled(name: String, level: Level): Boolean = {
+    val logLevel = ZioLoggerRuntime.logLevelMapping(level)
+
+    filter(
+      Trace(name, "", 0),
+      FiberId.None,
+      logLevel,
+      () => "",
+      Cause.empty,
+      FiberRefs.empty,
+      List.empty,
+      Map(zio.logging.loggerNameAnnotationKey -> name)
+    )
+  }
+
 }
 
 object ZioLoggerRuntime {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package zio.logging
 
 import zio.{ FiberRefs, Trace }
 
-trait LoggerNameExtractor { self =>
+sealed trait LoggerNameExtractor { self =>
 
   def apply(
     trace: Trace,
@@ -35,7 +35,7 @@ trait LoggerNameExtractor { self =>
    * The alphanumeric version of the `||` operator.
    */
   final def or(other: LoggerNameExtractor): LoggerNameExtractor =
-    (trace, context, annotations) => self(trace, context, annotations).orElse(other(trace, context, annotations))
+    LoggerNameExtractor.OrExtractor(self, other)
 
   /**
    * Converts this extractor into a log format
@@ -52,13 +52,33 @@ trait LoggerNameExtractor { self =>
 
 object LoggerNameExtractor {
 
+  private[logging] final case class FnExtractor(fn: (Trace, FiberRefs, Map[String, String]) => Option[String])
+      extends LoggerNameExtractor {
+    override def apply(trace: Trace, context: FiberRefs, annotations: Map[String, String]): Option[String] =
+      fn(trace, context, annotations)
+  }
+
+  private[logging] final case class AnnotationExtractor(name: String) extends LoggerNameExtractor {
+    override def apply(trace: Trace, context: FiberRefs, annotations: Map[String, String]): Option[String] =
+      annotations.get(name)
+  }
+
+  private[logging] final case class OrExtractor(first: LoggerNameExtractor, second: LoggerNameExtractor)
+      extends LoggerNameExtractor {
+
+    override def apply(trace: Trace, context: FiberRefs, annotations: Map[String, String]): Option[String] =
+      first(trace, context, annotations).orElse(second(trace, context, annotations))
+  }
+
+  def make(fn: (Trace, FiberRefs, Map[String, String]) => Option[String]): LoggerNameExtractor = FnExtractor(fn)
+
   /**
    * Extractor which take logger name from [[Trace]]
    *
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
    * will have ''example.LivePingService'' as logger name
    */
-  val trace: LoggerNameExtractor = (trace, _, _) =>
+  val trace: LoggerNameExtractor = FnExtractor((trace, _, _) =>
     trace match {
       case Trace(location, _, _) =>
         val last = location.lastIndexOf(".")
@@ -68,13 +88,14 @@ object LoggerNameExtractor {
         Some(name)
       case _                     => None
     }
+  )
 
   /**
    * Extractor which take logger name from annotation
    *
    * @param name name of annotation
    */
-  def annotation(name: String): LoggerNameExtractor = (_, _, annotations) => annotations.get(name)
+  def annotation(name: String): LoggerNameExtractor = AnnotationExtractor(name)
 
   /**
    * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present

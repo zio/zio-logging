@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,7 @@ final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, rende
   type Type = A
 
   def apply(value: A): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
-    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
-      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
-        logContext.get.flatMap(context => logContext.locally(context.annotate(self, value))(zio))
-    }
+    LogAnnotation.LogAnnotationAspect(Map(self -> value))
 
   def id: Id = (name, tag).asInstanceOf[Id]
 
@@ -58,6 +55,27 @@ final case class LogAnnotation[A: Tag](name: String, combine: (A, A) => A, rende
 }
 
 object LogAnnotation {
+
+  private[logging] final case class LogAnnotationAspect(annotations: Map[LogAnnotation[_], Any])
+      extends ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
+
+    override def >>>[LowerR, UpperR, LowerE, UpperE, LowerA, UpperA](
+      that: ZIOAspect[LowerR, UpperR, LowerE, UpperE, LowerA, UpperA]
+    ): ZIOAspect[LowerR, UpperR, LowerE, UpperE, LowerA, UpperA] =
+      that match {
+        case LogAnnotationAspect(thatAnnotations) => LogAnnotationAspect(annotations ++ thatAnnotations)
+        case that                                 => super.andThen(that)
+      }
+
+    final def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
+      logContext.getWith { context =>
+        logContext.locally {
+          annotations.foldLeft(context) { case (context, (annotation, value)) =>
+            context.annotate(annotation.asInstanceOf[LogAnnotation[Any]], value)
+          }
+        }(zio)
+      }
+  }
 
   /**
    * The `TraceId` annotation keeps track of distributed trace id.

@@ -52,7 +52,12 @@ inThisBuild(
       ),
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
-    zioVersion             := "2.0.13"
+    zioVersion             := "2.1.1",
+    scala212               := "2.12.17",
+    scala213               := "2.13.10",
+    scala3                 := "3.3.0",
+    javaPlatform           := "11",
+    javaPlatforms          := Seq("11", "17")
   )
 )
 
@@ -91,7 +96,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(enableZIO(enableStreaming = true))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-parser" % zioParser
+      "dev.zio" %%% "zio-parser"  % zioParser,
+      "dev.zio" %%% "zio-prelude" % zioPrelude
     )
   )
   .jvmSettings(
@@ -131,7 +137,7 @@ lazy val slf4j2 = project
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4j2Version,
       "ch.qos.logback"          % "logback-classic"          % logback2Version              % Test,
-      "net.logstash.logback"    % "logstash-logback-encoder" % "7.3"                        % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % "7.4"                        % Test,
       "org.scala-lang.modules" %% "scala-collection-compat"  % scalaCollectionCompatVersion % Test
     )
   )
@@ -195,8 +201,9 @@ lazy val examplesCore = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-metrics-connectors" % zioMetricsConnectorsVersion,
-      "dev.zio" %% "zio-config-typesafe"    % zioConfig
+      "dev.zio" %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
+      "dev.zio" %% "zio-http"                          % zioHttp,
+      "dev.zio" %% "zio-config-typesafe"               % zioConfig
     )
   )
 
@@ -220,7 +227,7 @@ lazy val examplesSlf4j2Logback = project
     publish / skip := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % logback2Version,
-      "net.logstash.logback" % "logstash-logback-encoder" % "7.3"
+      "net.logstash.logback" % "logstash-logback-encoder" % "7.4"
     )
   )
 
@@ -231,8 +238,8 @@ lazy val examplesSlf4j2Log4j = project
   .settings(
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.20.0",
-      "org.apache.logging.log4j" % "log4j-core"        % "2.20.0"
+      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % log4jVersion,
+      "org.apache.logging.log4j" % "log4j-core"        % log4jVersion
     )
   )
 

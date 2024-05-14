@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.MessageFormatter
 import org.slf4j.impl.LoggerRuntime
+import zio.logging.LogFilter
 import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-final class ZioLoggerRuntime(runtime: Runtime[Any], loggerNameAnnotationKey: String) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
 
   override def log(
     name: String,
@@ -44,7 +45,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], loggerNameAnnotationKey: Str
       }
 
       val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
-      val loggerName = (loggerNameAnnotationKey -> name)
+      val loggerName = (zio.logging.loggerNameAnnotationKey -> name)
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
@@ -69,6 +70,22 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], loggerNameAnnotationKey: Str
 
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
+
+  override def isEnabled(name: String, level: Level): Boolean = {
+    val logLevel = ZioLoggerRuntime.logLevelMapping(level)
+
+    filter(
+      Trace(name, "", 0),
+      FiberId.None,
+      logLevel,
+      () => "",
+      Cause.empty,
+      FiberRefs.empty,
+      List.empty,
+      Map(zio.logging.loggerNameAnnotationKey -> name)
+    )
+  }
+
 }
 
 object ZioLoggerRuntime {

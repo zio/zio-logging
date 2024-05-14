@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2024 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,24 +25,23 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
   private val slf4jLogger = org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER")
 
-  private val logFilter: LogFilter[String] = LogFilter.logLevelByName(
+  private val logFilterConfig = LogFilter.LogLevelByNameConfig(
     LogLevel.Info,
     "zio.logging.slf4j" -> LogLevel.Debug,
     "SLF4J-LOGGER"      -> LogLevel.Warning
   )
 
+  private val logFormat = LogFormat.label(
+    "name",
+    LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
+  ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+    LogAnnotation.TraceId
+  ) + LogFormat.default
+
+  private val loggerConfig = ConsoleLoggerConfig(logFormat, logFilterConfig)
+
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(
-      ConsoleLoggerConfig(
-        LogFormat.label(
-          "name",
-          LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
-        ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
-          LogAnnotation.TraceId
-        ) + LogFormat.default,
-        logFilter
-      )
-    ) >+> Slf4jBridge.initialize
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(loggerConfig) >+> Slf4jBridge.init(loggerConfig.toFilter)
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
@@ -50,7 +49,9 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     for {
       _ <- ZIO.logInfo("Start")
       _ <- ZIO.foreachPar(uuids) { u =>
-             ZIO.succeed(slf4jLogger.warn("Test {}!", "WARNING")) @@ LogAnnotation.UserId(
+             ZIO.succeed(slf4jLogger.info("Test {}!", "INFO")) *> ZIO.succeed(
+               slf4jLogger.warn("Test {}!", "WARNING")
+             ) @@ LogAnnotation.UserId(
                u.toString
              )
            } @@ LogAnnotation.TraceId(UUID.randomUUID())
