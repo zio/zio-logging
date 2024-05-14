@@ -52,10 +52,12 @@ inThisBuild(
       ),
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
-    zioVersion             := "2.0.22",
+    zioVersion             := "2.1.1",
     scala212               := "2.12.17",
     scala213               := "2.13.10",
-    scala3                 := "3.3.0"
+    scala3                 := "3.3.0",
+    javaPlatform           := "11",
+    javaPlatforms          := Seq("11", "17")
   )
 )
 
