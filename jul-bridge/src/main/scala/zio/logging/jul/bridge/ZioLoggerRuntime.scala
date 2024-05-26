@@ -18,7 +18,7 @@ package zio.logging.jul.bridge
 import zio.logging.LogFilter
 import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-import java.util.logging.{Handler, Level, LogRecord}
+import java.util.logging.{ Handler, Level, LogRecord }
 
 final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends Handler {
 
