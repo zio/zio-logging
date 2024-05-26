@@ -58,7 +58,7 @@ JUL bridge with custom logger can be setup:
 import zio.logging.jul.bridge.JULBridge
 import zio.logging.consoleJsonLogger
 
-val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridge.init()
+val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> JULBridge.init()
 ```
 
 <br/>

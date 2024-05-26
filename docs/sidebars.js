@@ -12,6 +12,7 @@ const sidebars = {
         'file-logger',
         'reconfigurable-logger',
         'jpl',
+        'jul-bridge',
         'slf4j2',
         'slf4j1',
         'slf4j2-bridge',

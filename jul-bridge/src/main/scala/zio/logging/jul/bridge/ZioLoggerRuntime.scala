@@ -96,7 +96,7 @@ object ZioLoggerRuntime {
     Level.CONFIG  -> LogLevel.Info,
     Level.FINE    -> LogLevel.Debug,
     Level.FINER   -> LogLevel.Debug,
-    Level.FINEST  -> LogLevel.Debug,
+    Level.FINEST  -> LogLevel.Trace,
     Level.ALL     -> LogLevel.All,
     Level.OFF     -> LogLevel.None
   )
