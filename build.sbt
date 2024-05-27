@@ -3,8 +3,8 @@ import Versions.*
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import zio.sbt.ZioSbtCiPlugin.{CacheDependencies, Checkout, SetupJava, SetupLibuv}
-import zio.sbt.githubactions.ScalaWorkflow.JavaVersion. ZuluJDK17
-import zio.sbt.githubactions.ScalaWorkflow.JobOps
+import zio.sbt.githubactions.ScalaWorkflow.JavaVersion.ZuluJDK17
+import zio.sbt.githubactions.ScalaWorkflow.{JobOps, setupScala}
 import zio.sbt.githubactions.{Job, ScalaWorkflow}
 import zio.sbt.githubactions.Step.SingleStep
 
@@ -260,7 +260,7 @@ lazy val compileExamplesJob = Def.setting {
     name = "Compile examples",
     steps = Seq(
       SetupLibuv,
-      SetupJava("${{ matrix.java }}"),
+      setupScala(),
       CacheDependencies,
       Checkout.value,
       SingleStep(

@@ -131,12 +131,10 @@ jobs:
     steps:
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
-    - name: Setup Scala
-      uses: actions/setup-java@v4
+    - name: Setup Java and Scala
+      uses: olafurpg/setup-scala@v11
       with:
-        distribution: corretto
         java-version: ${{ matrix.java }}
-        check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
     - name: Git Checkout
