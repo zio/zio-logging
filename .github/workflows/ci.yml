@@ -77,25 +77,25 @@ jobs:
         - '21'
         scala-project:
         - ++2.12.19 jpl
-        - ++2.13.13 jpl
+        - ++2.13.14 jpl
         - ++3.3.3 jpl
         - ++2.12.19 coreJS
-        - ++2.13.13 coreJS
+        - ++2.13.14 coreJS
         - ++3.3.3 coreJS
         - ++2.12.19 slf4jBridge
-        - ++2.13.13 slf4jBridge
+        - ++2.13.14 slf4jBridge
         - ++3.3.3 slf4jBridge
         - ++2.12.19 coreJVM
-        - ++2.13.13 coreJVM
+        - ++2.13.14 coreJVM
         - ++3.3.3 coreJVM
         - ++2.12.19 slf4j2Bridge
-        - ++2.13.13 slf4j2Bridge
+        - ++2.13.14 slf4j2Bridge
         - ++3.3.3 slf4j2Bridge
         - ++2.12.19 slf4j2
-        - ++2.13.13 slf4j2
+        - ++2.13.14 slf4j2
         - ++3.3.3 slf4j2
         - ++2.12.19 slf4j
-        - ++2.13.13 slf4j
+        - ++2.13.14 slf4j
         - ++3.3.3 slf4j
     steps:
     - name: Install libuv
@@ -125,7 +125,7 @@ jobs:
         - ubuntu-latest
         scala:
         - 2.12.19
-        - 2.13.13
+        - 2.13.14
         java:
         - zulu@1.17
     steps:
