@@ -124,19 +124,25 @@ jobs:
         os:
         - ubuntu-latest
         scala:
-        - '2.12'
-        - '2.13'
+        - 2.12.17
+        - 2.13.10
         java:
         - zulu@1.17
     steps:
-    - name: Checkout current branch
-      uses: actions/checkout@v2
+    - name: Install libuv
+      run: sudo apt-get update && sudo apt-get install -y libuv1-dev
+    - name: Setup Scala
+      uses: actions/setup-java@v4
       with:
-        fetch-depth: 0
-    - name: Setup Java and Scala
-      uses: olafurpg/setup-scala@v11
-      with:
+        distribution: corretto
         java-version: ${{ matrix.java }}
+        check-latest: true
+    - name: Cache Dependencies
+      uses: coursier/cache-action@v6
+    - name: Git Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: '0'
     - name: Compile additional subprojects
       run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
   update-readme:

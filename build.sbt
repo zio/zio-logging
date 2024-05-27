@@ -2,33 +2,13 @@ import BuildHelper.*
 import Versions.*
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
-import zio.sbt.githubactions.ScalaWorkflow.JavaVersion.{AdoptJDK18, ZuluJDK17}
-import zio.sbt.githubactions.ScalaWorkflow.{JobOps, checkoutCurrentBranch, setupScala}
-import zio.sbt.githubactions.{Condition, Job, ScalaWorkflow, Strategy}
+import zio.sbt.ZioSbtCiPlugin.{CacheDependencies, Checkout, SetupJava, SetupLibuv}
+import zio.sbt.githubactions.ScalaWorkflow.JavaVersion. ZuluJDK17
+import zio.sbt.githubactions.ScalaWorkflow.JobOps
+import zio.sbt.githubactions.{Job, ScalaWorkflow}
 import zio.sbt.githubactions.Step.SingleStep
 
-import scala.collection.immutable.Seq
-
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
-
-val compileExamplesJob = Job(
-  id = "compile-examples",
-  name = "Compile examples",
-  steps = Seq(
-    checkoutCurrentBranch(),
-    setupScala(),
-    SingleStep(
-      name = "Compile additional subprojects",
-      run = Some(
-        "sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile " +
-          "examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile"
-      )
-    )
-  )
-).matrix(
-  scalaVersions = Seq(ScalaWorkflow.ScalaVersion("2.12"), ScalaWorkflow.ScalaVersion("2.13")),
-  javaVersions = Seq(ZuluJDK17)
-)
 
 inThisBuild(
   List(
@@ -44,7 +24,7 @@ inThisBuild(
         (slf4jBridge / thisProject).value.id  -> (slf4jBridge / crossScalaVersions).value,
         (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value
       ),
-    ciTestJobs            := ciTestJobs.value ++ Seq(compileExamplesJob),
+    ciTestJobs            := ciTestJobs.value :+ compileExamplesJob.value,
     developers            := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
@@ -273,3 +253,26 @@ lazy val docs = project
   .settings(macroDefinitionSettings)
   .dependsOn(coreJVM, coreJS, slf4j, slf4jBridge, jpl)
   .enablePlugins(WebsitePlugin)
+
+lazy val compileExamplesJob = Def.setting {
+  Job(
+    id = "compile-examples",
+    name = "Compile examples",
+    steps = Seq(
+      SetupLibuv,
+      SetupJava("${{ matrix.java }}"),
+      CacheDependencies,
+      Checkout.value,
+      SingleStep(
+        name = "Compile additional subprojects",
+        run = Some(
+          "sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile " +
+            "examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile"
+        )
+      )
+    )
+  ).matrix(
+    scalaVersions = Seq(ScalaWorkflow.ScalaVersion(scala212.value), ScalaWorkflow.ScalaVersion(scala213.value)),
+    javaVersions = Seq(ZuluJDK17)
+  )
+}
