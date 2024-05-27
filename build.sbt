@@ -1,10 +1,10 @@
 import BuildHelper.*
 import Versions.*
 import MimaSettings.mimaSettings
-import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
-import zio.sbt.githubactions.ScalaWorkflow.JavaVersion.{ AdoptJDK18, ZuluJDK17 }
-import zio.sbt.githubactions.ScalaWorkflow.JobOps
-import zio.sbt.githubactions.{ Condition, Job, ScalaWorkflow, Strategy }
+import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
+import zio.sbt.githubactions.ScalaWorkflow.JavaVersion.{AdoptJDK18, ZuluJDK17}
+import zio.sbt.githubactions.ScalaWorkflow.{JobOps, checkoutCurrentBranch, setupScala}
+import zio.sbt.githubactions.{Condition, Job, ScalaWorkflow, Strategy}
 import zio.sbt.githubactions.Step.SingleStep
 
 import scala.collection.immutable.Seq
@@ -15,6 +15,8 @@ val compileExamplesJob = Job(
   id = "compile-examples",
   name = "Compile examples",
   steps = Seq(
+    checkoutCurrentBranch(),
+    setupScala(),
     SingleStep(
       name = "Compile additional subprojects",
       run = Some(

@@ -129,6 +129,14 @@ jobs:
         java:
         - zulu@1.17
     steps:
+    - name: Checkout current branch
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Setup Java and Scala
+      uses: olafurpg/setup-scala@v11
+      with:
+        java-version: ${{ matrix.java }}
     - name: Compile additional subprojects
       run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
   update-readme:
