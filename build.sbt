@@ -14,17 +14,6 @@ inThisBuild(
   List(
     name                  := "zio-logging",
     ciEnabledBranches     := Seq("master"),
-    ciTargetScalaVersions :=
-      Map(
-        (coreJS / thisProject).value.id       -> (coreJS / crossScalaVersions).value,
-        (coreJVM / thisProject).value.id      -> (coreJVM / crossScalaVersions).value,
-        (jpl / thisProject).value.id          -> (jpl / crossScalaVersions).value,
-        (julBridge / thisProject).value.id    -> (julBridge / crossScalaVersions).value,
-        (slf4j / thisProject).value.id        -> (slf4j / crossScalaVersions).value,
-        (slf4j2 / thisProject).value.id       -> (slf4j2 / crossScalaVersions).value,
-        (slf4jBridge / thisProject).value.id  -> (slf4jBridge / crossScalaVersions).value,
-        (slf4j2Bridge / thisProject).value.id -> (slf4j2Bridge / crossScalaVersions).value
-      ),
     ciTestJobs            := ciTestJobs.value :+ compileExamplesJob.value,
     developers            := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
