@@ -1,11 +1,11 @@
 import BuildHelper.*
 import Versions.*
 import MimaSettings.mimaSettings
-import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
-import zio.sbt.ZioSbtCiPlugin.{CacheDependencies, Checkout, SetupJava, SetupLibuv}
+import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
+import zio.sbt.ZioSbtCiPlugin.{ CacheDependencies, Checkout, SetupLibuv }
 import zio.sbt.githubactions.ScalaWorkflow.JavaVersion.ZuluJDK17
-import zio.sbt.githubactions.ScalaWorkflow.{JobOps, setupScala}
-import zio.sbt.githubactions.{Job, ScalaWorkflow}
+import zio.sbt.githubactions.ScalaWorkflow.{ JobOps, setupScala }
+import zio.sbt.githubactions.{ Job, ScalaWorkflow }
 import zio.sbt.githubactions.Step.SingleStep
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
@@ -36,7 +36,7 @@ inThisBuild(
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
     zioVersion            := "2.1.1",
-    scala213              := "2.13.14",
+    scala213              := "2.13.14"
   )
 )
 
