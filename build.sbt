@@ -2,20 +2,19 @@ import BuildHelper.*
 import Versions.*
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
-import zio.sbt.ZioSbtCiPlugin.{ CacheDependencies, Checkout, SetupLibuv }
-import zio.sbt.githubactions.ScalaWorkflow.JavaVersion.ZuluJDK17
-import zio.sbt.githubactions.ScalaWorkflow.{ JobOps, setupScala }
-import zio.sbt.githubactions.{ Job, ScalaWorkflow }
+import zio.sbt.ZioSbtCiPlugin.{ CacheDependencies, Checkout, SetupJava, SetupLibuv }
+import zio.sbt.githubactions.OS.UbuntuLatest
+import zio.sbt.githubactions.{ Job, Strategy }
 import zio.sbt.githubactions.Step.SingleStep
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
 inThisBuild(
   List(
-    name                  := "zio-logging",
-    ciEnabledBranches     := Seq("master"),
-    ciTestJobs            := ciTestJobs.value :+ compileExamplesJob.value,
-    developers            := List(
+    name              := "zio-logging",
+    ciEnabledBranches := Seq("master"),
+    ciTestJobs        := ciTestJobs.value :+ compileExamplesJob.value,
+    developers        := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
         "pshemass",
@@ -25,8 +24,8 @@ inThisBuild(
       ),
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
-    zioVersion            := "2.1.1",
-    scala213              := "2.13.14"
+    zioVersion        := "2.1.1",
+    scala213          := "2.13.14"
   )
 )
 
@@ -255,7 +254,7 @@ lazy val docs = project
     mainModuleName                             := (coreJVM / name).value,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j, slf4jBridge, jpl),
     projectStage                               := ProjectStage.ProductionReady,
-    publish / skip                             := true,
+    publish / skip                             := true
   )
   .settings(macroDefinitionSettings)
   .dependsOn(coreJVM, coreJS, slf4j, slf4jBridge, jpl)
@@ -267,7 +266,7 @@ lazy val compileExamplesJob = Def.setting {
     name = "Compile examples",
     steps = Seq(
       SetupLibuv,
-      setupScala(),
+      SetupJava(),
       CacheDependencies,
       Checkout.value,
       SingleStep(
@@ -278,9 +277,14 @@ lazy val compileExamplesJob = Def.setting {
             "examplesSlf4j2Log4j/compile benchmarks/compile"
         )
       )
-    )
-  ).matrix(
-    scalaVersions = Seq(ScalaWorkflow.ScalaVersion(scala212.value), ScalaWorkflow.ScalaVersion(scala213.value)),
-    javaVersions = Seq(ZuluJDK17)
+    ),
+    strategy = Some(
+      Strategy(
+        matrix = Map(
+          "scala" -> List(scala212.value, scala213.value, scala3.value)
+        )
+      )
+    ),
+    runsOn = UbuntuLatest.asString
   )
 }

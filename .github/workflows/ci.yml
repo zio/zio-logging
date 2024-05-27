@@ -94,25 +94,24 @@ jobs:
       run: sbt +test
   compile-examples:
     name: Compile examples
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     continue-on-error: false
     strategy:
       fail-fast: true
       matrix:
-        os:
-        - ubuntu-latest
         scala:
         - 2.12.19
         - 2.13.14
-        java:
-        - zulu@1.17
+        - 3.3.3
     steps:
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
-    - name: Setup Java and Scala
-      uses: olafurpg/setup-scala@v11
+    - name: Setup Scala
+      uses: actions/setup-java@v4
       with:
-        java-version: ${{ matrix.java }}
+        distribution: corretto
+        java-version: '17'
+        check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
     - name: Git Checkout
