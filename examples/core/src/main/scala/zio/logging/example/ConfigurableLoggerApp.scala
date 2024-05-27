@@ -19,14 +19,7 @@ import com.typesafe.config.ConfigFactory
 import zio.config.typesafe.TypesafeConfigProvider
 import zio.http._
 import zio.logging.api.http.ApiHandlers
-import zio.logging.{
-  ConfigurableLogger,
-  ConsoleLoggerConfig,
-  LogAnnotation,
-  LoggerConfigurer,
-  makeConsoleLogger,
-  ZLoggerZIOLayerOps
-}
+import zio.logging.{ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LoggerConfigurer, ZLoggerZIOLayerOps, makeConsoleLogger}
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
