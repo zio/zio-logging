@@ -159,7 +159,7 @@ lazy val slf4j2Bridge = project
 lazy val julBridge = project
   .in(file("jul-bridge"))
   .dependsOn(coreJVM)
-  .settings(stdSettings("zio-logging-jul-bridge", turnCompilerWarningIntoErrors = false))
+  .settings(stdSettings(Some("zio-logging-jul-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableTesting = true))
   .settings(mimaSettings(failOnProblem = true))
   .settings(
@@ -245,7 +245,7 @@ lazy val examplesJpl = project
 lazy val examplesJulBridge = project
   .in(file("examples/jul-bridge"))
   .dependsOn(julBridge)
-  .settings(stdSettings("zio-logging-examples-jul-bridge", turnCompilerWarningIntoErrors = false))
+  .settings(stdSettings(Some("zio-logging-examples-jul-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(
     publish / skip := true
   )
