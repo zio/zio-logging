@@ -19,6 +19,7 @@ inThisBuild(
         (coreJS / thisProject).value.id       -> (coreJS / crossScalaVersions).value,
         (coreJVM / thisProject).value.id      -> (coreJVM / crossScalaVersions).value,
         (jpl / thisProject).value.id          -> (jpl / crossScalaVersions).value,
+        (julBridge / thisProject).value.id    -> (julBridge / crossScalaVersions).value,
         (slf4j / thisProject).value.id        -> (slf4j / crossScalaVersions).value,
         (slf4j2 / thisProject).value.id       -> (slf4j2 / crossScalaVersions).value,
         (slf4jBridge / thisProject).value.id  -> (slf4jBridge / crossScalaVersions).value,
@@ -58,9 +59,11 @@ lazy val root = project
     slf4jBridge,
     slf4j2Bridge,
     jpl,
+    julBridge,
     benchmarks,
     examplesCore,
     examplesJpl,
+    examplesJulBridge,
     examplesSlf4j2Bridge,
     examplesSlf4jLogback,
     examplesSlf4j2Logback,
@@ -153,6 +156,16 @@ lazy val slf4j2Bridge = project
   )
   .settings(enableZIO())
 
+lazy val julBridge = project
+  .in(file("jul-bridge"))
+  .dependsOn(coreJVM)
+  .settings(stdSettings("zio-logging-jul-bridge", turnCompilerWarningIntoErrors = false))
+  .settings(enableZIO(enableTesting = true))
+  .settings(mimaSettings(failOnProblem = true))
+  .settings(
+    Test / fork := true
+  )
+
 lazy val jpl = project
   .in(file("jpl"))
   .dependsOn(coreJVM)
@@ -225,6 +238,14 @@ lazy val examplesJpl = project
   .in(file("examples/jpl"))
   .dependsOn(jpl)
   .settings(stdSettings(Some("zio-logging-examples-jpl"), turnCompilerWarningIntoErrors = false))
+  .settings(
+    publish / skip := true
+  )
+
+lazy val examplesJulBridge = project
+  .in(file("examples/jul-bridge"))
+  .dependsOn(julBridge)
+  .settings(stdSettings("zio-logging-examples-jul-bridge", turnCompilerWarningIntoErrors = false))
   .settings(
     publish / skip := true
   )
