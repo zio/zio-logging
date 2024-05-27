@@ -285,8 +285,9 @@ lazy val compileExamplesJob = Def.setting {
       SingleStep(
         name = "Compile additional subprojects",
         run = Some(
-          "sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesSlf4j2Bridge/compile " +
-            "examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile"
+          "sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesJulBridge/compile " +
+            "examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile " +
+            "examplesSlf4j2Log4j/compile benchmarks/compile"
         )
       )
     )
