@@ -19,7 +19,7 @@ import zio.logging.LogFilter
 import zio.{ Config, NonEmptyChunk, Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 
 import java.io.ByteArrayInputStream
-import java.util.logging.{ LogManager, Logger }
+import java.util.logging.LogManager
 
 object JULBridge {
 
