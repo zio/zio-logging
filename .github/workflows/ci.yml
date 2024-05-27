@@ -31,7 +31,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: '11'
+        java-version: '17'
         check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
@@ -56,7 +56,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: '11'
+        java-version: '17'
         check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
@@ -74,6 +74,7 @@ jobs:
         java:
         - '11'
         - '17'
+        - '21'
         scala-project:
         - ++2.12.17 jpl
         - ++2.13.10 jpl
@@ -123,8 +124,8 @@ jobs:
         os:
         - ubuntu-latest
         scala:
-        - 2.12.17
-        - 2.13.10
+        - '2.12'
+        - '2.13'
         java:
         - zulu@1.17
     steps:
@@ -146,7 +147,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: '11'
+        java-version: '17'
         check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
@@ -221,7 +222,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: '11'
+        java-version: '17'
         check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
@@ -250,7 +251,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: '11'
+        java-version: '17'
         check-latest: true
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
