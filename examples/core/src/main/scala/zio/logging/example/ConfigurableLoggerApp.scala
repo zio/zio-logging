@@ -36,7 +36,7 @@ import java.util.UUID
  */
 object ConfigurableLoggerApp extends ZIOAppDefault {
 
-  def configurableLogger(): ZLayer[Any,Config.Error,Unit] =
+  def configurableLogger(): ZLayer[Any, Config.Error, Unit] =
     ConsoleLoggerConfig
       .load()
       .flatMap { config =>
