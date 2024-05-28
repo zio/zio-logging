@@ -1,10 +1,13 @@
-package zio.logging.slf4j.bridge
+package zio.logging.jul.bridge
 
 import zio.logging.LogFilter
 import zio.test._
 import zio.{ Cause, Chunk, ConfigProvider, LogLevel, Runtime, ZIO, ZIOAspect }
 
-object Slf4jBridgeSpec extends ZIOSpecDefault {
+import java.util.logging.Level._
+import java.util.logging.Logger
+
+object JULBridgeSpec extends ZIOSpecDefault {
 
   final case class LogEntry(
     span: List[String],
@@ -21,8 +24,8 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           _ <-
             ZIO.foreachPar((1 to 5).toList) { _ =>
               ZIO
-                .succeed(org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER").warn("Test {}!", "WARNING"))
-                .provide(Slf4jBridge.initialize)
+                .succeed(Logger.getLogger("SLF4J-LOGGER").warning("Test WARNING!"))
+                .provide(JULBridge.initialize)
             }
         } yield assertCompletes
       },
@@ -31,16 +34,14 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         for {
           _      <-
             (for {
-              logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
-              _      <- ZIO.logSpan("span")(
-                          ZIO.attempt(logger.atDebug().addKeyValue("k", "v").addArgument("message").log("test debug {}"))
-                        ) @@ ZIOAspect
+              logger <- ZIO.attempt(Logger.getLogger("test.logger"))
+              _      <- ZIO.logSpan("span")(ZIO.attempt(logger.fine("test fine message"))) @@ ZIOAspect
                           .annotated("trace_id", "tId")
-              _      <- ZIO.attempt(logger.warn("hello {}", "world")) @@ ZIOAspect.annotated("user_id", "uId")
-              _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
-              _      <- ZIO.attempt(logger.atWarn().setCause(testFailure).setMessage("warn cause").log())
-              _      <- ZIO.attempt(logger.error("error", testFailure))
-              _      <- ZIO.attempt(logger.atError().log("error"))
+              _      <- ZIO.attempt(logger.warning("hello world")) @@ ZIOAspect.annotated("user_id", "uId")
+              _      <- ZIO.attempt(logger.warning("3..2..1 ... go!"))
+              _      <- ZIO.attempt(logger.log(WARNING, "warn cause", testFailure))
+              _      <- ZIO.attempt(logger.log(SEVERE, "severe", testFailure))
+              _      <- ZIO.attempt(logger.log(SEVERE, "severe"))
             } yield ()).exit
           output <- ZTestLogger.logOutput
           lines   = output.map { logEntry =>
@@ -57,8 +58,8 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             LogEntry(
               List("test.logger", "span"),
               LogLevel.Debug,
-              Map(zio.logging.loggerNameAnnotationKey -> "test.logger", "trace_id" -> "tId", "k" -> "v"),
-              "test debug message",
+              Map(zio.logging.loggerNameAnnotationKey -> "test.logger", "trace_id" -> "tId"),
+              "test fine message",
               Cause.empty
             ),
             LogEntry(
@@ -84,33 +85,33 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             ),
             LogEntry(
               List("test.logger"),
-              LogLevel.Error,
+              LogLevel.Fatal,
               Map(zio.logging.loggerNameAnnotationKey -> "test.logger"),
-              "error",
+              "severe",
               Cause.die(testFailure)
             ),
             LogEntry(
               List("test.logger"),
-              LogLevel.Error,
+              LogLevel.Fatal,
               Map(zio.logging.loggerNameAnnotationKey -> "test.logger"),
-              "error",
+              "severe",
               Cause.empty
             )
           )
         )
-      }.provide(Slf4jBridge.initialize),
+      }.provide(JULBridge.initialize),
       test("Implements Logger#getName") {
         for {
-          logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("zio.test.logger"))
+          logger <- ZIO.attempt(Logger.getLogger("zio.test.logger"))
         } yield assertTrue(logger.getName == "zio.test.logger")
-      }.provide(Slf4jBridge.initialize),
+      }.provide(JULBridge.initialize),
       test("logs through slf4j without fiber ref propagation") {
         for {
           _      <- (for {
-                      logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
-                      _      <- ZIO.logSpan("span")(ZIO.attempt(logger.debug("test debug message"))) @@ ZIOAspect
+                      logger <- ZIO.attempt(Logger.getLogger("test.logger"))
+                      _      <- ZIO.logSpan("span")(ZIO.attempt(logger.fine("test fine message"))) @@ ZIOAspect
                                   .annotated("trace_id", "tId")
-                      _      <- ZIO.attempt(logger.warn("hello {}", "world")) @@ ZIOAspect.annotated("user_id", "uId")
+                      _      <- ZIO.attempt(logger.warning("hello world")) @@ ZIOAspect.annotated("user_id", "uId")
                     } yield ()).exit
           output <- ZTestLogger.logOutput
           lines   = output.map { logEntry =>
@@ -128,7 +129,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
               List("test.logger"),
               LogLevel.Debug,
               Map(zio.logging.loggerNameAnnotationKey -> "test.logger"),
-              "test debug message",
+              "test fine message",
               Cause.empty
             ),
             LogEntry(
@@ -140,11 +141,11 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             )
           )
         )
-      }.provide(Slf4jBridge.initializeWithoutFiberRefPropagation),
+      }.provide(JULBridge.initializeWithoutFiberRefPropagation),
       test("logs through slf4j with filter") {
         filterTest
       }.provide(
-        Slf4jBridge.init(
+        JULBridge.init(
           LogFilter.logLevelByName(
             LogLevel.Debug,
             "test.logger"      -> LogLevel.Info,
@@ -163,24 +164,22 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           ),
           "/"
         )
-        Runtime.setConfigProvider(configProvider) >>> Slf4jBridge.init()
+        Runtime.setConfigProvider(configProvider) >>> JULBridge.init()
       }
-    ) @@ TestAspect.sequential
+    ) @@ TestAspect.after(removeExistingHandlers) @@ TestAspect.sequential
 
   def filterTest: ZIO[Any, Nothing, TestResult] =
     for {
       _      <- (for {
-                  logger1 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.abc"))
-                  logger2 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger.def"))
-                  logger3 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.test.logger.xyz"))
-                  _       <- ZIO.attempt(logger1.debug("test debug message"))
-                  _       <- ZIO.attempt(logger1.warn("test warn message"))
-                  _       <- ZIO.attempt(logger2.debug("hello2 {} debug", "world"))
-                  _       <- ZIO.attempt(logger2.atDebug().log("hello2 {} debug", "world"))
-                  _       <- ZIO.attempt(logger2.warn("hello2 {} warn", "world"))
-                  _       <- ZIO.attempt(logger3.atDebug().log("hello3 {} info", "world"))
-                  _       <- ZIO.attempt(logger3.info("hello3 {} info", "world"))
-                  _       <- ZIO.attempt(logger3.warn("hello3 {} warn", "world"))
+                  logger1 <- ZIO.attempt(Logger.getLogger("test.abc"))
+                  logger2 <- ZIO.attempt(Logger.getLogger("test.logger.def"))
+                  logger3 <- ZIO.attempt(Logger.getLogger("test.test.logger.xyz"))
+                  _       <- ZIO.attempt(logger1.fine("test debug message"))
+                  _       <- ZIO.attempt(logger1.warning("test warning message"))
+                  _       <- ZIO.attempt(logger2.fine("hello2 world fine"))
+                  _       <- ZIO.attempt(logger2.warning("hello2 world warning"))
+                  _       <- ZIO.attempt(logger3.info("hello3 world info"))
+                  _       <- ZIO.attempt(logger3.warning("hello3 world warning"))
                 } yield ()).exit
       output <- ZTestLogger.logOutput
       lines   = output.map { logEntry =>
@@ -205,24 +204,29 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           List("test.abc"),
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
-          "test warn message",
+          "test warning message",
           Cause.empty
         ),
         LogEntry(
           List("test.logger.def"),
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.logger.def"),
-          "hello2 world warn",
+          "hello2 world warning",
           Cause.empty
         ),
         LogEntry(
           List("test.test.logger.xyz"),
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.test.logger.xyz"),
-          "hello3 world warn",
+          "hello3 world warning",
           Cause.empty
         )
       )
+    )
+
+  def removeExistingHandlers: ZIO[Any, Nothing, Unit] =
+    ZIO.succeed(
+      Logger.getLogger("").getHandlers.foreach(Logger.getLogger("").removeHandler(_))
     )
 
 }

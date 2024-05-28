@@ -15,15 +15,15 @@
  */
 package zio.logging.example
 
-import zio.logging.slf4j.bridge.Slf4jBridge
+import zio.logging.jul.bridge.JULBridge
 import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
 import java.util.UUID
 
-object Slf4jBridgeExampleApp extends ZIOAppDefault {
+object JULBridgeExampleApp extends ZIOAppDefault {
 
-  private val slf4jLogger = org.slf4j.LoggerFactory.getLogger("SLF4J-LOGGER")
+  private val julLogger = java.util.logging.Logger.getLogger("JUL-LOGGER")
 
   private val logFilterConfig = LogFilter.LogLevelByNameConfig(
     LogLevel.Info,
@@ -34,12 +34,14 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   private val logFormat = LogFormat.label(
     "name",
     LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
-  ) + LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey)) + LogFormat.default
+  ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
+    LogAnnotation.TraceId
+  ) + LogFormat.default
 
   private val loggerConfig = ConsoleLoggerConfig(logFormat, logFilterConfig)
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    Runtime.removeDefaultLoggers >>> consoleJsonLogger(loggerConfig) >+> Slf4jBridge.init(loggerConfig.toFilter)
+    Runtime.removeDefaultLoggers >>> consoleJsonLogger(loggerConfig) >+> JULBridge.init(loggerConfig.toFilter)
 
   private val uuids = List.fill(2)(UUID.randomUUID())
 
@@ -47,8 +49,8 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
     for {
       _ <- ZIO.logInfo("Start")
       _ <- ZIO.foreachPar(uuids) { u =>
-             ZIO.succeed(slf4jLogger.info("Test {}!", "INFO")) *> ZIO.succeed(
-               slf4jLogger.atWarn().addArgument("WARNING").log("Test {}!")
+             ZIO.succeed(julLogger.info("Test INFO!")) *> ZIO.succeed(
+               julLogger.warning("Test WARNING!")
              ) @@ LogAnnotation.UserId(
                u.toString
              )

@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package zio.logging.slf4j.bridge
+package zio.logging.jul.bridge
 
-import org.slf4j.event.{ KeyValuePair, Level }
-import org.slf4j.helpers.MessageFormatter
 import zio.logging.LogFilter
 import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-import scala.jdk.CollectionConverters._
+import java.util.logging.{ Handler, Level, LogRecord }
 
-final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends Handler {
 
-  override def log(
-    name: String,
-    level: Level,
-    messagePattern: String,
-    arguments: Array[AnyRef],
-    throwable: Throwable,
-    keyValues: java.util.List[KeyValuePair]
-  ): Unit =
+  override def publish(record: LogRecord): Unit = {
+    if (!isEnabled(record.getLoggerName, record.getLevel)) {
+      return
+    }
+
     Unsafe.unsafe { implicit u =>
+      val msg       = record.getMessage
+      val level     = record.getLevel
+      val name      = record.getLoggerName
+      val throwable = record.getThrown
+
       val logLevel     = ZioLoggerRuntime.logLevelMapping(level)
       val trace        = Trace.empty
       val fiberId      = FiberId.Gen.Live.make(trace)
@@ -44,28 +44,17 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan        = zio.LogSpan(name, java.lang.System.currentTimeMillis())
-      val loggerName     = (zio.logging.loggerNameAnnotationKey -> name)
-      val logAnnotations = if (keyValues != null) {
-        keyValues.asScala.map(kv => (kv.key, kv.value.toString)).toMap
-      } else {
-        Map.empty
-      }
+      val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
+      val loggerName = (zio.logging.loggerNameAnnotationKey -> name)
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
-          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logAnnotations + loggerName
+          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) + loggerName
         )
 
       val fiberRuntime = zio.internal.FiberRuntime(fiberId, fiberRefs, runtime.runtimeFlags)
-
-      lazy val msg = if (arguments != null) {
-        MessageFormatter.arrayFormat(messagePattern, arguments.toArray).getMessage
-      } else {
-        messagePattern
-      }
 
       val cause = if (throwable != null) {
         Cause.die(throwable)
@@ -74,9 +63,15 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
       }
 
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
-    }
 
-  override def isEnabled(name: String, level: Level): Boolean = {
+    }
+  }
+
+  override def flush(): Unit = ()
+
+  override def close(): Unit = ()
+
+  private def isEnabled(name: String, level: Level): Boolean = {
     val logLevel = ZioLoggerRuntime.logLevelMapping(level)
 
     filter(
@@ -90,16 +85,19 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
       Map(zio.logging.loggerNameAnnotationKey -> name)
     )
   }
-
 }
 
 object ZioLoggerRuntime {
 
-  val logLevelMapping: Map[Level, LogLevel] = Map(
-    Level.TRACE -> LogLevel.Trace,
-    Level.DEBUG -> LogLevel.Debug,
-    Level.INFO  -> LogLevel.Info,
-    Level.WARN  -> LogLevel.Warning,
-    Level.ERROR -> LogLevel.Error
+  private val logLevelMapping: Map[Level, LogLevel] = Map(
+    Level.SEVERE  -> LogLevel.Fatal,
+    Level.WARNING -> LogLevel.Warning,
+    Level.INFO    -> LogLevel.Info,
+    Level.CONFIG  -> LogLevel.Info,
+    Level.FINE    -> LogLevel.Debug,
+    Level.FINER   -> LogLevel.Debug,
+    Level.FINEST  -> LogLevel.Trace,
+    Level.ALL     -> LogLevel.All,
+    Level.OFF     -> LogLevel.None
   )
 }
