@@ -23,11 +23,13 @@ object SimpleApp extends ZIOAppDefault {
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig.default)
 
-  override def run: ZIO[Scope, Any, ExitCode] =
+  override def run: ZIO[Scope, Any, ExitCode] = {
+    val ee: ZIO[Any, String, Unit] = ZIO.die(new Exception(""))
     for {
       _ <- ZIO.logInfo("Start")
-      _ <- ZIO.fail("FAILURE")
+      _ <- ee.catchAll(c => ZIO.logError(s"error $c"))
       _ <- ZIO.logInfo("Done")
     } yield ExitCode.success
+  }
 
 }

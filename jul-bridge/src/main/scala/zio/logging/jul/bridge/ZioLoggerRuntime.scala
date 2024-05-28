@@ -35,7 +35,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
 
       val logLevel     = ZioLoggerRuntime.logLevelMapping(level)
       val trace        = Trace.empty
-      val fiberId      = FiberId.make(trace)
+      val fiberId      = FiberId.Gen.Live.make(trace)
       val currentFiber = Fiber._currentFiber.get()
 
       val currentFiberRefs = if (currentFiber eq null) {

@@ -32,13 +32,15 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
           _      <-
             (for {
               logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger"))
-              _      <- ZIO.logSpan("span")(ZIO.attempt(logger.debug("test debug message"))) @@ ZIOAspect
+              _      <- ZIO.logSpan("span")(
+                          ZIO.attempt(logger.atDebug().addKeyValue("k", "v").addArgument("message").log("test debug {}"))
+                        ) @@ ZIOAspect
                           .annotated("trace_id", "tId")
               _      <- ZIO.attempt(logger.warn("hello {}", "world")) @@ ZIOAspect.annotated("user_id", "uId")
               _      <- ZIO.attempt(logger.warn("{}..{}..{} ... go!", "3", "2", "1"))
-              _      <- ZIO.attempt(logger.warn("warn cause", testFailure))
+              _      <- ZIO.attempt(logger.atWarn().setCause(testFailure).setMessage("warn cause").log())
               _      <- ZIO.attempt(logger.error("error", testFailure))
-              _      <- ZIO.attempt(logger.error("error", null))
+              _      <- ZIO.attempt(logger.atError().log("error"))
             } yield ()).exit
           output <- ZTestLogger.logOutput
           lines   = output.map { logEntry =>
@@ -55,7 +57,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             LogEntry(
               List("test.logger", "span"),
               LogLevel.Debug,
-              Map(zio.logging.loggerNameAnnotationKey -> "test.logger", "trace_id" -> "tId"),
+              Map(zio.logging.loggerNameAnnotationKey -> "test.logger", "trace_id" -> "tId", "k" -> "v"),
               "test debug message",
               Cause.empty
             ),
@@ -174,7 +176,9 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
                   _       <- ZIO.attempt(logger1.debug("test debug message"))
                   _       <- ZIO.attempt(logger1.warn("test warn message"))
                   _       <- ZIO.attempt(logger2.debug("hello2 {} debug", "world"))
+                  _       <- ZIO.attempt(logger2.atDebug().log("hello2 {} debug", "world"))
                   _       <- ZIO.attempt(logger2.warn("hello2 {} warn", "world"))
+                  _       <- ZIO.attempt(logger3.atDebug().log("hello3 {} info", "world"))
                   _       <- ZIO.attempt(logger3.info("hello3 {} info", "world"))
                   _       <- ZIO.attempt(logger3.warn("hello3 {} warn", "world"))
                 } yield ()).exit

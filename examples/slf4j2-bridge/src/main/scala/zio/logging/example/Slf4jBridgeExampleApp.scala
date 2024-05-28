@@ -34,9 +34,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
   private val logFormat = LogFormat.label(
     "name",
     LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
-  ) + LogFormat.logAnnotation(LogAnnotation.UserId) + LogFormat.logAnnotation(
-    LogAnnotation.TraceId
-  ) + LogFormat.default
+  ) + LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey)) + LogFormat.default
 
   private val loggerConfig = ConsoleLoggerConfig(logFormat, logFilterConfig)
 
@@ -50,7 +48,7 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
       _ <- ZIO.logInfo("Start")
       _ <- ZIO.foreachPar(uuids) { u =>
              ZIO.succeed(slf4jLogger.info("Test {}!", "INFO")) *> ZIO.succeed(
-               slf4jLogger.warn("Test {}!", "WARNING")
+               slf4jLogger.atWarn().addArgument("WARNING").log("Test {}!")
              ) @@ LogAnnotation.UserId(
                u.toString
              )

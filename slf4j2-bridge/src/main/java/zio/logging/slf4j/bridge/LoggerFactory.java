@@ -17,8 +17,10 @@ package zio.logging.slf4j.bridge;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Marker;
+import org.slf4j.event.KeyValuePair;
 import org.slf4j.event.Level;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,9 +34,9 @@ final class LoggerFactory implements ILoggerFactory {
         this.runtime = runtime;
     }
 
-    void log(String name, Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable) {
+    void log(String name, Level level, String messagePattern, Object[] arguments, Throwable throwable, List<KeyValuePair> keyValues) {
         if (runtime != null) {
-            runtime.log(name, level, marker, messagePattern, arguments, throwable);
+            runtime.log(name, level, messagePattern, arguments, throwable, keyValues);
         }
     }
 

@@ -17,9 +17,13 @@ package zio.logging.slf4j.bridge;
 
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
+import org.slf4j.event.LoggingEvent;
 import org.slf4j.helpers.AbstractLogger;
+import org.slf4j.spi.LoggingEventAware;
 
-final class Logger extends AbstractLogger {
+import java.util.Collections;
+
+final class Logger extends AbstractLogger implements LoggingEventAware {
 
     private LoggerFactory factory;
 
@@ -35,7 +39,7 @@ final class Logger extends AbstractLogger {
 
     @Override
     protected void handleNormalizedLoggingCall(Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable) {
-        factory.log(name, level, marker, messagePattern, arguments, throwable);
+        factory.log(name, level, messagePattern, arguments, throwable, Collections.emptyList());
     }
 
     @Override
@@ -86,5 +90,12 @@ final class Logger extends AbstractLogger {
     @Override
     public boolean isErrorEnabled(Marker marker) {
         return isErrorEnabled();
+    }
+
+    @Override
+    public void log(LoggingEvent event) {
+        if (factory.isEnabled(name, event.getLevel())) {
+            factory.log(name, event.getLevel(), event.getMessage(), event.getArgumentArray(), event.getThrowable(), event.getKeyValuePairs());
+        }
     }
 }
