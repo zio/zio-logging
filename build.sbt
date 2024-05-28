@@ -254,7 +254,7 @@ lazy val docs = project
     mainModuleName                             := (coreJVM / name).value,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j, slf4jBridge, jpl),
     projectStage                               := ProjectStage.ProductionReady,
-    publish / skip                             := true
+    publish / skip                             := false
   )
   .settings(macroDefinitionSettings)
   .dependsOn(coreJVM, coreJS, slf4j, slf4jBridge, jpl)
