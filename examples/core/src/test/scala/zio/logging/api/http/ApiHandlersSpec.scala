@@ -26,7 +26,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
     }
   }
 
-  def spec: Spec[Any, Serializable] = suite("ApiHandlersSpec")(
+  def spec: Spec[TestEnvironment, Any] = suite("ApiHandlersSpec")(
     test("get all") {
       val routes = ApiHandlers.routes("example" :: Nil)
 

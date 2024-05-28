@@ -48,5 +48,5 @@ object WriterProviderSpec extends ZIOSpecDefault {
         sameWriter2 <- parallelExecution.map(_.toSet)
       } yield assertTrue(sameWriter1.size == 1 && sameWriter2.size == 1 && sameWriter1 != sameWriter2)
     }
-  )
+  ) @@ TestAspect.unix
 }
