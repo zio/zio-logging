@@ -77,18 +77,6 @@ Other modules:
     See [Java Platform/System Logger](docs/jpl.md) section for more details.
 
 
-* java.util.logging bridge - with this logging bridge, it is possible to use `zio-logging` for JUL loggers (usually third-party non-ZIO libraries), add the one of following lines to your `build.sbt` file:
-
-    ```scala
-    // JUL bridge
-    libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "2.2.4"
-    ```
-
-    When to use this module: you are already using JUL logger in some other project, and you like to have same log outputs.
-    See [java.util.logging bridge](docs/jul-bridge.md) section for more details.
-
-
-
 ## Example
 
 Let's try an example of ZIO Logging which demonstrates a simple application of ZIO logging.
