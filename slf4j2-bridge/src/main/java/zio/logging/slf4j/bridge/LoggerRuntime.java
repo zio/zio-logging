@@ -15,11 +15,13 @@
  */
 package zio.logging.slf4j.bridge;
 
-import org.slf4j.Marker;
+import org.slf4j.event.KeyValuePair;
 import org.slf4j.event.Level;
 
+import java.util.List;
+
 interface LoggerRuntime {
-    void log(String name, Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable);
+    void log(String name, Level level, String messagePattern, Object[] arguments, Throwable throwable, List<KeyValuePair> keyValues);
 
     boolean isEnabled(String name, Level level);
 }

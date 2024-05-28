@@ -15,26 +15,27 @@
  */
 package zio.logging.slf4j.bridge
 
-import org.slf4j.Marker
-import org.slf4j.event.Level
+import org.slf4j.event.{ KeyValuePair, Level }
 import org.slf4j.helpers.MessageFormatter
 import zio.logging.LogFilter
 import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
+
+import scala.jdk.CollectionConverters._
 
 final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
 
   override def log(
     name: String,
     level: Level,
-    marker: Marker,
     messagePattern: String,
     arguments: Array[AnyRef],
-    throwable: Throwable
+    throwable: Throwable,
+    keyValues: java.util.List[KeyValuePair]
   ): Unit =
     Unsafe.unsafe { implicit u =>
       val logLevel     = ZioLoggerRuntime.logLevelMapping(level)
       val trace        = Trace.empty
-      val fiberId      = FiberId.make(trace)
+      val fiberId      = FiberId.Gen.Live.make(trace)
       val currentFiber = Fiber._currentFiber.get()
 
       val currentFiberRefs = if (currentFiber eq null) {
@@ -43,14 +44,19 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
-      val loggerName = (zio.logging.loggerNameAnnotationKey -> name)
+      val logSpan        = zio.LogSpan(name, java.lang.System.currentTimeMillis())
+      val loggerName     = (zio.logging.loggerNameAnnotationKey -> name)
+      val logAnnotations = if (keyValues != null) {
+        keyValues.asScala.map(kv => (kv.key, kv.value.toString)).toMap
+      } else {
+        Map.empty
+      }
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
-          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) + loggerName
+          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logAnnotations + loggerName
         )
 
       val fiberRuntime = zio.internal.FiberRuntime(fiberId, fiberRefs, runtime.runtimeFlags)

@@ -111,10 +111,10 @@ object Slf4jBridgeExampleApp extends ZIOAppDefault {
 
 Expected Console Output:
 ```
-{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2024-02-16T08:10:45.373807+01:00","level":"INFO","thread":"zio-fiber-6","message":"Start"}
+{"name":"zio.logging.example.Slf4jBridgeExampleApp","timestamp":"2024-02-16T08:10:45.373807+01:00","level":"INFO","thread":"zio-fiber-6","message":"Start"}
 {"name":"SLF4J-LOGGER","user_id":"d13f90ad-6b0a-45fd-bf94-1db7a0d8c0b7","trace_id":"561300a9-e6f1-4f61-8dcc-dfef476dab20","timestamp":"2024-02-16T08:10:45.421448+01:00","level":"WARN","thread":"zio-fiber-10","message":"Test WARNING!"}
 {"name":"SLF4J-LOGGER","user_id":"0f28521f-ac8f-4d8e-beeb-13c85c90c041","trace_id":"561300a9-e6f1-4f61-8dcc-dfef476dab20","timestamp":"2024-02-16T08:10:45.421461+01:00","level":"WARN","thread":"zio-fiber-9","message":"Test WARNING!"}
-{"name":"zio.logging.slf4j.bridge.Slf4jBridgeExampleApp","timestamp":"2024-02-16T08:10:45.428162+01:00","level":"DEBUG","thread":"zio-fiber-6","message":"Done"}
+{"name":"zio.logging.example.Slf4jBridgeExampleApp","timestamp":"2024-02-16T08:10:45.428162+01:00","level":"DEBUG","thread":"zio-fiber-6","message":"Done"}
 ```
 
 ## Feature changes
