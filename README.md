@@ -84,8 +84,8 @@ Other modules:
     libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "2.3.0"
     ```
 
-  When to use this module: you are already using JUL logger in some other project, and you like to have same log outputs.
-  See [java.util.logging bridge](docs/docs/jul-bridge.md) section for more details.
+    When to use this module: you are already using JUL logger in some other project, and you like to have same log outputs.
+    See [java.util.logging bridge](docs/docs/jul-bridge.md) section for more details.
 
 
 ## Example
