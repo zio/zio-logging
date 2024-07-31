@@ -106,7 +106,7 @@ lazy val slf4j2 = project
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4j2Version,
       "ch.qos.logback"          % "logback-classic"          % logback2Version              % Test,
-      "net.logstash.logback"    % "logstash-logback-encoder" % "7.4"                        % Test,
+      "net.logstash.logback"    % "logstash-logback-encoder" % "8.0"                        % Test,
       "org.scala-lang.modules" %% "scala-collection-compat"  % scalaCollectionCompatVersion % Test
     )
   )
@@ -206,7 +206,7 @@ lazy val examplesSlf4j2Logback = project
     publish / skip := true,
     libraryDependencies ++= Seq(
       "ch.qos.logback"       % "logback-classic"          % logback2Version,
-      "net.logstash.logback" % "logstash-logback-encoder" % "7.4"
+      "net.logstash.logback" % "logstash-logback-encoder" % "8.0"
     )
   )
 
