@@ -75,8 +75,8 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
       _       <- ZIO.logDebug("Done") @@ LogAnnotation.TraceId(traceId)
     } yield ()
 
-  val httpApp: HttpApp[LoggerConfigurer] =
-    ApiHandlers.routes("example" :: Nil).toHttpApp @@ Middleware.basicAuth("admin", "admin")
+  val httpApp: Routes[LoggerConfigurer with Any, Nothing] =
+    ApiHandlers.routes("example" :: Nil) @@ Middleware.basicAuth("admin", "admin")
 
   override def run: ZIO[Scope, Any, ExitCode] =
     (for {
