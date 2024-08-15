@@ -32,7 +32,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
 
       for {
         request  <- ZIO.attempt(Request.get(URL.decode("/example/logger").toOption.get))
-        response <- routes.toHttpApp.runZIO(request)
+        response <- routes.runZIO(request)
         content  <- HttpCodec.content[List[ApiDomain.LoggerConfig]].decodeResponse(response)
       } yield assertTrue(response.status.isSuccess) && assertTrue(
         content == List(ApiDomain.LoggerConfig("root", LogLevel.Info))
@@ -42,7 +42,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
       val routes = ApiHandlers.routes("example" :: Nil)
       for {
         request  <- ZIO.attempt(Request.get(URL.decode("/example/logger/example.Service").toOption.get))
-        response <- routes.toHttpApp.runZIO(request)
+        response <- routes.runZIO(request)
         content  <- HttpCodec.content[ApiDomain.LoggerConfig].decodeResponse(response)
       } yield assertTrue(response.status.isSuccess) && assertTrue(
         content == ApiDomain.LoggerConfig("example.Service", LogLevel.Info)
@@ -59,7 +59,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
                           HttpCodec.content[LogLevel].encodeRequest(LogLevel.Warning).body
                         )
                     )
-        response <- routes.toHttpApp.runZIO(request)
+        response <- routes.runZIO(request)
         content  <- HttpCodec.content[ApiDomain.LoggerConfig].decodeResponse(response)
       } yield assertTrue(response.status.isSuccess) && assertTrue(
         content == ApiDomain.LoggerConfig("example.Service", LogLevel.Warning)
