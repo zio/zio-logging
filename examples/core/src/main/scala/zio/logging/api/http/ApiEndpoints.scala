@@ -19,7 +19,7 @@ import zio._
 import zio.http._
 import zio.http.codec.PathCodec.{ literal, string }
 import zio.http.codec.{ HttpCodec, PathCodec }
-import zio.http.endpoint.EndpointMiddleware.None
+import zio.http.endpoint.AuthType.None
 import zio.http.endpoint._
 import zio.http.endpoint.openapi.{ OpenAPI, OpenAPIGen }
 import zio.logging.api.http.ApiDomain.Error
