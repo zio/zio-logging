@@ -54,6 +54,23 @@ package object logging extends LoggerLayers {
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
+  /**
+   * Append logger name aspect, by which it is possible to append a logger name to the current logger name.
+   * The new name is appended using a dot (.) as the delimiter.
+   *
+   * annotation key: [[zio.logging.loggerNameAnnotationKey]]
+   */
+  def appendLoggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
+    new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
+      def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
+        for {
+          annotations      <- FiberRef.currentLogAnnotations.get
+          currentLoggerName = annotations.get(loggerNameAnnotationKey)
+          newLoggerName     = currentLoggerName.fold(value)(currentLoggerName => s"$currentLoggerName.$value")
+          a                <- ZIO.logAnnotate(loggerNameAnnotationKey, newLoggerName)(zio)
+        } yield a
+    }
+
   implicit final class LogAnnotationZIOSyntax[R, E, A](private val self: ZIO[R, E, A]) {
     def logAnnotate[V: Tag](key: LogAnnotation[V], value: V): ZIO[R, E, A] =
       self @@ key(value)
