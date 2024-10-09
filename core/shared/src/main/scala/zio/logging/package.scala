@@ -64,7 +64,7 @@ package object logging extends LoggerLayers {
     new ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] {
       def apply[R, E, A](zio: ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] =
         for {
-          annotations      <- FiberRef.currentLogAnnotations.get
+          annotations      <- ZIO.logAnnotations
           currentLoggerName = annotations.get(loggerNameAnnotationKey)
           newLoggerName     = currentLoggerName.fold(value)(currentLoggerName => s"$currentLoggerName.$value")
           a                <- ZIO.logAnnotate(loggerNameAnnotationKey, newLoggerName)(zio)
