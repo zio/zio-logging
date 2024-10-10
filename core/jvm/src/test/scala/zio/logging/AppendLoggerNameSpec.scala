@@ -1,8 +1,8 @@
 package zio.logging
 
-import zio.test._
-import zio.logging.appendLoggerName
 import zio.ZIO
+import zio.logging.appendLoggerName
+import zio.test._
 
 object AppendLoggerNameSpec extends ZIOSpecDefault {
 
