@@ -18,7 +18,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: true
     steps:
     - name: Git Checkout
@@ -43,7 +43,7 @@ jobs:
       run: sbt docs/clean; sbt docs/buildWebsite
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
     - name: Git Checkout
@@ -66,7 +66,7 @@ jobs:
       run: sbt lint
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     strategy:
       fail-fast: false
@@ -94,7 +94,7 @@ jobs:
       run: sbt +test
   compile-examples:
     name: Compile examples
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     strategy:
       fail-fast: true
@@ -122,7 +122,7 @@ jobs:
       run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesJulBridge/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
   update-readme:
     name: Update README
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     if: ${{ github.event_name == 'push' }}
     steps:
@@ -195,7 +195,7 @@ jobs:
       run: echo "ci passed"
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     needs:
     - ci
@@ -224,7 +224,7 @@ jobs:
         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
   release-docs:
     name: Release Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     needs:
     - release
@@ -255,7 +255,7 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   notify-docs-release:
     name: Notify Docs Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: false
     needs:
     - release-docs
