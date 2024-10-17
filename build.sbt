@@ -3,18 +3,26 @@ import Versions.*
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 import zio.sbt.ZioSbtCiPlugin.{ CacheDependencies, Checkout, SetupJava, SetupLibuv }
-import zio.sbt.githubactions.OS.UbuntuLatest
 import zio.sbt.githubactions.{ Job, Strategy }
 import zio.sbt.githubactions.Step.SingleStep
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
+lazy val ciRunsOn = "ubuntu-22.04"
+
+def ciJobWithSetup(job: Job) = job.copy(runsOn = ciRunsOn)
+
 inThisBuild(
   List(
-    name              := "zio-logging",
-    ciEnabledBranches := Seq("master"),
-    ciTestJobs        := ciTestJobs.value :+ compileExamplesJob.value,
-    developers        := List(
+    name               := "zio-logging",
+    ciEnabledBranches  := Seq("master"),
+    ciTestJobs         := ciTestJobs.value.map(ciJobWithSetup) :+ compileExamplesJob.value,
+    ciLintJobs         := ciLintJobs.value.map(ciJobWithSetup),
+    ciBuildJobs        := ciBuildJobs.value.map(ciJobWithSetup),
+    ciReleaseJobs      := ciReleaseJobs.value.map(ciJobWithSetup),
+    ciUpdateReadmeJobs := ciUpdateReadmeJobs.value.map(ciJobWithSetup),
+    ciPostReleaseJobs  := ciPostReleaseJobs.value.map(ciJobWithSetup),
+    developers         := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
         "pshemass",
@@ -24,8 +32,8 @@ inThisBuild(
       ),
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
-    zioVersion        := "2.1.9",
-    scala213          := "2.13.15"
+    zioVersion         := "2.1.11",
+    scala213           := "2.13.15"
   )
 )
 
@@ -285,6 +293,6 @@ lazy val compileExamplesJob = Def.setting {
         )
       )
     ),
-    runsOn = UbuntuLatest.asString
+    runsOn = ciRunsOn
   )
 }
