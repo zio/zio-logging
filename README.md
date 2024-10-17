@@ -28,7 +28,7 @@ In order to use this library, we need to add the following line in our `build.sb
 
 ```scala
 // ZIO Logging backends
-libraryDependencies += "dev.zio" %% "zio-logging" % "2.3.1"
+libraryDependencies += "dev.zio" %% "zio-logging" % "2.3.2"
 ```
 
 The main module contains the following features: 
