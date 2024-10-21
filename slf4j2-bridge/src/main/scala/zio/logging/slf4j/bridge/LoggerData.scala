@@ -13,15 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package zio.logging.slf4j.bridge;
+package zio.logging.slf4j.bridge
 
-import org.slf4j.event.KeyValuePair;
-import org.slf4j.event.Level;
+final case class LoggerData(name: String) {
 
-import java.util.List;
+  lazy val annotations: Map[String, String] = Map(zio.logging.loggerNameAnnotationKey -> name)
 
-interface LoggerRuntime {
-    void log(String name, Level level, String messagePattern, Object[] arguments, Throwable throwable, List<KeyValuePair> keyValues);
-
-    boolean isEnabled(String name, Level level);
 }

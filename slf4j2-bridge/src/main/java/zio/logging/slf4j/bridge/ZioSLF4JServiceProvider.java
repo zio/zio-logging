@@ -52,7 +52,7 @@ final public class ZioSLF4JServiceProvider implements org.slf4j.spi.SLF4JService
     @Override
     public void initialize() {
         markerFactory = new BasicMarkerFactory();
-        loggerFactory = new LoggerFactory();
+        loggerFactory = new ZioLoggerFactory();
         mdcAdapter = new BasicMDCAdapter();
     }
 }
