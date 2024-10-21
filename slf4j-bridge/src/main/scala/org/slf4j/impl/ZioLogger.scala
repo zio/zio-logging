@@ -18,8 +18,11 @@ package org.slf4j.impl
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import org.slf4j.helpers.ZioLoggerBase
+import zio.logging.slf4j.bridge.LoggerData
 
 final class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
+  private val data: LoggerData = LoggerData(name)
+
   override protected def log(
     level: Level,
     marker: Marker,
@@ -27,7 +30,7 @@ final class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLogger
     arguments: Array[AnyRef],
     throwable: Throwable
   ): Unit =
-    factory.log(name, level, marker, messagePattern, arguments, throwable)
+    factory.log(data, level, marker, messagePattern, arguments, throwable)
 
-  override protected def isEnabled(name: String, level: Level): Boolean = factory.isEnabled(name, level)
+  override protected def isEnabled(level: Level): Boolean = factory.isEnabled(data, level)
 }

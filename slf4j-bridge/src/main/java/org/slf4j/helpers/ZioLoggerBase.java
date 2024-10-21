@@ -26,7 +26,7 @@ public abstract class ZioLoggerBase extends MarkerIgnoringBase {
 
     abstract protected void log(Level level, Marker marker, String messagePattern, Object[] arguments, Throwable throwable);
 
-    abstract protected boolean isEnabled(String name, Level level);
+    abstract protected boolean isEnabled(Level level);
 
     private void logWithThrowable(Level level, Marker marker, String msg, Throwable t) {
         log(level, marker, msg, null, t);
@@ -56,27 +56,27 @@ public abstract class ZioLoggerBase extends MarkerIgnoringBase {
 
     @Override
     public boolean isTraceEnabled() {
-        return isEnabled(name, Level.TRACE);
+        return isEnabled(Level.TRACE);
     }
 
     @Override
     public boolean isDebugEnabled() {
-        return isEnabled(name, Level.DEBUG);
+        return isEnabled(Level.DEBUG);
     }
 
     @Override
     public boolean isErrorEnabled() {
-        return isEnabled(name, Level.ERROR);
+        return isEnabled(Level.ERROR);
     }
 
     @Override
     public boolean isWarnEnabled() {
-        return isEnabled(name, Level.WARN);
+        return isEnabled(Level.WARN);
     }
 
     @Override
     public boolean isInfoEnabled() {
-        return isEnabled(name, Level.INFO);
+        return isEnabled(Level.INFO);
     }
 
     @Override

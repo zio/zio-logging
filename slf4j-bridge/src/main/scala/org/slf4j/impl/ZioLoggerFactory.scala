@@ -17,6 +17,7 @@ package org.slf4j.impl
 
 import org.slf4j.event.Level
 import org.slf4j.{ ILoggerFactory, Logger, Marker }
+import zio.logging.slf4j.bridge.LoggerData
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters._
@@ -29,17 +30,17 @@ class ZioLoggerFactory extends ILoggerFactory {
     this.runtime = runtime
 
   private[impl] def log(
-    name: String,
+    logger: LoggerData,
     level: Level,
     marker: Marker,
     messagePattern: String,
     arguments: Array[AnyRef],
     throwable: Throwable
   ): Unit =
-    if (runtime != null) runtime.log(name, level, marker, messagePattern, arguments, throwable)
+    if (runtime != null) runtime.log(logger, level, marker, messagePattern, arguments, throwable)
 
-  private[impl] def isEnabled(name: String, level: Level): Boolean =
-    if (runtime != null) runtime.isEnabled(name, level) else false
+  private[impl] def isEnabled(logger: LoggerData, level: Level): Boolean =
+    if (runtime != null) runtime.isEnabled(logger, level) else false
 
   override def getLogger(name: String): Logger =
     loggers.getOrElseUpdate(name, new ZioLogger(name, this))

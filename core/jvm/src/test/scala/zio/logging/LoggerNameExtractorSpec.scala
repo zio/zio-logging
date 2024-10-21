@@ -56,6 +56,18 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
         assertTrue(result == Some(value))
       }
     },
+    test("loggerNameAnnotationOrTrace with empty trace") {
+      val extractor = LoggerNameExtractor.loggerNameAnnotationOrTrace
+      check(Gen.alphaNumericString) { annotation =>
+        val annotations = Map(loggerNameAnnotationKey -> annotation)
+        val result      = extractor(
+          Trace.empty,
+          FiberRefs.empty,
+          annotations
+        )
+        assertTrue(result == Some(annotation))
+      }
+    },
     test("trace") {
       val extractor = LoggerNameExtractor.trace
       check(Gen.alphaNumericString) { trace =>
