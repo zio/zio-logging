@@ -44,14 +44,13 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan    = zio.LogSpan(logger.name, java.lang.System.currentTimeMillis())
-      val loggerName = (zio.logging.loggerNameAnnotationKey -> logger.name)
+      val logSpan = zio.LogSpan(logger.name, java.lang.System.currentTimeMillis())
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
-          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) + loggerName
+          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logger.annotations
         )
 
       val fiberRuntime = zio.internal.FiberRuntime(fiberId, fiberRefs, runtime.runtimeFlags)
