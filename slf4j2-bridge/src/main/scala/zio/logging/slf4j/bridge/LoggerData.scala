@@ -13,22 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.slf4j.impl
+package zio.logging.slf4j.bridge
 
-import org.slf4j.Marker
-import org.slf4j.event.Level
-import zio.logging.slf4j.bridge.LoggerData
+final case class LoggerData(name: String) {
 
-trait LoggerRuntime {
+  lazy val annotations: Map[String, String] = Map(zio.logging.loggerNameAnnotationKey -> name)
 
-  def log(
-    logger: LoggerData,
-    level: Level,
-    marker: Marker,
-    messagePattern: String,
-    arguments: Array[AnyRef],
-    throwable: Throwable
-  ): Unit
-
-  def isEnabled(logger: LoggerData, level: Level): Boolean
 }

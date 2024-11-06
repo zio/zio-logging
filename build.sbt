@@ -139,7 +139,7 @@ lazy val slf4j2Bridge = project
   .settings(enableZIO())
   .settings(mimaSettings(failOnProblem = true))
   .settings(
-    compileOrder            := CompileOrder.JavaThenScala,
+    compileOrder            := CompileOrder.ScalaThenJava,
     javacOptions            := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
     javaOptions             := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javaOptions.value),
     Compile / doc / sources := Seq.empty // module-info.java compilation issue

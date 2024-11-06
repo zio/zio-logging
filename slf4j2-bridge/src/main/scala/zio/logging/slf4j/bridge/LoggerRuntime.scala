@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.slf4j.impl
+package zio.logging.slf4j.bridge
 
-import org.slf4j.Marker
-import org.slf4j.event.Level
-import zio.logging.slf4j.bridge.LoggerData
+import org.slf4j.event.{ KeyValuePair, Level }
 
 trait LoggerRuntime {
 
   def log(
     logger: LoggerData,
     level: Level,
-    marker: Marker,
     messagePattern: String,
     arguments: Array[AnyRef],
-    throwable: Throwable
+    throwable: Throwable,
+    keyValues: java.util.List[KeyValuePair]
   ): Unit
 
   def isEnabled(logger: LoggerData, level: Level): Boolean

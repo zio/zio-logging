@@ -25,7 +25,7 @@ import scala.jdk.CollectionConverters._
 final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
 
   override def log(
-    name: String,
+    logger: LoggerData,
     level: Level,
     messagePattern: String,
     arguments: Array[AnyRef],
@@ -44,19 +44,19 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan        = zio.LogSpan(name, java.lang.System.currentTimeMillis())
-      val loggerName     = (zio.logging.loggerNameAnnotationKey -> name)
-      val logAnnotations = if (keyValues != null) {
-        keyValues.asScala.map(kv => (kv.key, kv.value.toString)).toMap
+      val logSpan = zio.LogSpan(logger.name, java.lang.System.currentTimeMillis())
+
+      val logAnnotations = if (keyValues != null && !keyValues.isEmpty) {
+        keyValues.asScala.map(kv => (kv.key, kv.value.toString)).toMap ++ logger.annotations
       } else {
-        Map.empty
+        logger.annotations
       }
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
-          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logAnnotations + loggerName
+          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logAnnotations
         )
 
       val fiberRuntime = zio.internal.FiberRuntime(fiberId, fiberRefs, runtime.runtimeFlags)
@@ -76,18 +76,18 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
 
-  override def isEnabled(name: String, level: Level): Boolean = {
+  override def isEnabled(logger: LoggerData, level: Level): Boolean = {
     val logLevel = ZioLoggerRuntime.logLevelMapping(level)
 
     filter(
-      Trace(name, "", 0),
+      Trace.empty,
       FiberId.None,
       logLevel,
       () => "",
       Cause.empty,
       FiberRefs.empty,
       List.empty,
-      Map(zio.logging.loggerNameAnnotationKey -> name)
+      logger.annotations
     )
   }
 

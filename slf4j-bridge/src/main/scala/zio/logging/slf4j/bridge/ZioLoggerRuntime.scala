@@ -25,7 +25,7 @@ import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trac
 final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
 
   override def log(
-    name: String,
+    logger: LoggerData,
     level: Level,
     marker: Marker,
     messagePattern: String,
@@ -44,14 +44,13 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan    = zio.LogSpan(name, java.lang.System.currentTimeMillis())
-      val loggerName = (zio.logging.loggerNameAnnotationKey -> name)
+      val logSpan = zio.LogSpan(logger.name, java.lang.System.currentTimeMillis())
 
       val fiberRefs = currentFiberRefs
         .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
-          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) + loggerName
+          currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logger.annotations
         )
 
       val fiberRuntime = zio.internal.FiberRuntime(fiberId, fiberRefs, runtime.runtimeFlags)
@@ -71,18 +70,18 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
       fiberRuntime.log(() => msg, cause, Some(logLevel), trace)
     }
 
-  override def isEnabled(name: String, level: Level): Boolean = {
+  override def isEnabled(logger: LoggerData, level: Level): Boolean = {
     val logLevel = ZioLoggerRuntime.logLevelMapping(level)
 
     filter(
-      Trace(name, "", 0),
+      Trace.empty,
       FiberId.None,
       logLevel,
       () => "",
       Cause.empty,
       FiberRefs.empty,
       List.empty,
-      Map(zio.logging.loggerNameAnnotationKey -> name)
+      logger.annotations
     )
   }
 

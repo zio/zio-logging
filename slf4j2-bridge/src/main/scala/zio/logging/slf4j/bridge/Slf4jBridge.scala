@@ -65,12 +65,7 @@ object Slf4jBridge {
     for {
       runtime <- ZIO.runtime[Any]
       _       <- initLock.withPermit {
-                   ZIO.succeed(
-                     org.slf4j.LoggerFactory
-                       .getILoggerFactory()
-                       .asInstanceOf[LoggerFactory]
-                       .attachRuntime(new ZioLoggerRuntime(runtime, filter))
-                   )
+                   ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, filter)))
                  }
     } yield ()
 
