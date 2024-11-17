@@ -1,16 +1,17 @@
+import scala.collection.immutable.ListMap
 import BuildHelper.*
 import Versions.*
-import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 import zio.sbt.ZioSbtCiPlugin.{ CacheDependencies, Checkout, SetupJava, SetupLibuv }
-import zio.sbt.githubactions.{ Job, Strategy }
-import zio.sbt.githubactions.Step.SingleStep
+import zio.sbt.githubactionsnative.{ Job, Strategy }
+import zio.sbt.githubactionsnative.Step.SingleStep
+import zio.sbt.ZioSbtCrossbuildPlugin
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
 
 lazy val ciRunsOn = "ubuntu-22.04"
 
-def ciJobWithSetup(job: Job) = job.copy(runsOn = ciRunsOn)
+def ciJobWithSetup(job: Job) = job.withRunsOn(ciRunsOn)
 
 inThisBuild(
   List(
@@ -33,13 +34,8 @@ inThisBuild(
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
     zioVersion         := "2.1.12",
-    scala213           := "2.13.15"
+    scalaVersion       := scala213.value
   )
-)
-
-addCommandAlias(
-  "mimaChecks",
-  "all coreJVM/mimaReportBinaryIssues slf4j/mimaReportBinaryIssues slf4jBridge/mimaReportBinaryIssues"
 )
 
 lazy val root = project
@@ -66,6 +62,7 @@ lazy val root = project
     examplesSlf4j2Log4j,
     docs
   )
+  .enablePlugins(ZioSbtCrossbuildPlugin)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
@@ -78,11 +75,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
       "dev.zio" %%% "zio-prelude" % zioPrelude
     )
   )
+  .jsSettings(jsSettings)
+  .jvmSettings(jvmSettings)
   .jvmSettings(
     Test / fork := true,
-    run / fork  := true,
-    mimaSettings(failOnProblem = true)
+    run / fork  := true
   )
+  .settings(crossProjectSettings)
 
 lazy val coreJVM = core.jvm
 lazy val coreJS  = core.js.settings(
@@ -94,7 +93,6 @@ lazy val slf4j = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4jVersion,
@@ -109,7 +107,6 @@ lazy val slf4j2 = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j2"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4j2Version,
@@ -124,7 +121,6 @@ lazy val slf4jBridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(mimaSettings(failOnProblem = true))
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4jVersion,
@@ -137,7 +133,6 @@ lazy val slf4j2Bridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j2-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(mimaSettings(failOnProblem = true))
   .settings(
     compileOrder            := CompileOrder.ScalaThenJava,
     javacOptions            := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
@@ -157,7 +152,6 @@ lazy val julBridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-jul-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableTesting = true))
-  .settings(mimaSettings(failOnProblem = true))
   .settings(
     Test / fork := true
   )
@@ -167,7 +161,6 @@ lazy val jpl = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-jpl"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableTesting = true))
-  .settings(mimaSettings(failOnProblem = true))
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
@@ -270,7 +263,6 @@ lazy val docs = project
 
 lazy val compileExamplesJob = Def.setting {
   Job(
-    id = "compile-examples",
     name = "Compile examples",
     steps = Seq(
       SetupLibuv,
@@ -288,7 +280,7 @@ lazy val compileExamplesJob = Def.setting {
     ),
     strategy = Some(
       Strategy(
-        matrix = Map(
+        matrix = ListMap(
           "scala" -> List(scala212.value, scala213.value, scala3.value)
         )
       )
