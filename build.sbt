@@ -79,8 +79,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .jvmSettings(jvmSettings)
   .jvmSettings(
     Test / fork := true,
-    run / fork  := true,
-    enableMimaSettings()
+    run / fork  := true
   )
   .settings(crossProjectSettings)
 
@@ -94,7 +93,6 @@ lazy val slf4j = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(enableMimaSettings())
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4jVersion,
@@ -109,7 +107,6 @@ lazy val slf4j2 = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j2"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(enableMimaSettings())
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"                % slf4j2Version,
@@ -124,7 +121,6 @@ lazy val slf4jBridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(enableMimaSettings())
   .settings(
     libraryDependencies ++= Seq(
       "org.slf4j"               % "slf4j-api"               % slf4jVersion,
@@ -137,7 +133,6 @@ lazy val slf4j2Bridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-slf4j2-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
-  .settings(enableMimaSettings())
   .settings(
     compileOrder            := CompileOrder.ScalaThenJava,
     javacOptions            := jpmsOverwriteModulePath((Compile / dependencyClasspath).value.map(_.data))(javacOptions.value),
@@ -157,7 +152,6 @@ lazy val julBridge = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-jul-bridge"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableTesting = true))
-  .settings(enableMimaSettings())
   .settings(
     Test / fork := true
   )
@@ -167,7 +161,6 @@ lazy val jpl = project
   .dependsOn(coreJVM)
   .settings(stdSettings(Some("zio-logging-jpl"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO(enableTesting = true))
-  .settings(enableMimaSettings())
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
