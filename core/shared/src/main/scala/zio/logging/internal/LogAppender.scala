@@ -152,7 +152,7 @@ private[logging] object LogAppender {
   }
 
   def json(textAppender: String => Any): LogAppender = new LogAppender { self =>
-    val AnsiColorRegex = "\\u001b\\[\\d+m".r
+    val AnsiColorRegex = """\033\[\d+m""".r
 
     class State(
       var root: Boolean = false,

@@ -119,7 +119,7 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Compile additional subprojects
-      run: sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesJulBridge/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
+      run: sbt ++${{ matrix.scala }} examplesCoreJVM/compile examplesCoreJS/compile examplesCoreNative/compile examplesJpl/compile examplesJulBridge/compile examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile examplesSlf4j2Log4j/compile benchmarks/compile
   update-readme:
     name: Update README
     runs-on: ubuntu-22.04

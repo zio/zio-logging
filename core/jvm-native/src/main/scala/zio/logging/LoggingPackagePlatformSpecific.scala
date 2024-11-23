@@ -13,6 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package zio
+package zio.logging
 
-package object logging extends LoggingPackageAllPlatforms with logging.LoggingPackagePlatformSpecific
+private[logging] trait LoggingPackagePlatformSpecific extends FileLoggerLayers
