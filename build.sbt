@@ -16,6 +16,7 @@ inThisBuild(
   List(
     name               := "zio-logging",
     ciEnabledBranches  := Seq("master"),
+    // ciJvmOptions ++= Seq("-Xmx6g", "-Xss2m", "-XX:+UseG1GC"),
     ciTestJobs         := ciTestJobs.value.map(ciJobWithSetup) :+ compileExamplesJob.value,
     ciLintJobs         := ciLintJobs.value.map(ciJobWithSetup),
     ciBuildJobs        := ciBuildJobs.value.map(ciJobWithSetup),

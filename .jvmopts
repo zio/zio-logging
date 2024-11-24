@@ -1,0 +1,4 @@
+-XX:+PrintCommandLineFlags
+-Xss2m
+-Xmx6g
+-XX:+UseG1GC
