@@ -49,13 +49,13 @@ object ReconfigurableLoggerSpec extends ZIOSpecDefault {
             _         <- ZIO.logDebug("debug")
             elements1 <- queue.takeAll
             _         <- TestSystem.putProperty("logger/format", "%level %message")
-            _         <- ZIO.sleep(500.millis)
+            _         <- ZIO.sleep(1000.millis)
             _         <- ZIO.logWarning("warn")
             _         <- ZIO.logDebug("debug")
             elements2 <- queue.takeAll
             _         <- TestSystem.putProperty("logger/format", "L: %level M: %message")
             _         <- TestSystem.putProperty("logger/filter/rootLevel", LogLevel.Debug.label)
-            _         <- ZIO.sleep(500.millis)
+            _         <- ZIO.sleep(1000.millis)
             _         <- ZIO.logDebug("debug")
             elements3 <- queue.takeAll
           } yield assertTrue(
