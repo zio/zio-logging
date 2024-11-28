@@ -91,12 +91,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 lazy val coreJVM    = core.jvm
 lazy val coreJS     = core.js.settings(
   libraryDependencies ++= Seq(
-    "io.github.cquiroz" %%% "scala-java-time"           % scalaJavaTimeVersion % Test,
-    ("org.scala-js"     %%% "scalajs-java-securerandom" % "1.0.0"              % Test).cross(CrossVersion.for3Use2_13)
+    "io.github.cquiroz" %%% "scala-java-time"           % scalaJavaTimeVersion,
+    "io.github.cquiroz" %%% "scala-java-time-tzdb"      % scalaJavaTimeVersion,
+    ("org.scala-js"     %%% "scalajs-java-securerandom" % "1.0.0" % Test).cross(CrossVersion.for3Use2_13)
   )
 )
 lazy val coreNative = core.native.settings(
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
 )
 
 lazy val slf4j = project
@@ -210,13 +211,9 @@ lazy val examplesCoreJVM    = examplesCore.jvm
   )
 lazy val examplesCoreJS     = examplesCore.js
   .settings(
-    scalaJSUseMainModuleInitializer             := true,
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
+    scalaJSUseMainModuleInitializer := true
   )
 lazy val examplesCoreNative = examplesCore.native
-  .settings(
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
-  )
 
 lazy val examplesSlf4jLogback = project
   .in(file("examples/slf4j-logback"))

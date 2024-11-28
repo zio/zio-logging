@@ -16,14 +16,12 @@
 package zio.logging.example
 
 import zio._
-import zio.internal.Platform
 import zio.logging.{ ConsoleLoggerConfig, consoleLogger }
 
 object SimpleApp extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    if (Platform.isJS) ZLayer.empty
-    else Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig.default)
+    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig.default)
 
   override def run: ZIO[Scope, Any, ExitCode] =
     for {
