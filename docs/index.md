@@ -15,7 +15,7 @@ When we are writing our applications using ZIO effects, to log easy way we need 
 Key features of ZIO Logging:
 
 - **ZIO Native** — Other than it is a type-safe and purely functional solution, it leverages ZIO's features.
-- **Multi-Platform** - It supports both JVM and JS platforms.
+- **Multi-Platform** - It supports JS, JVM and Native platforms for the core zio-logging module, all other modules are only available for JVM.
 - **Composable** — Loggers are composable together via contraMap.
 - **Pluggable Backends** — Support multiple backends like ZIO Console, SLF4j, JPL.
 - **Logger Context** — It has a first citizen _Logger Context_ implemented on top of `FiberRef`. The Logger Context maintains information like logger name, filters, correlation id, and so forth across different fibers. It supports _Mapped Diagnostic Context (MDC)_ which manages contextual information across fibers in a concurrent environment.

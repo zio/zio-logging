@@ -16,6 +16,7 @@ inThisBuild(
   List(
     name               := "zio-logging",
     ciEnabledBranches  := Seq("master"),
+    // ciJvmOptions ++= Seq("-Xmx6g", "-Xss2m", "-XX:+UseG1GC"),
     ciTestJobs         := ciTestJobs.value.map(ciJobWithSetup) :+ compileExamplesJob.value,
     ciLintJobs         := ciLintJobs.value.map(ciJobWithSetup),
     ciBuildJobs        := ciBuildJobs.value.map(ciJobWithSetup),
@@ -50,6 +51,7 @@ lazy val root = project
   .aggregate(
     coreJVM,
     coreJS,
+    coreNative,
     slf4j,
     slf4j2,
     slf4jBridge,
@@ -57,7 +59,9 @@ lazy val root = project
     jpl,
     julBridge,
     benchmarks,
-    examplesCore,
+    examplesCoreJVM,
+    examplesCoreJS,
+    examplesCoreNative,
     examplesJpl,
     examplesJulBridge,
     examplesSlf4j2Bridge,
@@ -67,7 +71,7 @@ lazy val root = project
     docs
   )
 
-lazy val core = crossProject(JSPlatform, JVMPlatform)
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .in(file("core"))
   .settings(stdSettings(Some("zio-logging"), turnCompilerWarningIntoErrors = false))
@@ -84,9 +88,16 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     mimaSettings(failOnProblem = true)
   )
 
-lazy val coreJVM = core.jvm
-lazy val coreJS  = core.js.settings(
-  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion % Test
+lazy val coreJVM    = core.jvm
+lazy val coreJS     = core.js.settings(
+  libraryDependencies ++= Seq(
+    "io.github.cquiroz" %%% "scala-java-time"           % scalaJavaTimeVersion,
+    "io.github.cquiroz" %%% "scala-java-time-tzdb"      % scalaJavaTimeVersion,
+    ("org.scala-js"     %%% "scalajs-java-securerandom" % "1.0.0" % Test).cross(CrossVersion.for3Use2_13)
+  )
+)
+lazy val coreNative = core.native.settings(
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
 )
 
 lazy val slf4j = project
@@ -180,19 +191,29 @@ lazy val benchmarks = project
   .dependsOn(coreJVM)
   .enablePlugins(JmhPlugin)
 
-lazy val examplesCore = project
+lazy val examplesCore = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .crossType(CrossType.Full)
   .in(file("examples/core"))
-  .dependsOn(coreJVM)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(stdSettings(Some("zio-logging-examples-core"), turnCompilerWarningIntoErrors = false))
   .settings(enableZIO())
   .settings(
-    publish / skip := true,
+    publish / skip := true
+  )
+
+lazy val examplesCoreJVM    = examplesCore.jvm
+  .settings(
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
       "dev.zio" %% "zio-http"                          % zioHttp,
       "dev.zio" %% "zio-config-typesafe"               % zioConfig
     )
   )
+lazy val examplesCoreJS     = examplesCore.js
+  .settings(
+    scalaJSUseMainModuleInitializer := true
+  )
+lazy val examplesCoreNative = examplesCore.native
 
 lazy val examplesSlf4jLogback = project
   .in(file("examples/slf4j-logback"))
@@ -280,7 +301,7 @@ lazy val compileExamplesJob = Def.setting {
       SingleStep(
         name = "Compile additional subprojects",
         run = Some(
-          "sbt ++${{ matrix.scala }} examplesCore/compile examplesJpl/compile examplesJulBridge/compile " +
+          "sbt ++${{ matrix.scala }} examplesCoreJVM/compile examplesCoreJS/compile examplesCoreNative/compile examplesJpl/compile examplesJulBridge/compile " +
             "examplesSlf4j2Bridge/compile examplesSlf4jLogback/compile examplesSlf4j2Logback/compile " +
             "examplesSlf4j2Log4j/compile benchmarks/compile"
         )

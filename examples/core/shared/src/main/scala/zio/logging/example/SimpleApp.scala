@@ -13,6 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package zio
+package zio.logging.example
 
-package object logging extends LoggingPackageAllPlatforms with logging.LoggingPackagePlatformSpecific
+import zio._
+import zio.logging.{ ConsoleLoggerConfig, consoleLogger }
+
+object SimpleApp extends ZIOAppDefault {
+
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+    Runtime.removeDefaultLoggers >>> consoleLogger(ConsoleLoggerConfig.default)
+
+  override def run: ZIO[Scope, Any, ExitCode] =
+    for {
+      _ <- ZIO.logInfo("Start")
+      _ <- ZIO.logError("FAILURE")
+      _ <- ZIO.logInfo("Done")
+    } yield ExitCode.success
+
+}
