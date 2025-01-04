@@ -25,7 +25,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       val group = LogGroup.loggerName
       check(Gen.alphaNumericString) { value =>
         val result = group(
-          Trace.apply(value, "", 0),
+          Trace.apply(value, "", 1),
           FiberId.None,
           LogLevel.Info,
           () => "",
@@ -58,7 +58,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
-            Trace.apply(value, "", 0),
+            Trace.apply(value, "", 1),
             FiberId.None,
             level,
             () => "",
@@ -75,7 +75,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
-            Trace.apply(value, "", 0),
+            Trace.apply(value, "", 1),
             FiberId.None,
             level,
             () => "",
@@ -107,7 +107,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       val group = LogGroup.loggerName.map("PREFIX_" + _)
       check(Gen.alphaNumericString) { value =>
         val result = group(
-          Trace.apply(value, "", 0),
+          Trace.apply(value, "", 1),
           FiberId.None,
           LogLevel.Info,
           () => "",
@@ -124,7 +124,7 @@ object LogGroupSpec extends ZIOSpecDefault {
       check(Gen.alphaNumericString, Gen.elements(LogLevel.Info, LogLevel.Warning, LogLevel.Error, LogLevel.Debug)) {
         (value, level) =>
           val result = group(
-            Trace.apply(value, "", 0),
+            Trace.apply(value, "", 1),
             FiberId.None,
             level,
             () => "",
