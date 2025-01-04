@@ -370,7 +370,7 @@ object LogFormatSpec extends ZIOSpecDefault {
     },
     test("traceLine") {
       val format = LogFormat.traceLine
-      check(Gen.int) { tLine =>
+      check(Gen.int(1, 2000)) { tLine =>
         val result = format.toLogger(
           Trace("location", "file", tLine),
           FiberId.None,

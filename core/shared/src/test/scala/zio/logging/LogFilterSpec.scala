@@ -28,7 +28,7 @@ object LogFilterSpec extends ZIOSpecDefault {
     expectation: Assertion[Boolean]
   ): TestResult =
     assert(
-      filter(Trace(location, "", 0), FiberId.None, level, () => "", Cause.empty, FiberRefs.empty, List.empty, Map.empty)
+      filter(Trace(location, "", 1), FiberId.None, level, () => "", Cause.empty, FiberRefs.empty, List.empty, Map.empty)
     )(expectation ?? s"$location with $level")
 
   private def testFilterAnnotation(

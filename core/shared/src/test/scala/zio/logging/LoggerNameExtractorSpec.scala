@@ -29,7 +29,7 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
             } else trace
           }
         val result      = extractor(
-          Trace.apply(trace, "", 0),
+          Trace.apply(trace, "", 1),
           FiberRefs.empty,
           annotations
         )
@@ -49,7 +49,7 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
             } else trace
           }
         val result      = extractor(
-          Trace.apply(trace, "", 0),
+          Trace.apply(trace, "", 1),
           FiberRefs.empty,
           annotations
         )
@@ -76,7 +76,7 @@ object LoggerNameExtractorSpec extends ZIOSpecDefault {
           trace.substring(0, last)
         } else trace
         val result = extractor(
-          Trace.apply(trace, "", 0),
+          Trace.apply(trace, "", 1),
           FiberRefs.empty,
           Map.empty
         )

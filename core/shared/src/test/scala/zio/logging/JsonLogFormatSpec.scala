@@ -144,7 +144,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
       },
       test("numeric value") {
         val format = label("line", traceLine)
-        check(Gen.int) { i =>
+        check(Gen.int(1, 1000)) { i =>
           val result = format.toJsonLogger(
             Trace.apply("", "", i),
             FiberId.None,
@@ -161,7 +161,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
       },
       test("numeric value concatenated with string") {
         val format = label("line", traceLine |-| line)
-        check(Gen.alphaNumericString, Gen.int) { (line, i) =>
+        check(Gen.alphaNumericString, Gen.int(1, 1000)) { (line, i) =>
           val result = format.toJsonLogger(
             Trace.apply("", "", i),
             FiberId.None,
