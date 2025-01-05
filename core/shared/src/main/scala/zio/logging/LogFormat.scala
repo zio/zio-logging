@@ -841,9 +841,11 @@ object LogFormat {
 
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
-      trace match {
-        case Trace(_, file, _) => builder.appendText(file)
-        case _                 => builder.appendText("not-available")
+      val parsed = Trace.parseOrNull(trace)
+      if (parsed ne null) {
+        builder.appendText(parsed.file)
+      } else {
+        builder.appendText("not-available")
       }
     }
 
@@ -868,9 +870,9 @@ object LogFormat {
     }
 
   val traceLine: LogFormat = LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
-    trace match {
-      case Trace(_, _, line) => builder.appendNumeric(line)
-      case _                 => ()
+    val parsed = Trace.parseOrNull(trace)
+    if (parsed ne null) {
+      builder.appendNumeric(parsed.line)
     }
   }
 
