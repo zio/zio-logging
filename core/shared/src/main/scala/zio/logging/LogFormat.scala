@@ -15,6 +15,7 @@
  */
 package zio.logging
 
+import zio.internal.stacktracer.Tracer
 import zio.logging.internal._
 import zio.parser.{ Syntax, _ }
 import zio.{ Cause, Chunk, Config, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
@@ -841,9 +842,11 @@ object LogFormat {
 
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
-      trace match {
-        case Trace(_, file, _) => builder.appendText(file)
-        case _                 => builder.appendText("not-available")
+      val parsed = Tracer.instance.parseOrNull(trace)
+      if (parsed != null) {
+        builder.appendText(parsed.file)
+      } else {
+        builder.appendText("not-available")
       }
     }
 
@@ -868,9 +871,9 @@ object LogFormat {
     }
 
   val traceLine: LogFormat = LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
-    trace match {
-      case Trace(_, _, line) => builder.appendNumeric(line)
-      case _                 => ()
+    val parsed = Tracer.instance.parseOrNull(trace)
+    if (parsed != null) {
+      builder.appendNumeric(parsed.line)
     }
   }
 
