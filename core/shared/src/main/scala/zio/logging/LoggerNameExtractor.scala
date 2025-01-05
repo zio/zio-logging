@@ -15,7 +15,6 @@
  */
 package zio.logging
 
-import zio.internal.stacktracer.Tracer
 import zio.{ FiberRefs, Trace }
 
 sealed trait LoggerNameExtractor { self =>
@@ -80,8 +79,8 @@ object LoggerNameExtractor {
    * will have ''example.LivePingService'' as logger name
    */
   val trace: LoggerNameExtractor = FnExtractor { (trace, _, _) =>
-    val parsed = Tracer.instance.parseOrNull(trace)
-    if (parsed != null) {
+    val parsed = Trace.parseOrNull(trace)
+    if (parsed ne null) {
       val location = parsed.location
       val last     = location.lastIndexOf(".")
       val name     = if (last > 0) {
