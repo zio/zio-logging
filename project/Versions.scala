@@ -1,6 +1,6 @@
 object Versions {
   val slf4jVersion                  = "1.7.36"
-  val slf4j2Version                 = "2.0.16"
+  val slf4j2Version                 = "2.0.17"
   val logbackVersion                = "1.2.13"
   val logback2Version               = "1.4.12"
   val scalaCollectionCompatVersion  = "2.13.0"
