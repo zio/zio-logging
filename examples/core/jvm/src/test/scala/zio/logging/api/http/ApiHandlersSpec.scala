@@ -4,7 +4,7 @@ import zio.http._
 import zio.http.codec._
 import zio.logging.LoggerConfigurer
 import zio.test._
-import zio.{ LogLevel, ULayer, ZIO, ZLayer }
+import zio.{ LogLevel, Scope, ULayer, ZIO, ZLayer }
 
 object ApiHandlersSpec extends ZIOSpecDefault {
 
@@ -26,7 +26,7 @@ object ApiHandlersSpec extends ZIOSpecDefault {
     }
   }
 
-  def spec: Spec[TestEnvironment, Any] = suite("ApiHandlersSpec")(
+  def spec: Spec[TestEnvironment with Scope, Any] = suite("ApiHandlersSpec")(
     test("get all") {
       val routes = ApiHandlers.routes("example" :: Nil)
 
@@ -65,6 +65,6 @@ object ApiHandlersSpec extends ZIOSpecDefault {
         content == ApiDomain.LoggerConfig("example.Service", LogLevel.Warning)
       )
     }
-  ).provideLayer(loggerConfigurer)
+  ).provideSomeLayer[Scope](loggerConfigurer)
 
 }
