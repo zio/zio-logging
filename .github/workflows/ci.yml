@@ -25,13 +25,13 @@ jobs:
     continue-on-error: true
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: '17'
@@ -52,13 +52,13 @@ jobs:
     continue-on-error: false
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: '17'
@@ -86,7 +86,7 @@ jobs:
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: ${{ matrix.java }}
@@ -96,7 +96,7 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Test
@@ -116,7 +116,7 @@ jobs:
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: '17'
@@ -124,7 +124,7 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Compile additional subprojects
@@ -136,13 +136,13 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: '17'
@@ -213,13 +213,13 @@ jobs:
     if: ${{ github.event_name != 'pull_request' }}
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: '17'
@@ -244,13 +244,13 @@ jobs:
     if: ${{ ((github.event_name == 'release') && (github.event.action == 'published')) || (github.event_name == 'workflow_dispatch') }}
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Setup Scala
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: '17'
@@ -260,7 +260,7 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v6
     - name: Setup NodeJs
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: 16.x
         registry-url: https://registry.npmjs.org
@@ -277,7 +277,7 @@ jobs:
     if: ${{ (github.event_name == 'release') && (github.event.action == 'published') }}
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: '0'
     - name: notify the main repo about the new release of docs package
