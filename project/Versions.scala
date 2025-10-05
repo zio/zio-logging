@@ -9,7 +9,7 @@ object Versions {
   val zioMetricsConnectorsVersion   = "2.5.0"
   val zioConfig                     = "4.0.5"
   val zioParser                     = "0.1.11"
-  val zioPrelude                    = "1.0.0-RC41"
+  val zioPrelude                    = "1.0.0-RC42"
   val zioHttp                       = "3.5.1"
-  val log4jVersion                  = "2.25.1"
+  val log4jVersion                  = "2.25.2"
 }
