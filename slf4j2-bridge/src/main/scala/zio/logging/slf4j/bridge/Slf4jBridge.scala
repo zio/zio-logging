@@ -16,11 +16,16 @@
 package zio.logging.slf4j.bridge
 
 import zio.logging.LogFilter
-import zio.{ Config, NonEmptyChunk, Runtime, Semaphore, Unsafe, ZIO, ZLayer }
+import zio.{ Config, NonEmptyChunk, RuntimeFlag, RuntimeFlags, Scope, Semaphore, Unsafe, ZIO, ZLayer }
 
 object Slf4jBridge {
 
-  val logFilterConfigPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath :+ "filter"
+  val bridgeConfigPath: NonEmptyChunk[String] = bridgeConfigPath(zio.logging.loggerConfigPath)
+
+  def bridgeConfigPath(path: NonEmptyChunk[String]): NonEmptyChunk[String] = path :+ "bridge"
+
+  def logFilterConfigPath(path: NonEmptyChunk[String] = zio.logging.loggerConfigPath): NonEmptyChunk[String] =
+    path :+ "filter"
 
   /**
    * initialize SLF4J bridge
@@ -31,45 +36,48 @@ object Slf4jBridge {
    * initialize SLF4J bridge with `LogFilter`
    * @param filter Log filter
    */
-  def init(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
+  def init(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] =
+    layer(filter, Slf4jBridgeConfig.default)
 
   /**
    * initialize SLF4J bridge with `LogFilter` from configuration
    * @param configPath configuration path
    */
-  def init(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZLayer[Any, Config.Error, Unit] =
-    Runtime.enableCurrentFiber ++ layer(configPath)
+  def init(configPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
+    layer(configPath)
 
   /**
    * initialize SLF4J bridge without `FiberRef` propagation
    */
-  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initWithoutFiberRefPropagation(
-    LogFilter.acceptAll
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer(
+    LogFilter.acceptAll,
+    Slf4jBridgeConfig(fiberRefPropagation = false, loggerNameLogSpan = true)
   )
-
-  /**
-   * initialize SLF4J bridge with `LogFilter`, without `FiberRef` propagation
-   * @param filter Log filter
-   */
-  def initWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
 
   private val initLock = Semaphore.unsafe.make(1)(Unsafe.unsafe)
 
-  private def layer(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] =
-    ZLayer(make(filter))
+  private def layer(filter: LogFilter[Any], config: Slf4jBridgeConfig): ZLayer[Any, Nothing, Unit] =
+    ZLayer.scoped[Any](make(filter, config))
 
   private def layer(configPath: NonEmptyChunk[String]): ZLayer[Any, Config.Error, Unit] =
-    ZLayer(make(configPath))
+    ZLayer.scoped[Any](make(configPath))
 
-  def make(filter: LogFilter[Any]): ZIO[Any, Nothing, Unit] =
+  def make(configPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath): ZIO[Scope, Config.Error, Unit] =
     for {
-      runtime <- ZIO.runtime[Any]
-      _       <- initLock.withPermit {
-                   ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, filter)))
-                 }
+      filterConfig <- LogFilter.LogLevelByNameConfig.load(logFilterConfigPath(configPath))
+      bridgeConfig <- Slf4jBridgeConfig.load(bridgeConfigPath(configPath))
+      _            <- make(filterConfig.toFilter, bridgeConfig)
     } yield ()
 
-  def make(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZIO[Any, Config.Error, Unit] =
-    LogFilter.LogLevelByNameConfig.load(configPath).flatMap(c => make(c.toFilter))
+  def make(filter: LogFilter[Any], config: Slf4jBridgeConfig): ZIO[Scope, Nothing, Unit] =
+    for {
+      _       <- ZIO.when(config.fiberRefPropagation) {
+                   ZIO.withRuntimeFlagsScoped(RuntimeFlags.enable(RuntimeFlag.CurrentFiber))
+                 }
+      runtime <- ZIO.runtime[Any]
+      _       <- initLock.withPermit {
+                   ZIO.succeed(ZioLoggerFactory.initialize(new ZioLoggerRuntime(runtime, filter, config)))
+                 }
+    } yield ()
 
 }
