@@ -145,7 +145,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         )
       }.provide(Slf4jBridge.initializeWithoutFiberRefPropagation),
       test("logs through slf4j with filter") {
-        filterTest
+        filterTest()
       }.provide(
         Slf4jBridge.init(
           LogFilter.logLevelByName(
@@ -156,13 +156,14 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         )
       ),
       test("logs through slf4j with filter from config") {
-        filterTest
+        filterTest(false)
       }.provide {
         val configProvider: ConfigProvider = ConfigProvider.fromMap(
           Map(
             "logger/filter/rootLevel"                 -> "DEBUG",
             "logger/filter/mappings/test.logger"      -> "INFO",
-            "logger/filter/mappings/test.test.logger" -> "WARN"
+            "logger/filter/mappings/test.test.logger" -> "WARN",
+            "logger/bridge/loggerNameLogSpan"         -> "false"
           ),
           "/"
         )
@@ -170,7 +171,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
       }
     ) @@ TestAspect.sequential
 
-  def filterTest: ZIO[Any, Nothing, TestResult] =
+  def filterTest(loggerNameLogSpan: Boolean = true): ZIO[Any, Nothing, TestResult] =
     for {
       _      <- (for {
                   logger1 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.abc"))
@@ -185,8 +186,14 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
                 } yield ()).exit
       output <- ZTestLogger.logOutput
       lines   = output.map { logEntry =>
+                  val logSpans = if (loggerNameLogSpan) {
+                    logEntry.spans.map(_.label)
+                  } else {
+                    List.empty
+                  }
+
                   LogEntry(
-                    logEntry.spans.map(_.label),
+                    logSpans,
                     logEntry.logLevel,
                     logEntry.annotations,
                     logEntry.message(),
@@ -196,28 +203,28 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
     } yield assertTrue(
       lines == Chunk(
         LogEntry(
-          List("test.abc"),
+          if (loggerNameLogSpan) List("test.abc") else List.empty,
           LogLevel.Debug,
           Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
           "test debug message",
           Cause.empty
         ),
         LogEntry(
-          List("test.abc"),
+          if (loggerNameLogSpan) List("test.abc") else List.empty,
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
           "test warn message",
           Cause.empty
         ),
         LogEntry(
-          List("test.logger.def"),
+          if (loggerNameLogSpan) List("test.logger.def") else List.empty,
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.logger.def"),
           "hello2 world warn",
           Cause.empty
         ),
         LogEntry(
-          List("test.test.logger.xyz"),
+          if (loggerNameLogSpan) List("test.test.logger.xyz") else List.empty,
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.test.logger.xyz"),
           "hello3 world warn",
