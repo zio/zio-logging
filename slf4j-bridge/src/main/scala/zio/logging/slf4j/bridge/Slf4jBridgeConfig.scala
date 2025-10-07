@@ -17,6 +17,9 @@ package zio.logging.slf4j.bridge
 
 import zio.{ Config, NonEmptyChunk, ZIO, ZLayer }
 
+/**
+ * SLF4J bridge configuration
+ */
 case class Slf4jBridgeConfig(fiberRefPropagation: Boolean, loggerNameLogSpan: Boolean)
 
 object Slf4jBridgeConfig {
