@@ -156,14 +156,28 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
         )
       ),
       test("logs through slf4j with filter from config") {
-        filterTest(false)
+        filterTest()
+      }.provide {
+        val configProvider: ConfigProvider = ConfigProvider.fromMap(
+          Map(
+            "logger/filter/rootLevel"                 -> "DEBUG",
+            "logger/filter/mappings/test.logger"      -> "INFO",
+            "logger/filter/mappings/test.test.logger" -> "WARN"
+          ),
+          "/"
+        )
+        Runtime.setConfigProvider(configProvider) >>> Slf4jBridge.init()
+      },
+      test("logs through slf4j with filter from config with disabled loggerNameLogSpan and fiberRefPropagation") {
+        filterTest(Slf4jBridgeConfig(loggerNameLogSpan = false, fiberRefPropagation = false))
       }.provide {
         val configProvider: ConfigProvider = ConfigProvider.fromMap(
           Map(
             "logger/filter/rootLevel"                 -> "DEBUG",
             "logger/filter/mappings/test.logger"      -> "INFO",
             "logger/filter/mappings/test.test.logger" -> "WARN",
-            "logger/bridge/loggerNameLogSpan"         -> "false"
+            "logger/bridge/loggerNameLogSpan"         -> "false",
+            "logger/bridge/fiberRefPropagation"       -> "false"
           ),
           "/"
         )
@@ -171,14 +185,14 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
       }
     ) @@ TestAspect.sequential
 
-  def filterTest(loggerNameLogSpan: Boolean = true): ZIO[Any, Nothing, TestResult] =
+  def filterTest(config: Slf4jBridgeConfig = Slf4jBridgeConfig.default): ZIO[Any, Nothing, TestResult] =
     for {
       _      <- (for {
                   logger1 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.abc"))
                   logger2 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.logger.def"))
                   logger3 <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.test.logger.xyz"))
-                  _       <- ZIO.attempt(logger1.debug("test debug message"))
-                  _       <- ZIO.attempt(logger1.warn("test warn message"))
+                  _       <- ZIO.attempt(logger1.debug("test debug message")) @@ ZIOAspect.annotated("user_id", "uId")
+                  _       <- ZIO.attempt(logger1.warn("test warn message")) @@ ZIOAspect.annotated("user_id", "uId")
                   _       <- ZIO.attempt(logger2.debug("hello2 {} debug", "world"))
                   _       <- ZIO.attempt(logger2.warn("hello2 {} warn", "world"))
                   _       <- ZIO.attempt(logger3.info("hello3 {} info", "world"))
@@ -186,7 +200,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
                 } yield ()).exit
       output <- ZTestLogger.logOutput
       lines   = output.map { logEntry =>
-                  val logSpans = if (loggerNameLogSpan) {
+                  val logSpans = if (config.loggerNameLogSpan) {
                     logEntry.spans.map(_.label)
                   } else {
                     List.empty
@@ -203,28 +217,30 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
     } yield assertTrue(
       lines == Chunk(
         LogEntry(
-          if (loggerNameLogSpan) List("test.abc") else List.empty,
+          if (config.loggerNameLogSpan) List("test.abc") else List.empty,
           LogLevel.Debug,
-          Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
+          if (config.fiberRefPropagation) Map(zio.logging.loggerNameAnnotationKey -> "test.abc", "user_id" -> "uId")
+          else Map(zio.logging.loggerNameAnnotationKey                            -> "test.abc"),
           "test debug message",
           Cause.empty
         ),
         LogEntry(
-          if (loggerNameLogSpan) List("test.abc") else List.empty,
+          if (config.loggerNameLogSpan) List("test.abc") else List.empty,
           LogLevel.Warning,
-          Map(zio.logging.loggerNameAnnotationKey -> "test.abc"),
+          if (config.fiberRefPropagation) Map(zio.logging.loggerNameAnnotationKey -> "test.abc", "user_id" -> "uId")
+          else Map(zio.logging.loggerNameAnnotationKey                            -> "test.abc"),
           "test warn message",
           Cause.empty
         ),
         LogEntry(
-          if (loggerNameLogSpan) List("test.logger.def") else List.empty,
+          if (config.loggerNameLogSpan) List("test.logger.def") else List.empty,
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.logger.def"),
           "hello2 world warn",
           Cause.empty
         ),
         LogEntry(
-          if (loggerNameLogSpan) List("test.test.logger.xyz") else List.empty,
+          if (config.loggerNameLogSpan) List("test.test.logger.xyz") else List.empty,
           LogLevel.Warning,
           Map(zio.logging.loggerNameAnnotationKey -> "test.test.logger.xyz"),
           "hello3 world warn",
