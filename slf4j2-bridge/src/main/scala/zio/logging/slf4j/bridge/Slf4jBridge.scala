@@ -40,6 +40,14 @@ object Slf4jBridge {
     layer(filter, Slf4jBridgeConfig.default)
 
   /**
+   * initialize SLF4J bridge with `LogFilter`
+   * @param filter Log filter
+   * @param config SLF4J bridge configuration
+   */
+  def init(filter: LogFilter[Any], config: Slf4jBridgeConfig): ZLayer[Any, Nothing, Unit] =
+    layer(filter, config)
+
+  /**
    * initialize SLF4J bridge with `LogFilter` from configuration
    * @param configPath configuration path
    */
