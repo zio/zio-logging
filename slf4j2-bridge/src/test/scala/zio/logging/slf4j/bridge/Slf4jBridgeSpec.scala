@@ -14,7 +14,7 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
     cause: Cause[Any]
   )
 
-  override def spec =
+  override def spec: Spec[Any, Throwable] =
     suite("Slf4jBridge")(
       test("parallel init") {
         for {
@@ -140,7 +140,9 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             )
           )
         )
-      }.provide(Slf4jBridge.initializeWithoutFiberRefPropagation),
+      }.provide(
+        Slf4jBridge.init(LogFilter.acceptAll, Slf4jBridgeConfig(fiberRefPropagation = false, loggerNameLogSpan = true))
+      ),
       test("logs through slf4j with filter") {
         filterTest()
       }.provide(
