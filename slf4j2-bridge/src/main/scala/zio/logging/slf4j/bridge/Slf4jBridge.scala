@@ -57,8 +57,17 @@ object Slf4jBridge {
   /**
    * initialize SLF4J bridge without `FiberRef` propagation
    */
-  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = layer(
-    LogFilter.acceptAll,
+  @deprecated("use Slf4jBridge.init with Slf4jBridgeConfig", "2.5.1")
+  def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] =
+    initWithoutFiberRefPropagation(LogFilter.acceptAll)
+
+  /**
+   * initialize SLF4J bridge with `LogFilter`, without `FiberRef` propagation
+   * @param filter Log filter
+   */
+  @deprecated("use Slf4jBridge.init with Slf4jBridgeConfig", "2.5.1")
+  def initWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(
+    filter,
     Slf4jBridgeConfig(fiberRefPropagation = false, loggerNameLogSpan = true)
   )
 
