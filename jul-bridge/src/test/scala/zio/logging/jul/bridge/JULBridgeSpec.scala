@@ -1,7 +1,7 @@
 package zio.logging.jul.bridge
 
 import zio.logging.LogFilter
-import zio.test._
+import zio.test.{ Spec, _ }
 import zio.{ Cause, Chunk, ConfigProvider, LogLevel, Runtime, ZIO, ZIOAspect }
 
 import java.util.logging.Level._
@@ -17,7 +17,7 @@ object JULBridgeSpec extends ZIOSpecDefault {
     cause: Cause[Any]
   )
 
-  override def spec =
+  override def spec: Spec[Any, Throwable] =
     suite("Slf4jBridge")(
       test("parallel init") {
         for {

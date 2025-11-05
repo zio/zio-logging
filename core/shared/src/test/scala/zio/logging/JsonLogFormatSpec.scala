@@ -257,7 +257,7 @@ object JsonLogFormatSpec extends ZIOSpecDefault {
               .generate(List("\"" + string + "\""))
           ),
           Gen.string.filter(isNotJson)
-        ) { case (line, annotationValue) =>
+        ) { case (line, _) =>
           val result = format.toJsonLogger(
             Trace.empty,
             FiberId.None,
