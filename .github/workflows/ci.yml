@@ -39,7 +39,7 @@ jobs:
     - name: Setup SBT
       uses: sbt/setup-sbt@v1
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Check all code compiles
       run: sbt +Test/compile
     - name: Check artifacts build process
@@ -66,7 +66,7 @@ jobs:
     - name: Setup SBT
       uses: sbt/setup-sbt@v1
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Check if the site workflow is up to date
       run: sbt ciCheckGithubWorkflow
     - name: Lint
@@ -94,7 +94,7 @@ jobs:
     - name: Setup SBT
       uses: sbt/setup-sbt@v1
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Git Checkout
       uses: actions/checkout@v5
       with:
@@ -122,7 +122,7 @@ jobs:
         java-version: '17'
         check-latest: true
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Git Checkout
       uses: actions/checkout@v5
       with:
@@ -150,7 +150,7 @@ jobs:
     - name: Setup SBT
       uses: sbt/setup-sbt@v1
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Generate Readme
       run: sbt docs/generateReadme
     - name: Commit Changes
@@ -227,7 +227,7 @@ jobs:
     - name: Setup SBT
       uses: sbt/setup-sbt@v1
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Release
       run: sbt ci-release
       env:
@@ -258,7 +258,7 @@ jobs:
     - name: Setup SBT
       uses: sbt/setup-sbt@v1
     - name: Cache Dependencies
-      uses: coursier/cache-action@v6
+      uses: coursier/cache-action@v7
     - name: Setup NodeJs
       uses: actions/setup-node@v6
       with:
