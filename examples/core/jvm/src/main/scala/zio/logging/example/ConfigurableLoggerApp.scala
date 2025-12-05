@@ -25,7 +25,7 @@ import zio.logging.{
   LogAnnotation,
   LoggerConfigurer,
   ZLoggerZIOLayerOps,
-  makeConsoleLogger
+  makeSystemOutLogger
 }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
@@ -47,7 +47,7 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
     ConsoleLoggerConfig
       .load()
       .flatMap { config =>
-        makeConsoleLogger(config).map { logger =>
+        makeSystemOutLogger(config.format.toLogger).map { logger =>
           ConfigurableLogger.make(logger, config.filter)
         }
       }
