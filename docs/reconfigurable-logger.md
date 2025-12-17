@@ -183,18 +183,18 @@ import com.typesafe.config.ConfigFactory
 import zio.config.typesafe.TypesafeConfigProvider
 import zio.http._
 import zio.logging.api.http.ApiHandlers
-import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LoggerConfigurer, makeConsoleLogger }
+import zio.logging.{ ConfigurableLogger, ConsoleLoggerConfig, LogAnnotation, LoggerConfigurer, makeSystemOutLogger }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
 import java.util.UUID
 
 object ConfigurableLoggerApp extends ZIOAppDefault {
 
-  def configurableLogger() =
+  def configurableLogger(): ZLayer[Any, Config.Error, Unit] =
     ConsoleLoggerConfig
       .load()
       .flatMap { config =>
-        makeConsoleLogger(config).map { logger =>
+        makeSystemOutLogger(config.format.toLogger).map { logger =>
           ConfigurableLogger.make(logger, config.filter)
         }
       }
