@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 John A. De Goes and the ZIO Contributors
+ * Copyright 2019-2026 John A. De Goes and the ZIO Contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import zio.logging.{
   LogAnnotation,
   LoggerConfigurer,
   ZLoggerZIOLayerOps,
-  makeConsoleLogger
+  makeSystemOutLogger
 }
 import zio.{ ExitCode, Runtime, Scope, ZIO, ZIOAppDefault, _ }
 
@@ -47,7 +47,7 @@ object ConfigurableLoggerApp extends ZIOAppDefault {
     ConsoleLoggerConfig
       .load()
       .flatMap { config =>
-        makeConsoleLogger(config).map { logger =>
+        makeSystemOutLogger(config.format.toLogger).map { logger =>
           ConfigurableLogger.make(logger, config.filter)
         }
       }
