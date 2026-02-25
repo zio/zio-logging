@@ -82,9 +82,9 @@ jobs:
       fail-fast: false
       matrix:
         java:
-        - '11'
         - '17'
         - '21'
+        - '25'
     steps:
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
