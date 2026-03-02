@@ -22,7 +22,8 @@ import org.slf4j.impl.LoggerRuntime
 import zio.logging.LogFilter
 import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trace, Unsafe }
 
-final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any], config: Slf4jBridgeConfig)
+    extends LoggerRuntime {
 
   override def log(
     logger: LoggerData,
@@ -44,10 +45,14 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan = zio.LogSpan(logger.name, java.lang.System.currentTimeMillis())
+      val logSpans = if (config.loggerNameLogSpan) {
+        List(zio.LogSpan(logger.name, java.lang.System.currentTimeMillis()))
+      } else {
+        List.empty
+      }
 
       val fiberRefs = currentFiberRefs
-        .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
+        .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpans ++ currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
           currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logger.annotations
