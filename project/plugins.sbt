@@ -6,6 +6,6 @@ addSbtPlugin("dev.zio"      % "zio-sbt-ci"        % zioSbtVersion)
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin"   % "1.1.5")
 addSbtPlugin("org.scala-js" % "sbt-scalajs"       % "1.21.0")
 
-addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.10")
+addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.11")
 
 resolvers ++= Resolver.sonatypeOssRepos("public")
