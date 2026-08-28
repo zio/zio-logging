@@ -22,7 +22,8 @@ import zio.{ Cause, Fiber, FiberId, FiberRef, FiberRefs, LogLevel, Runtime, Trac
 
 import scala.jdk.CollectionConverters._
 
-final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) extends LoggerRuntime {
+final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any], config: Slf4jBridgeConfig)
+    extends LoggerRuntime {
 
   override def log(
     logger: LoggerData,
@@ -44,7 +45,11 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
         runtime.fiberRefs.joinAs(fiberId)(currentFiber.unsafe.getFiberRefs())
       }
 
-      val logSpan = zio.LogSpan(logger.name, java.lang.System.currentTimeMillis())
+      val logSpans = if (config.loggerNameLogSpan) {
+        List(zio.LogSpan(logger.name, java.lang.System.currentTimeMillis()))
+      } else {
+        List.empty
+      }
 
       val logAnnotations = if (keyValues != null && !keyValues.isEmpty) {
         keyValues.asScala.map(kv => (kv.key, kv.value.toString)).toMap ++ logger.annotations
@@ -53,7 +58,7 @@ final class ZioLoggerRuntime(runtime: Runtime[Any], filter: LogFilter[Any]) exte
       }
 
       val fiberRefs = currentFiberRefs
-        .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpan :: currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
+        .updatedAs(fiberId)(FiberRef.currentLogSpan, logSpans ++ currentFiberRefs.getOrDefault(FiberRef.currentLogSpan))
         .updatedAs(fiberId)(
           FiberRef.currentLogAnnotations,
           currentFiberRefs.getOrDefault(FiberRef.currentLogAnnotations) ++ logAnnotations
