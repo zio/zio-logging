@@ -5,7 +5,7 @@ import sbt.Keys.{ name, organization }
 import sbt._
 
 object MimaSettings {
-  lazy val bincompatVersionToCompare = "2.4.0"
+  lazy val bincompatVersionToCompare = "2.5.1"
 
   def mimaSettings(failOnProblem: Boolean) =
     Seq(

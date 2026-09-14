@@ -3,7 +3,7 @@ id: slf4j2-bridge
 title: "SLF4J v2 bridge"
 ---
 
-It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-ZIO libraries. To do so, import  the `zio-logging-slf4j2-bridge` module for [SLF4J v2](https://www.slf4j.org/faq.html#changesInVersion200) (using JDK9+ module system ([JPMS](http://openjdk.java.net/projects/jigsaw/spec/)))
+You can use `zio-logging` with SLF4J loggers, which is particularly useful for third-party non-ZIO libraries. To get started, add the `zio-logging-slf4j2-bridge` module to your project. This version is compatible with [SLF4J v2](https://www.slf4j.org/faq.html#changesInVersion200) (using JDK9+ module system ([JPMS](http://openjdk.java.net/projects/jigsaw/spec/)))
 
 ```scala
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
@@ -17,44 +17,82 @@ import zio.logging.slf4j.Slf4jBridge
 program.provideCustom(Slf4jBridge.init())
 ```
 
-`Slf4jBridge` layers:
-* `Slf4jBridge.init(configPath: NonEmptyChunk[String] = logFilterConfigPath)` - setup with `LogFilter` from [filter configuration](log-filter.md#configuration), default configuration path: `logger.filter`, default `LogLevel` is `INFO`
-* `Slf4jBridge.init(filter: LogFilter[Any])` - setup with given `LogFilter`
-* `Slf4jBridge.initialize` - setup without filtering
+## Available Layers
+
+The `Slf4jBridge` provides several initialization methods:
+
+* `Slf4jBridge.init(configPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath)` - Set up with `LogFilter` from [filter configuration](log-filter.md#configuration) and `Slf4jBridgeConfig`. The default configuration path is `logger`, and the default `LogLevel` is `INFO`.
+* `Slf4jBridge.init(filter: LogFilter[Any])` - Set up with a specified `LogFilter` and the default `Slf4jBridgeConfig`.
+* `Slf4jBridge.init(filter: LogFilter[Any], config: Slf4jBridgeConfig)` - Set up with both a specified `LogFilter` and `Slf4jBridgeConfig`.
+* `Slf4jBridge.initialize` - Set up without any filtering.
 
 SLF4J v2 [key-value pairs](https://www.slf4j.org/manual.html#fluent) are propagated like ZIO log annotations.
 
-Need for log filtering in slf4j bridge: libraries with slf4j loggers, may have conditional logic for logging,
-which using functions like [org.slf4j.Logger.isTraceEnabled()](https://github.com/qos-ch/slf4j/blob/master/slf4j-api/src/main/java/org/slf4j/Logger.java#L170).
-logging parts may contain message and log parameters construction, which may be expensive and degrade performance of application.
+## Configuration
 
-<br/>
+The SLF4J bridge can be configured using `Slf4jBridgeConfig` with the following options:
 
-SLF4J logger name is stored in log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`), following log format
+### Configuration Options
+
+- **fiberRefPropagation** (default: `true`):
+    - When enabled, propagates ZIO's fiber context (including annotations and log spans) to the SLF4J bridge logger.
+    - This allows log annotations and spans to appear in the log output.
+    - Note: Enabling this feature may impact performance.
+
+- **loggerNameLogSpan** (default: `true`):
+    - When enabled, includes the SLF4J logger name as a log span in the ZIO logging context.
+    - This helps with log correlation between ZIO and SLF4J loggers.
+
+### Configuration Example
+
+You can configure these settings using ZIO's `ConfigProvider`. Here's an example configuration in HOCON format:
+
+```hocon
+logger {
+  # Log filter configuration
+  filter {
+    # See filter configuration for more options
+    rootLevel = INFO
+  }
+  
+  # SLF4J bridge specific settings
+  bridge {
+    fiberRefPropagation = true
+    loggerNameLogSpan = false
+  }
+}
+```
+
+For more information about filter configuration, see the [filter configuration](log-filter.md#configuration) documentation.
+
+## Performance Considerations
+
+### LogFilter and Performance
+
+SLF4J libraries often use conditional logging with methods like [isTraceEnabled()](https://github.com/qos-ch/slf4j/blob/master/slf4j-api/src/main/java/org/slf4j/Logger.java#L170) to optimize performance. The SLF4J bridge provides several optimizations:
+
+- Efficiently filtering log messages at the ZIO logging level
+- Only evaluating message parameters when the log level is enabled
+- Providing fine-grained control over logging behavior through configuration
+
+### Logger Name Handling
+
+The SLF4J logger name is stored in the log annotation with the key `logger_name` (`zio.logging.loggerNameAnnotationKey`). You can use the following format to work with logger names:
 
 ```scala
 import zio.logging.slf4j.Slf4jBridge
 import zio.logging.LoggerNameExtractor
 
+// Extract logger name from log annotation or ZIO trace
 val loggerName = LoggerNameExtractor.loggerNameAnnotationOrTrace
+
+// Convert to log format
 val loggerNameFormat = loggerName.toLogFormat()
 ```
-may be used to get logger name from log annotation or ZIO Trace. 
 
-This logger name extractor is used by default in log filter, which applying log filtering by defined logger name and level:
+## Setting Up a Custom Logger
 
-```scala
-val logFilterConfig = LogFilter.LogLevelByNameConfig(
-  LogLevel.Info,
-  "zio.logging.slf4j" -> LogLevel.Debug,
-  "SLF4J-LOGGER"      -> LogLevel.Warning
-)
-
-val logFilter: LogFilter[String] = logFilterConfig.toFilter
-```
-<br/>
-
-SLF4J bridge with custom logger can be setup:
+You can set up the SLF4J bridge with a custom logger as follows:
 
 ```scala
 import zio.logging.slf4j.Slf4jBridge
@@ -65,7 +103,7 @@ val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridg
 
 <br/>
 
-**NOTE:** You should either use `zio-logging-slf4j` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j-bridge` to send all SLF4j logs to
+**NOTE:** You should either use `zio-logging-slf4j2` to send all ZIO logs to an SLF4j provider (such as logback, log4j etc) OR `zio-logging-slf4j2-bridge` to send all SLF4j logs to
 ZIO logging. Enabling both causes circular logging and makes no sense.
 
 
