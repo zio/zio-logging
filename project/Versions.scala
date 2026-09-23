@@ -1,6 +1,6 @@
 object Versions {
   val slf4jVersion                  = "1.7.36"
-  val slf4j2Version                 = "2.0.19"
+  val slf4j2Version                 = "2.0.20"
   val logbackVersion                = "1.2.13"
   val logback2Version               = "1.4.12"
   val scalaCollectionCompatVersion  = "2.14.0"
@@ -10,6 +10,6 @@ object Versions {
   val zioConfig                     = "4.1.0"
   val zioParser                     = "0.1.11"
   val zioPrelude                    = "1.0.0-RC48"
-  val zioHttp                       = "3.11.5"
+  val zioHttp                       = "3.11.6"
   val log4jVersion                  = "2.26.1"
 }
