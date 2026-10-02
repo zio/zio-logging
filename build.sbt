@@ -3,7 +3,7 @@ import Versions.*
 import MimaSettings.mimaSettings
 import sbtcrossproject.CrossPlugin.autoImport.{ CrossType, crossProject }
 import zio.sbt.ZioSbtCiPlugin.{ CacheDependencies, Checkout, SetupJava, SetupLibuv }
-import zio.sbt.githubactions.{ Job, Strategy }
+import zio.sbt.githubactions.{ DependencyBot, Job, Strategy }
 import zio.sbt.githubactions.Step.SingleStep
 
 enablePlugins(ZioSbtEcosystemPlugin, ZioSbtCiPlugin)
@@ -14,16 +14,20 @@ def ciJobWithSetup(job: Job) = job.copy(runsOn = ciRunsOn)
 
 inThisBuild(
   List(
-    name               := "zio-logging",
-    ciEnabledBranches  := Seq("master"),
+    name                   := "zio-logging",
+    ciEnabledBranches      := Seq("master"),
+    // The old scala-steward account (pre-GitHub-App, no "[bot]" suffix) still opens PRs here
+    // alongside the newer zio-scala-steward[bot]; without this, auto-approve/auto-merge silently
+    // ignore its PRs since they don't match any of the plugin's default bot logins.
+    ciDependencyUpdateBots := ciDependencyUpdateBots.value :+ DependencyBot.Custom("scala-steward"),
     // ciJvmOptions ++= Seq("-Xmx6g", "-Xss2m", "-XX:+UseG1GC"),
-    ciTestJobs         := ciTestJobs.value.map(ciJobWithSetup) :+ compileExamplesJob.value,
-    ciLintJobs         := ciLintJobs.value.map(ciJobWithSetup),
-    ciBuildJobs        := ciBuildJobs.value.map(ciJobWithSetup),
-    ciReleaseJobs      := ciReleaseJobs.value.map(ciJobWithSetup),
-    ciUpdateReadmeJobs := ciUpdateReadmeJobs.value.map(ciJobWithSetup),
-    ciPostReleaseJobs  := ciPostReleaseJobs.value.map(ciJobWithSetup),
-    developers         := List(
+    ciTestJobs             := ciTestJobs.value.map(ciJobWithSetup) :+ compileExamplesJob.value,
+    ciLintJobs             := ciLintJobs.value.map(ciJobWithSetup),
+    ciBuildJobs            := ciBuildJobs.value.map(ciJobWithSetup),
+    ciReleaseJobs          := ciReleaseJobs.value.map(ciJobWithSetup),
+    ciUpdateReadmeJobs     := ciUpdateReadmeJobs.value.map(ciJobWithSetup),
+    ciPostReleaseJobs      := ciPostReleaseJobs.value.map(ciJobWithSetup),
+    developers             := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
       Developer(
         "pshemass",
@@ -33,8 +37,8 @@ inThisBuild(
       ),
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
-    zioVersion         := "2.1.26",
-    scala213           := "2.13.18"
+    zioVersion             := "2.1.26",
+    scala213               := "2.13.18"
   )
 )
 

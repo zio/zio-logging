@@ -22,7 +22,7 @@ jobs:
     name: auto-merge
     runs-on: ubuntu-latest
     continue-on-error: false
-    if: ${{ (((github.event_name == 'workflow_dispatch') || (github.event.pull_request.user.login == 'dependabot[bot]')) || (github.event.pull_request.user.login == 'renovate[bot]')) || (github.event.pull_request.user.login == 'zio-scala-steward[bot]') }}
+    if: ${{ ((((github.event_name == 'workflow_dispatch') || (github.event.pull_request.user.login == 'dependabot[bot]')) || (github.event.pull_request.user.login == 'renovate[bot]')) || (github.event.pull_request.user.login == 'zio-scala-steward[bot]')) || (github.event.pull_request.user.login == 'scala-steward') }}
     steps:
     - name: Check App Token
       id: check-app-token
@@ -51,7 +51,7 @@ jobs:
       if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         set -euo pipefail
-        for actor in "dependabot[bot]" "renovate[bot]" "zio-scala-steward[bot]"; do
+        for actor in "dependabot[bot]" "renovate[bot]" "zio-scala-steward[bot]" "scala-steward"; do
           gh pr list \
             --author "$actor" \
             --state open \
