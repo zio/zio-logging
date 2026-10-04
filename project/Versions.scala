@@ -2,7 +2,7 @@ object Versions {
   val slf4jVersion                  = "1.7.36"
   val slf4j2Version                 = "2.0.20"
   val logbackVersion                = "1.2.13"
-  val logback2Version               = "1.4.12"
+  val logback2Version               = "1.4.14"
   val scalaCollectionCompatVersion  = "2.14.0"
   val logstashLogbackEncoderVersion = "6.6"
   val scalaJavaTimeVersion          = "2.7.0"
