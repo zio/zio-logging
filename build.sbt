@@ -37,7 +37,7 @@ inThisBuild(
       ),
       Developer("justcoon", "Peter Kotula", "peto.kotula@yahoo.com", url("https://github.com/justcoon"))
     ),
-    zioVersion             := "2.1.26",
+    zioVersion             := "2.1.27",
     scala213               := "2.13.18"
   )
 )
