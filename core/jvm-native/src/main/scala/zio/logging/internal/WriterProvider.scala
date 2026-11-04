@@ -15,7 +15,7 @@
  */
 package zio.logging.internal
 
-import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
+import java.io.{ BufferedWriter, FileOutputStream, IOException, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
 import java.nio.file.{ FileSystems, Path }
 import java.time.LocalDateTime
@@ -27,13 +27,28 @@ private[logging] sealed trait WriterProvider {
 }
 
 private[logging] object WriterProvider {
+  private def openOutputStream(destination: Path, append: Boolean): FileOutputStream = {
+    val file = destination.toFile
+    if (file.exists()) {
+      if (file.isDirectory)
+        throw new IOException(s"File '$file' exists but is a directory")
+      if (!file.canWrite)
+        throw new IOException(s"File '$file' cannot be written to")
+    } else {
+      val parent = file.getParentFile
+      if (parent != null && !parent.mkdirs() && !parent.isDirectory)
+        throw new IOException(s"Directory '$parent' could not be created")
+    }
+    new FileOutputStream(file, append)
+  }
+
   final case class SimpleWriterProvider(
     destination: Path,
     charset: Charset,
     bufferedIOSize: Option[Int]
   ) extends WriterProvider {
     override val writer: Writer = {
-      val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
+      val output = new OutputStreamWriter(openOutputStream(destination, append = true), charset)
       bufferedIOSize match {
         case Some(bufferSize) => new BufferedWriter(output, bufferSize)
         case None             => output
@@ -87,7 +102,7 @@ private[logging] object WriterProvider {
     }
 
     private def makeWriter(path: Path, charset: Charset, bufferedIOSize: Option[Int]): Writer = {
-      val output = new OutputStreamWriter(new FileOutputStream(path.toFile, true), charset)
+      val output = new OutputStreamWriter(openOutputStream(path, append = true), charset)
       bufferedIOSize match {
         case Some(bufferSize) => new BufferedWriter(output, bufferSize)
         case None             => output

@@ -3,6 +3,7 @@ package zio.logging.internal
 import zio.ZIO
 import zio.test._
 
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.FileSystems
 import java.time.{ LocalDate, LocalDateTime }
@@ -47,6 +48,29 @@ object WriterProviderSpec extends ZIOSpecDefault {
         _            = timeRef.set(LocalDateTime.now().plusDays(1))
         sameWriter2 <- parallelExecution.map(_.toSet)
       } yield assertTrue(sameWriter1.size == 1 && sameWriter2.size == 1 && sameWriter1 != sameWriter2)
+    },
+    test("Create missing parent directories") {
+      val destination = FileSystems.getDefault.getPath("/tmp/zio-logging-test-parent/nested/file_app.log")
+      val parentDir   = destination.getParent
+
+      for {
+        _      <- ZIO.attempt(destination.toFile.delete()).ignore
+        _      <- ZIO.attempt(parentDir.toFile.delete()).ignore
+        _      <- ZIO.attempt(parentDir.getParent.toFile.delete()).ignore
+        writer <- ZIO.attempt(WriterProvider.SimpleWriterProvider(destination, StandardCharsets.UTF_8, None).writer)
+        _      <- ZIO.attempt(writer.close())
+        exists <- ZIO.attempt(destination.toFile.exists())
+        _      <- ZIO.attempt(destination.toFile.delete()).ignore
+        _      <- ZIO.attempt(parentDir.toFile.delete()).ignore
+        _      <- ZIO.attempt(parentDir.getParent.toFile.delete()).ignore
+      } yield assertTrue(exists)
+    },
+    test("Fail when destination is an existing directory") {
+      val destination = FileSystems.getDefault.getPath("/tmp")
+
+      for {
+        err <- ZIO.attempt(WriterProvider.SimpleWriterProvider(destination, StandardCharsets.UTF_8, None).writer).flip
+      } yield assertTrue(err.isInstanceOf[IOException])
     }
   ) @@ TestAspect.unix
 }
