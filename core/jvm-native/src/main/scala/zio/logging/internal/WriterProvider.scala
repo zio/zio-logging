@@ -17,7 +17,7 @@ package zio.logging.internal
 
 import java.io.{ BufferedWriter, FileOutputStream, OutputStreamWriter, Writer }
 import java.nio.charset.Charset
-import java.nio.file.{ FileSystems, Path }
+import java.nio.file.{ FileSystems, Files, Path }
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -27,18 +27,25 @@ private[logging] sealed trait WriterProvider {
 }
 
 private[logging] object WriterProvider {
+  private def openFileWriter(path: Path, charset: Charset, bufferedIOSize: Option[Int]): Writer = {
+    Option(path.getParent).foreach { parent =>
+      if (!Files.exists(parent)) {
+        Files.createDirectories(parent)
+      }
+    }
+    val output = new OutputStreamWriter(new FileOutputStream(path.toFile, true), charset)
+    bufferedIOSize match {
+      case Some(bufferSize) => new BufferedWriter(output, bufferSize)
+      case None             => output
+    }
+  }
+
   final case class SimpleWriterProvider(
     destination: Path,
     charset: Charset,
     bufferedIOSize: Option[Int]
   ) extends WriterProvider {
-    override val writer: Writer = {
-      val output = new OutputStreamWriter(new FileOutputStream(destination.toFile, true), charset)
-      bufferedIOSize match {
-        case Some(bufferSize) => new BufferedWriter(output, bufferSize)
-        case None             => output
-      }
-    }
+    override val writer: Writer = openFileWriter(destination, charset, bufferedIOSize)
   }
 
   final case class TimeBasedRollingWriterProvider(
@@ -86,12 +93,7 @@ private[logging] object WriterProvider {
       timeDestination
     }
 
-    private def makeWriter(path: Path, charset: Charset, bufferedIOSize: Option[Int]): Writer = {
-      val output = new OutputStreamWriter(new FileOutputStream(path.toFile, true), charset)
-      bufferedIOSize match {
-        case Some(bufferSize) => new BufferedWriter(output, bufferSize)
-        case None             => output
-      }
-    }
+    private def makeWriter(path: Path, charset: Charset, bufferedIOSize: Option[Int]): Writer =
+      openFileWriter(path, charset, bufferedIOSize)
   }
 }

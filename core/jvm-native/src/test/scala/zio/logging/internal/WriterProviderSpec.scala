@@ -4,13 +4,30 @@ import zio.ZIO
 import zio.test._
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.FileSystems
+import java.nio.file.{ FileSystems, Files }
 import java.time.{ LocalDate, LocalDateTime }
 import java.util.concurrent.atomic.AtomicReference
 
 object WriterProviderSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] = suite("WriterProvider")(
+    test("SimpleWriterProvider creates missing parent directories") {
+      val tempDir     = Files.createTempDirectory("zio-logging-test")
+      val destination = tempDir.resolve("nested/dir/app.log")
+      val provider    = WriterProvider.SimpleWriterProvider(
+        destination = destination,
+        charset = StandardCharsets.UTF_8,
+        bufferedIOSize = None
+      )
+      provider.writer.write("hello")
+      provider.writer.close()
+      val exists      = Files.exists(destination)
+      Files.deleteIfExists(destination)
+      Files.deleteIfExists(destination.getParent)
+      Files.deleteIfExists(destination.getParent.getParent)
+      Files.deleteIfExists(tempDir)
+      assertTrue(exists)
+    },
     test("Make path include date") {
       import WriterProvider.TimeBasedRollingWriterProvider.makePath
 
