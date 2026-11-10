@@ -8,7 +8,7 @@ object Versions {
   val scalaJavaTimeVersion          = "2.9.0"
   val zioMetricsConnectorsVersion   = "2.6.0"
   val zioConfig                     = "4.1.2"
-  val zioParser                     = "0.1.11"
+  val zioParser                     = "0.1.12"
   val zioPrelude                    = "1.0.0-RC48"
   val zioHttp                       = "3.11.6"
   val log4jVersion                  = "2.26.1"
