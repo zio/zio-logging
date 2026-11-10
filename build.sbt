@@ -290,7 +290,15 @@ lazy val docs = project
     publish / skip                             := false
   )
   .settings(macroDefinitionSettings)
-  .dependsOn(coreJVM, coreJS, slf4j, slf4jBridge, jpl)
+  // SLF4J v1 and v2 modules define classes with the same names, so only v2 is on the docs classpath.
+  .dependsOn(coreJVM, coreJS, slf4j2, slf4j2Bridge, julBridge, jpl)
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-test"                          % zioVersion.value            % Provided,
+      "dev.zio" %% "zio-config-typesafe"               % zioConfig                   % Provided,
+      "dev.zio" %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion % Provided
+    )
+  )
   .enablePlugins(WebsitePlugin)
 
 lazy val compileExamplesJob = Def.setting {
