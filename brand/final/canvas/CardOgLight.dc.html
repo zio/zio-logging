@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ZIO Logging social card, light</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 630px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Geist, system-ui, sans-serif; color: #15171C">
+  <svg viewBox="0 0 24 24" width="720" height="720" aria-hidden="true" shape-rendering="crispEdges" style="position: absolute; left: 600px; top: -45px"><g fill="#EEEEEA"><rect x="0" y="0" width="24" height="4"/><rect x="14" y="5" width="10" height="4"/><rect x="7" y="10" width="10" height="4"/><rect x="0" y="15" width="10" height="4"/><rect x="0" y="20" width="24" height="4"/></g></svg>
+  <div style="position: absolute; inset: 0; box-sizing: border-box; padding: 90px; display: flex; flex-direction: column; justify-content: space-between">
+    <div style="display: flex; align-items: baseline">
+      <svg viewBox="0 0 24 24" width="48" height="48" role="img" aria-label="Z" shape-rendering="crispEdges"><g fill="#15171C"><rect x="0" y="0" width="24" height="4"/><rect x="14" y="5" width="10" height="4"/><rect x="0" y="15" width="10" height="4"/><rect x="0" y="20" width="24" height="4"/></g><rect x="7" y="10" width="10" height="4" fill="#985A00"/></svg>
+      <span style="font-size: 68px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-left: 4px">IO Logging</span>
+    </div>
+    <p style="margin: 0; max-width: 760px; font-size: 38px; line-height: 1.3; letter-spacing: -0.01em">Simple logging for ZIO apps, with correlation, context and pluggable backends.</p>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; font-family: 'Geist Mono', monospace; font-size: 24px">
+      <span>ZIO.logInfo(<span style="color: #985A00">"order placed"</span>)</span>
+      <span style="color: #5B606B">zio.dev/zio-logging</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":630}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

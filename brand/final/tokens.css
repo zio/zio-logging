@@ -1,0 +1,17 @@
+/* ZIO Logging colour tokens. Ratios: brand/final/README.md. */
+:root {
+  --zl-bg: #FFFFFF;        /* White: page */
+  --zl-surface: #F5F4F0;   /* Ledger: panel */
+  --zl-text: #15171C;      /* Console: text, mark lines (brand colour) */
+  --zl-text-2: #5B606B;    /* Slate: secondary text */
+  --zl-accent: #985A00;    /* Deep amber: mark accent line, links, keywords */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --zl-bg: #111318;      /* Terminal: page */
+    --zl-surface: #1A1D24; /* Shell: panel */
+    --zl-text: #ECEDEF;    /* Phosphor: text, mark lines (brand colour) */
+    --zl-text-2: #9AA0AB;  /* Fog: secondary text */
+    --zl-accent: #F5A524;  /* Amber: mark accent line, links, keywords */
+  }
+}
