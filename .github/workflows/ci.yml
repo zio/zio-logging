@@ -115,7 +115,7 @@ jobs:
       matrix:
         scala:
         - 2.12.21
-        - 2.13.18
+        - 3.10.0
         - 3.9.0
     steps:
     - name: Install libuv
