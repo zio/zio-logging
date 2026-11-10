@@ -33,6 +33,7 @@ Design drafts for a ZIO Logging mark. Nothing here is served by the website and 
 
 ## Layout
 
-- `tools/marks.py`: mark geometry for every concept, writes the SVGs and a size preview page.
+- `tools/marks.py`: mark geometry for every concept, per round (`python3 tools/marks.py <round> <out-dir>`), writes the SVGs and a size preview page.
 - `tools/wcag.py`: WCAG 2.x contrast calculator used for every ratio in this folder.
 - `round-1/`: first concepts. See `round-1/NOTES.md`.
+- `round-2/`: variants of Line Z. See `round-2/NOTES.md`.
