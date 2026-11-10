@@ -294,9 +294,9 @@ lazy val docs = project
   .dependsOn(coreJVM, coreJS, slf4j2, slf4j2Bridge, julBridge, jpl)
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test"                          % zioVersion.value,
-      "dev.zio" %% "zio-config-typesafe"               % zioConfig,
-      "dev.zio" %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion
+      "dev.zio" %% "zio-test"                          % zioVersion.value         % Provided,
+      "dev.zio" %% "zio-config-typesafe"               % zioConfig                % Provided,
+      "dev.zio" %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion % Provided
     )
   )
   .enablePlugins(WebsitePlugin)
