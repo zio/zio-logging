@@ -9,12 +9,17 @@ It is possible to use `zio-logging` for SLF4J loggers, usually third-party non-Z
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 ```
 
-and use one of the `Slf4jBridge` layers when setting up logging:
+Then use one of the `Slf4jBridge` layers when setting up logging. To provide the layer to a program:
 
-```scala
-import zio.logging.slf4j.Slf4jBridge
+```scala mdoc:compile-only
+import zio.ZIO
+import zio.logging.slf4j.bridge.Slf4jBridge
 
-program.provideCustom(Slf4jBridge.init())
+object BridgeApp extends zio.ZIOAppDefault {
+  override val bootstrap: zio.ZLayer[zio.ZIOAppArgs, Any, Any] = Slf4jBridge.init()
+
+  override def run: zio.ZIO[Any, Any, zio.ExitCode] = zio.ZIO.logInfo("Program output").as(zio.ExitCode.success)
+}
 ```
 
 `Slf4jBridge` layers:
@@ -23,29 +28,29 @@ program.provideCustom(Slf4jBridge.init())
 * `Slf4jBridge.initialize` - setup without filtering
 
 Need for log filtering in slf4j bridge: libraries with slf4j loggers, may have conditional logic for logging,
-which using functions like [org.slf4j.Logger.isTraceEnabled()](https://github.com/qos-ch/slf4j/blob/master/slf4j-api/src/main/java/org/slf4j/Logger.java#L170). 
+which using functions like [org.slf4j.Logger.isTraceEnabled()](https://github.com/qos-ch/slf4j/blob/master/slf4j-api/src/main/java/org/slf4j/Logger.java#L170).
 logging parts may contain message and log parameters construction, which may be expensive and degrade performance of application.
 
 <br/>
 
-SLF4J logger name is stored in log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`), following log format
+SLF4J logger name is stored in log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`), following log format:
 
-```scala
-import zio.logging.slf4j.Slf4jBridge
+```scala mdoc:silent
 import zio.logging.LoggerNameExtractor
 
-val loggerName = LoggerNameExtractor.loggerNameAnnotationOrTrace
+val loggerName       = LoggerNameExtractor.loggerNameAnnotationOrTrace
 val loggerNameFormat = loggerName.toLogFormat()
 ```
-may be used to get logger name from log annotation or ZIO Trace.
+This logger name extractor may be used to get logger name from log annotation or ZIO Trace.
 
 <br/>
 
-SLF4J bridge with custom logger can be setup:
+SLF4J bridge with a custom logger can be set up:
 
-```scala
-import zio.logging.slf4j.Slf4jBridge
+```scala mdoc:silent
+import zio.{ Runtime, ZLayer }
 import zio.logging.consoleJsonLogger
+import zio.logging.slf4j.bridge.Slf4jBridge
 
 val logger = Runtime.removeDefaultLoggers >>> consoleJsonLogger() >+> Slf4jBridge.init()
 ```
@@ -57,13 +62,14 @@ ZIO logging. Enabling both causes circular logging and makes no sense.
 
 ## Examples
 
-### SLF4J bridge with JSON console logger
+The following example shows the bridge in a complete application.
 
-[//]: # (TODO: make snippet type-checked using mdoc)
+### SLF4J Bridge with JSON Console Logger
 
-```scala
-package zio.logging.example
+The following application logs through an SLF4J logger and a ZIO logger. The SLF4J logger name and the ZIO logger name appear in the JSON output, filtered by level:
 
+```scala mdoc:compile-only
+import zio.logging.slf4j.bridge.Slf4jBridge
 import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LogFilter, LogFormat, LoggerNameExtractor, consoleJsonLogger }
 import zio.{ ExitCode, LogLevel, Runtime, Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer }
 
@@ -117,37 +123,34 @@ Expected Console Output:
 {"name":"zio.logging.example.Slf4jBridgeExampleApp","timestamp":"2024-02-16T08:10:45.428162+01:00","level":"DEBUG","thread":"zio-fiber-6","message":"Done"}
 ```
 
-## Feature changes
+## Feature Changes
+
+The following changes affect the logger name annotation of this bridge.
 
 ### Version 2.1.9
 
-SLF4J logger name is stored in log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`), 
-in previous versions, logger name was stored in log annotation with key `slf4j_logger_name` (`Slf4jBridge.loggerNameAnnotationKey`),
-for backward compatibility, if there is need to use legacy annotation key, it can be done with following initialisation
+SLF4J logger name is stored in log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`).
+In previous versions, the logger name was stored in log annotation with key `slf4j_logger_name`.
+`Slf4jBridge.initialize` takes no arguments, so no annotation key needs to be passed when setting it up.
 
-```scala
-import zio.logging.slf4j.Slf4jBridge
+The following log format gets the logger name from the log annotation with key `logger_name`, or from the ZIO `Trace` if that annotation is absent:
 
-program.provideCustom(Slf4jBridge.initialize(Slf4jBridge.loggerNameAnnotationKey))
-```
-
-NOTE: this feature may be removed in future versions
-
-Following log format
-
-```scala
-import zio.logging.slf4j.Slf4jBridge
+```scala mdoc:compile-only
 import zio.logging.LoggerNameExtractor
 
-val loggerName = LoggerNameExtractor.annotationOrTrace(Slf4jBridge.loggerNameAnnotationKey)
+val loggerName       = LoggerNameExtractor.annotationOrTrace(zio.logging.loggerNameAnnotationKey)
 val loggerNameFormat = loggerName.toLogFormat()
 ```
-may be used to get logger name from log annotation or ZIO Trace.
 
+This logger name extractor can also be used in a log filter, which applies log filtering by defined logger name and level:
 
-This logger name extractor can be used also in log filter, which applying log filtering by defined logger name and level:
+```scala mdoc:compile-only
+import zio.LogLevel
+import zio.logging.LogFilter
+import zio.logging.LoggerNameExtractor
 
-```scala
+val loggerName = LoggerNameExtractor.annotationOrTrace(zio.logging.loggerNameAnnotationKey)
+
 val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
   LogLevel.Info,
   loggerName.toLogGroup(),
@@ -158,7 +161,5 @@ val logFilter: LogFilter[String] = LogFilter.logLevelByGroup(
 
 ### Version 2.2.0
 
-Deprecated log annotation with key `slf4j_logger_name` (`Slf4jBridge.loggerNameAnnotationKey`) removed, 
-only common log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`) for logger name is supported now.
-
-
+The deprecated log annotation with key `slf4j_logger_name` was removed.
+The common log annotation with key `logger_name` (`zio.logging.loggerNameAnnotationKey`) is now the only supported annotation for the logger name.
