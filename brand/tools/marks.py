@@ -39,6 +39,13 @@ def band_slice(y0, y1, x_left, d, role):
                     (x_left(y1) + d, y1), (x_left(y1), y1)), role)
 
 
+def river_row(y0, y1, x_left, gap, width):
+    """A full-width log line split by a slanted gap (the river) whose left edge is x_left(y)."""
+    a0, a1 = x_left(y0), x_left(y1)
+    return [poly(pts((0, y0), (a0, y0), (a1, y1), (0, y1)), "ink"),
+            poly(pts((a0 + gap, y0), (width, y0), (width, y1), (a1 + gap, y1)), "ink")]
+
+
 # Each concept: name -> {"master": (size, shapes), "small": (size, shapes)}
 ROUND1 = {
     # 1. Record: a level stripe plus three message lines. Not a Z; sits beside the name.
@@ -168,7 +175,81 @@ ROUND2 = {
     },
 }
 
-ROUNDS = {"1": ROUND1, "2": ROUND2}
+# Round 3: wider exploration seeded by 2A Lines (Milad: "2A wasn't bad", "be creative").
+# 2A is kept as the reference. Rows on the 16 grid stay 3,2,2,2,3 px with 1 px gaps unless noted.
+ROUND3 = {
+    "ref-2a-lines": ROUND2["lines"],
+    # 3A. Tail: the log scrolls up; old lines thin out, the newest line is the heaviest.
+    "tail": {
+        "master": (24, [
+            rect(0, 0, 24, 2, "ink"),
+            rect(14, 3, 24, 6, "ink"),
+            rect(7, 7, 17, 11, "accent"),
+            rect(0, 12, 10, 17, "ink"),
+            rect(0, 18, 24, 24, "ink"),
+        ]),
+        "small": (16, [  # rows 1,2,2,3,4 px
+            rect(0, 0, 16, 1, "ink"),
+            rect(9, 2, 16, 4, "ink"),
+            rect(5, 5, 11, 7, "accent"),
+            rect(0, 8, 7, 11, "ink"),
+            rect(0, 12, 16, 16, "ink"),
+        ]),
+    },
+    # 3B. River: full log lines; the gaps between words line up into the Z's diagonal (negative space).
+    "river": {
+        "master": (24, [
+            rect(0, 0, 24, 4, "ink"),
+            *river_row(5, 9, lambda y: 15 * (20 - y) / 16, 5, 24),
+            *river_row(10, 14, lambda y: 15 * (20 - y) / 16, 5, 24),
+            *river_row(15, 19, lambda y: 15 * (20 - y) / 16, 5, 24),
+            rect(0, 20, 24, 24, "ink"),
+        ]),
+        "small": (16, [
+            rect(0, 0, 16, 3, "ink"),
+            *river_row(4, 6, lambda y: 13 - y - 1, 3, 16),
+            *river_row(7, 9, lambda y: 13 - y - 1, 3, 16),
+            *river_row(10, 12, lambda y: 13 - y - 1, 3, 16),
+            rect(0, 13, 16, 16, "ink"),
+        ]),
+    },
+    # 3C. Prompt: five lines indented 0,1,2,1,0, a ">" chevron: nested spans, and the shell prompt.
+    "prompt": {
+        "master": (24, [
+            rect(0, 0, 12, 4, "ink"),
+            rect(6, 5, 18, 9, "ink"),
+            rect(12, 10, 24, 14, "accent"),
+            rect(6, 15, 18, 19, "ink"),
+            rect(0, 20, 12, 24, "ink"),
+        ]),
+        "small": (16, [
+            rect(0, 0, 8, 3, "ink"),
+            rect(4, 4, 12, 6, "ink"),
+            rect(8, 7, 16, 9, "accent"),
+            rect(4, 10, 12, 12, "ink"),
+            rect(0, 13, 8, 16, "ink"),
+        ]),
+    },
+    # 3D. Log L: short entries pile up into the stem of an L; the warning sticks out in amber.
+    "log-l": {
+        "master": (24, [
+            rect(0, 0, 8, 4, "ink"),
+            rect(0, 5, 6, 9, "ink"),
+            rect(0, 10, 13, 14, "accent"),
+            rect(0, 15, 7, 19, "ink"),
+            rect(0, 20, 24, 24, "ink"),
+        ]),
+        "small": (16, [
+            rect(0, 0, 5, 3, "ink"),
+            rect(0, 4, 4, 6, "ink"),
+            rect(0, 7, 9, 9, "accent"),
+            rect(0, 10, 5, 12, "ink"),
+            rect(0, 13, 16, 16, "ink"),
+        ]),
+    },
+}
+
+ROUNDS = {"1": ROUND1, "2": ROUND2, "3": ROUND3}
 
 
 def svg(size, shapes, colors, label, px=None, ground=False):

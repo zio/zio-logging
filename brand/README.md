@@ -37,3 +37,4 @@ Design drafts for a ZIO Logging mark. Nothing here is served by the website and 
 - `tools/wcag.py`: WCAG 2.x contrast calculator used for every ratio in this folder.
 - `round-1/`: first concepts. See `round-1/NOTES.md`.
 - `round-2/`: variants of Line Z. See `round-2/NOTES.md`.
+- `round-3/`: wider exploration from 2A. See `round-3/NOTES.md`.

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ZIO Logging logo, round 3 concepts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#985A00}a:hover{color:#15171C}
+</style>
+</helmet>
+<div style="width: 2000px; height: 1000px; box-sizing: border-box; padding: 56px 64px; background: #F5F4F0; font-family: Geist, system-ui, sans-serif; color: #15171C; display: flex; flex-direction: column; gap: 36px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #5B606B">ZIO Logging · logo · round 3 · 2026-11-10</div>
+      <h1 style="margin: 0; font-size: 44px; font-weight: 600; letter-spacing: -0.015em">Log lines, explored wider</h1>
+    </div>
+    <p style="margin: 0; max-width: 680px; font-size: 16px; line-height: 1.55; color: #5B606B">Seed: 2A Lines (left, for reference). Four new ideas: time as weight, a Z found in the gaps, a prompt, and a bold one that drops the Z for an L.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; flex-grow: 1">
+
+    <!-- Reference 2A -->
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #5B606B">Ref · 2A Lines</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; min-height: 90px">Round 2’s pick, unchanged. A Z set as five log lines; the middle one is amber.</p>
+      <div style="background: #FFFFFF; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="2A Lines, light" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="4" fill="#15171C"/><rect x="14" y="5" width="10" height="4" fill="#15171C"/><rect x="7" y="10" width="10" height="4" fill="#985A00"/><rect x="0" y="15" width="10" height="4" fill="#15171C"/><rect x="0" y="20" width="24" height="4" fill="#15171C"/></svg>
+        <div style="display: flex; align-items: baseline">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="4" fill="#15171C"/><rect x="14" y="5" width="10" height="4" fill="#15171C"/><rect x="7" y="10" width="10" height="4" fill="#985A00"/><rect x="0" y="15" width="10" height="4" fill="#15171C"/><rect x="0" y="20" width="24" height="4" fill="#15171C"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-left: 2px">IO Logging</span>
+        </div>
+      </div>
+      <div style="background: #111318; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="2A Lines, dark" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="4" fill="#ECEDEF"/><rect x="14" y="5" width="10" height="4" fill="#ECEDEF"/><rect x="7" y="10" width="10" height="4" fill="#F5A524"/><rect x="0" y="15" width="10" height="4" fill="#ECEDEF"/><rect x="0" y="20" width="24" height="4" fill="#ECEDEF"/></svg>
+        <div style="display: flex; align-items: baseline">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="4" fill="#ECEDEF"/><rect x="14" y="5" width="10" height="4" fill="#ECEDEF"/><rect x="7" y="10" width="10" height="4" fill="#F5A524"/><rect x="0" y="15" width="10" height="4" fill="#ECEDEF"/><rect x="0" y="20" width="24" height="4" fill="#ECEDEF"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: #ECEDEF; margin-left: 2px">IO Logging</span>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5B606B">Reference column.</p>
+    </div>
+
+    <!-- 3A Tail -->
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #5B606B">3A · Tail</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; min-height: 90px">The log scrolls up. Old lines thin out; the newest, at the bottom, is the heaviest. Time shown as weight. Amber: the middle line.</p>
+      <div style="background: #FFFFFF; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="Tail, light" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="2" fill="#15171C"/><rect x="14" y="3" width="10" height="3" fill="#15171C"/><rect x="7" y="7" width="10" height="4" fill="#985A00"/><rect x="0" y="12" width="10" height="5" fill="#15171C"/><rect x="0" y="18" width="24" height="6" fill="#15171C"/></svg>
+        <div style="display: flex; align-items: baseline">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="2" fill="#15171C"/><rect x="14" y="3" width="10" height="3" fill="#15171C"/><rect x="7" y="7" width="10" height="4" fill="#985A00"/><rect x="0" y="12" width="10" height="5" fill="#15171C"/><rect x="0" y="18" width="24" height="6" fill="#15171C"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-left: 2px">IO Logging</span>
+        </div>
+      </div>
+      <div style="background: #111318; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="Tail, dark" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="2" fill="#ECEDEF"/><rect x="14" y="3" width="10" height="3" fill="#ECEDEF"/><rect x="7" y="7" width="10" height="4" fill="#F5A524"/><rect x="0" y="12" width="10" height="5" fill="#ECEDEF"/><rect x="0" y="18" width="24" height="6" fill="#ECEDEF"/></svg>
+        <div style="display: flex; align-items: baseline">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="24" height="2" fill="#ECEDEF"/><rect x="14" y="3" width="10" height="3" fill="#ECEDEF"/><rect x="7" y="7" width="10" height="4" fill="#F5A524"/><rect x="0" y="12" width="10" height="5" fill="#ECEDEF"/><rect x="0" y="18" width="24" height="6" fill="#ECEDEF"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: #ECEDEF; margin-left: 2px">IO Logging</span>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5B606B">16 px: reads like 2A, with a 1 px top line. Closest to what you liked.</p>
+    </div>
+
+    <!-- 3B River -->
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #985A00">3B · River · recommended</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; min-height: 90px">A block of full log lines. The gaps between words line up into a diagonal, and the Z appears in the white space. No amber: one colour.</p>
+      <div style="background: #FFFFFF; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="River, light"><g fill="#15171C"><rect x="0" y="0" width="24" height="4"/><polygon points="0,5 14.06,5 10.31,9 0,9"/><polygon points="19.06,5 24,5 24,9 15.31,9"/><polygon points="0,10 9.38,10 5.62,14 0,14"/><polygon points="14.38,10 24,10 24,14 10.62,14"/><polygon points="0,15 4.69,15 0.94,19 0,19"/><polygon points="9.69,15 24,15 24,19 5.94,19"/><rect x="0" y="20" width="24" height="4"/></g></svg>
+        <div style="display: flex; align-items: baseline">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><g fill="#15171C"><rect x="0" y="0" width="24" height="4"/><polygon points="0,5 14.06,5 10.31,9 0,9"/><polygon points="19.06,5 24,5 24,9 15.31,9"/><polygon points="0,10 9.38,10 5.62,14 0,14"/><polygon points="14.38,10 24,10 24,14 10.62,14"/><polygon points="0,15 4.69,15 0.94,19 0,19"/><polygon points="9.69,15 24,15 24,19 5.94,19"/><rect x="0" y="20" width="24" height="4"/></g></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-left: 2px">IO Logging</span>
+        </div>
+      </div>
+      <div style="background: #111318; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="River, dark"><g fill="#ECEDEF"><rect x="0" y="0" width="24" height="4"/><polygon points="0,5 14.06,5 10.31,9 0,9"/><polygon points="19.06,5 24,5 24,9 15.31,9"/><polygon points="0,10 9.38,10 5.62,14 0,14"/><polygon points="14.38,10 24,10 24,14 10.62,14"/><polygon points="0,15 4.69,15 0.94,19 0,19"/><polygon points="9.69,15 24,15 24,19 5.94,19"/><rect x="0" y="20" width="24" height="4"/></g></svg>
+        <div style="display: flex; align-items: baseline">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><g fill="#ECEDEF"><rect x="0" y="0" width="24" height="4"/><polygon points="0,5 14.06,5 10.31,9 0,9"/><polygon points="19.06,5 24,5 24,9 15.31,9"/><polygon points="0,10 9.38,10 5.62,14 0,14"/><polygon points="14.38,10 24,10 24,14 10.62,14"/><polygon points="0,15 4.69,15 0.94,19 0,19"/><polygon points="9.69,15 24,15 24,19 5.94,19"/><rect x="0" y="20" width="24" height="4"/></g></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: #ECEDEF; margin-left: 2px">IO Logging</span>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5B606B">24 px and up: a crisp Z in the gaps. 16 px: a slash through lines. Risk: reads as a field with a cut, like Blocks.</p>
+    </div>
+
+    <!-- 3C Prompt -->
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #5B606B">3C · Prompt</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; min-height: 90px">Five lines indented 0, 1, 2, 1, 0: nested log spans, and a shell prompt. Not a Z: it sits beside the name, so the lockup reads “&gt; ZIO Logging”.</p>
+      <div style="background: #FFFFFF; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="Prompt, light" shape-rendering="crispEdges"><rect x="0" y="0" width="12" height="4" fill="#15171C"/><rect x="6" y="5" width="12" height="4" fill="#15171C"/><rect x="12" y="10" width="12" height="4" fill="#985A00"/><rect x="6" y="15" width="12" height="4" fill="#15171C"/><rect x="0" y="20" width="12" height="4" fill="#15171C"/></svg>
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="12" height="4" fill="#15171C"/><rect x="6" y="5" width="12" height="4" fill="#15171C"/><rect x="12" y="10" width="12" height="4" fill="#985A00"/><rect x="6" y="15" width="12" height="4" fill="#15171C"/><rect x="0" y="20" width="12" height="4" fill="#15171C"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1">ZIO Logging</span>
+        </div>
+      </div>
+      <div style="background: #111318; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="Prompt, dark" shape-rendering="crispEdges"><rect x="0" y="0" width="12" height="4" fill="#ECEDEF"/><rect x="6" y="5" width="12" height="4" fill="#ECEDEF"/><rect x="12" y="10" width="12" height="4" fill="#F5A524"/><rect x="6" y="15" width="12" height="4" fill="#ECEDEF"/><rect x="0" y="20" width="12" height="4" fill="#ECEDEF"/></svg>
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="12" height="4" fill="#ECEDEF"/><rect x="6" y="5" width="12" height="4" fill="#ECEDEF"/><rect x="12" y="10" width="12" height="4" fill="#F5A524"/><rect x="6" y="15" width="12" height="4" fill="#ECEDEF"/><rect x="0" y="20" width="12" height="4" fill="#ECEDEF"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: #ECEDEF">ZIO Logging</span>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5B606B">16 px: a clean “&gt;”. Risk: a chevron sits near HTTP’s arrows.</p>
+    </div>
+
+    <!-- 3D Log L -->
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #5B606B">3D · Log L · bold</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; min-height: 90px">No Z. Short entries pile up into the stem of an L; the warning sticks out in amber. In the lockup it is the L of “Logging”.</p>
+      <div style="background: #FFFFFF; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="Log L, light" shape-rendering="crispEdges"><rect x="0" y="0" width="8" height="4" fill="#15171C"/><rect x="0" y="5" width="6" height="4" fill="#15171C"/><rect x="0" y="10" width="13" height="4" fill="#985A00"/><rect x="0" y="15" width="7" height="4" fill="#15171C"/><rect x="0" y="20" width="24" height="4" fill="#15171C"/></svg>
+        <div style="display: flex; align-items: baseline">
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-right: 9px">ZIO</span>
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="8" height="4" fill="#15171C"/><rect x="0" y="5" width="6" height="4" fill="#15171C"/><rect x="0" y="10" width="13" height="4" fill="#985A00"/><rect x="0" y="15" width="7" height="4" fill="#15171C"/><rect x="0" y="20" width="24" height="4" fill="#15171C"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-left: 1px">ogging</span>
+        </div>
+      </div>
+      <div style="background: #111318; padding: 28px 24px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start">
+        <svg viewBox="0 0 24 24" width="96" height="96" role="img" aria-label="Log L, dark" shape-rendering="crispEdges"><rect x="0" y="0" width="8" height="4" fill="#ECEDEF"/><rect x="0" y="5" width="6" height="4" fill="#ECEDEF"/><rect x="0" y="10" width="13" height="4" fill="#F5A524"/><rect x="0" y="15" width="7" height="4" fill="#ECEDEF"/><rect x="0" y="20" width="24" height="4" fill="#ECEDEF"/></svg>
+        <div style="display: flex; align-items: baseline">
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: #ECEDEF; margin-right: 9px">ZIO</span>
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" shape-rendering="crispEdges"><rect x="0" y="0" width="8" height="4" fill="#ECEDEF"/><rect x="0" y="5" width="6" height="4" fill="#ECEDEF"/><rect x="0" y="10" width="13" height="4" fill="#F5A524"/><rect x="0" y="15" width="7" height="4" fill="#ECEDEF"/><rect x="0" y="20" width="24" height="4" fill="#ECEDEF"/></svg>
+          <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: #ECEDEF; margin-left: 1px">ogging</span>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5B606B">16 px: reads as an “align left” icon more than an L. Breaks the family’s Z habit on purpose.</p>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2000,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
