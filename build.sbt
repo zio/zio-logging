@@ -285,7 +285,7 @@ lazy val docs = project
     moduleName                                 := "zio-logging-docs",
     projectName                                := (ThisBuild / name).value,
     readmeBanner                               := {
-      val logoBase = "https://raw.githubusercontent.com/zio/zio-logging/master/brand/final"
+      val logoBase = "https://raw.githubusercontent.com/zio/zio-logging/master/brand"
       // <picture> lets GitHub swap the lockup per theme: the light lockup's near-black ink would
       // be invisible on GitHub's dark canvas without the dark variant. Width 572 draws the mark
       // at exactly 3x its 24-unit grid, so its lines land on whole pixels.

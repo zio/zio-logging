@@ -1,13 +1,13 @@
-"""Final ZIO Logging mark files: round 1's 03 Line Z master with round 2's five-line small cut.
+"""ZIO Logging vector files: mark SVGs, favicons, icon SVGs and colour tokens.
 
-Usage: python3 final.py <out-dir>
+Usage (from brand/): python3 tools/vector.py .
 """
 import os
 import sys
 
 from marks import PALETTE, ROUND2, svg
 
-MARK = ROUND2["lines"]  # master = round 1 "03 Line Z"; small = 2A's five-line 16 px cut
+MARK = ROUND2["lines"]  # the chosen mark: 24-unit master and five-line 16-unit small cut
 TERMINAL = PALETTE["dark"]["ground"]
 
 
@@ -50,7 +50,7 @@ def favicon_mono():
             f'shape-rendering="crispEdges" fill="currentColor">{body}</svg>')
 
 
-TOKENS = """/* ZIO Logging colour tokens. Ratios: brand/final/README.md. */
+TOKENS = """/* ZIO Logging colour tokens. Ratios: brand/README.md. */
 :root {
   --zl-bg: #FFFFFF;        /* White: page */
   --zl-surface: #F5F4F0;   /* Ledger: panel */

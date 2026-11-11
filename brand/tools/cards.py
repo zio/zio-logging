@@ -1,7 +1,7 @@
-"""Export the social cards (canvas boards in final/canvas/Card*.dc.html) as PNGs.
+"""Export the social cards (canvas boards in canvas/Card*.dc.html) as PNGs.
 
 Usage (from brand/):
-  python3 tools/cards.py <geist-fonts-dir> final/social
+  python3 tools/cards.py <geist-fonts-dir> social
 
 <geist-fonts-dir> is dist/fonts from the `geist` npm package (OFL; not committed). The cards render
 with those local files instead of Google Fonts, so the output doesn't depend on the network.
@@ -47,7 +47,7 @@ def main(fonts, out_dir):
     chromium = os.environ.get("CHROMIUM", "chromium")
     os.makedirs(out_dir, exist_ok=True)
     here = os.path.dirname(os.path.abspath(__file__))
-    canvas = os.path.join(here, "..", "final", "canvas")
+    canvas = os.path.join(here, "..", "canvas")
     with tempfile.TemporaryDirectory() as tmp:
         for card, (png, w, h) in CARDS.items():
             with open(os.path.join(canvas, f"{card}.dc.html")) as f:

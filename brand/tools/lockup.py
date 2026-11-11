@@ -1,7 +1,7 @@
 """Outlined ZIO Logging lockups: the mark as the Z of "ZIO", text converted to paths.
 
 Usage (from brand/):
-  uv run --with fonttools --with uharfbuzz python tools/lockup.py <Geist-SemiBold.ttf> final
+  uv run --with fonttools --with uharfbuzz python tools/lockup.py <Geist-SemiBold.ttf> .
 
 The font is Geist SemiBold from the `geist` npm package (OFL); it is not committed.
 Geometry matches the approved brand sheet:

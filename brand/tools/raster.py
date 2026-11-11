@@ -1,7 +1,7 @@
 """PNG and ICO fallbacks for the favicon and app icons, drawn on whole pixels.
 
 Usage (from brand/):
-  uv run --with pillow python tools/raster.py final
+  uv run --with pillow python tools/raster.py .
 
 Every mark is drawn at a size where its lines fall on whole pixels: the 16-unit small cut at 16 or 32 px,
 the 24-unit master at a multiple of 24. Fallback PNGs cannot follow the browser's colour scheme like

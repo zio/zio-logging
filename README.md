@@ -3,8 +3,8 @@
 [//]: # (e.g. "readmeDocumentation" and "readmeSupport".)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zio/zio-logging/master/brand/final/zio-logging-lockup-dark.svg">
-  <img alt="ZIO Logging" src="https://raw.githubusercontent.com/zio/zio-logging/master/brand/final/zio-logging-lockup-light.svg" width="572">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zio/zio-logging/master/brand/zio-logging-lockup-dark.svg">
+  <img alt="ZIO Logging" src="https://raw.githubusercontent.com/zio/zio-logging/master/brand/zio-logging-lockup-light.svg" width="572">
 </picture>
 
 # zio-logging
