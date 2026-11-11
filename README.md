@@ -7,8 +7,6 @@
   <img alt="ZIO Logging" src="https://raw.githubusercontent.com/zio/zio-logging/master/brand/zio-logging-lockup-light.svg" width="572">
 </picture>
 
-# zio-logging
-
 [ZIO Logging](https://github.com/zio/zio-logging) is simple logging for ZIO apps, with correlation, context, and pluggable backends out of the box with integrations for common logging backends.
 
 [![Production Ready](https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg)](https://github.com/zio/zio/wiki/Project-Stages) ![CI Badge](https://github.com/zio/zio-logging/workflows/CI/badge.svg) [![Sonatype Releases](https://img.shields.io/maven-central/v/dev.zio/zio-logging_2.13.svg?label=Sonatype%20Release)](https://central.sonatype.com/artifact/dev.zio/zio-logging_2.13) [![Sonatype Snapshots](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fdev%2Fzio%2Fzio-logging_2.13%2Fmaven-metadata.xml&label=Sonatype%20Snapshot)](https://central.sonatype.com/repository/maven-snapshots/dev/zio/zio-logging_2.13/) [![javadoc](https://javadoc.io/badge2/dev.zio/zio-logging_2.13/javadoc.svg)](https://javadoc.io/doc/dev.zio/zio-logging_2.13) [![zio-logging](https://img.shields.io/github/stars/zio/zio-logging?style=social)](https://github.com/zio/zio-logging)
