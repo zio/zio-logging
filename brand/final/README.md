@@ -25,7 +25,7 @@ Milad picked round 1's **03 · Line Z** (2026-11-10). The master is unchanged fr
 All generated from the geometry in `tools/marks.py`; run from `brand/`. The Geist fonts come from the `geist` npm package (OFL, version 1.9.2 used) and are not committed.
 
 ```sh
-python3 tools/final.py final                                                   # mark SVGs, favicon.svg, icon SVGs, tokens.css, design-system/styles.css
+python3 tools/final.py final                                                   # mark SVGs, favicon.svg, icon SVGs, tokens.css
 uv run --with fonttools --with uharfbuzz python tools/lockup.py <geist>/dist/fonts/geist-sans/Geist-SemiBold.ttf final
 python3 tools/cards.py <geist>/dist/fonts final/social                        # needs chromium
 uv run --with pillow python tools/raster.py final                              # PNG and ICO fallbacks

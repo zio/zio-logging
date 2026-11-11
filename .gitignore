@@ -35,10 +35,3 @@ website/yarn.lock
 website/package-lock.json
 website/static/api
 .bsp/
-
-# design-sync (Claude Design) build output and staged converter
-.ds-sync/
-ds-bundle/
-.design-sync/.cache/
-.design-sync/learnings/
-.design-sync/node_modules
