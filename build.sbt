@@ -284,6 +284,29 @@ lazy val docs = project
   .settings(
     moduleName                                 := "zio-logging-docs",
     projectName                                := (ThisBuild / name).value,
+    readmeBanner                               := {
+      val logoBase = "https://raw.githubusercontent.com/zio/zio-logging/master/brand"
+      // <picture> lets GitHub swap the lockup per theme: the light lockup's near-black ink would
+      // be invisible on GitHub's dark canvas without the dark variant. Width 572 draws the mark
+      // at exactly 3x its 24-unit grid, so its lines land on whole pixels.
+      s"""|
+          |<picture>
+          |  <source media="(prefers-color-scheme: dark)" srcset="$logoBase/zio-logging-lockup-dark.svg">
+          |  <img alt="ZIO Logging" src="$logoBase/zio-logging-lockup-light.svg" width="572">
+          |</picture>
+          |""".stripMargin
+    },
+    // The banner lockup already carries the name, so the plugin's "# zio-logging" heading under it
+    // would show the name twice. Run the plugin's generator, then drop that one heading; the
+    // image's alt text gives the page its accessible name. CI's README job runs this task too.
+    generateReadme                             := {
+      generateReadme.value
+      val readme  = (ThisBuild / baseDirectory).value / "README.md"
+      val heading = s"\n# ${projectName.value}\n"
+      val text    = IO.read(readme)
+      val at      = text.indexOf(heading)
+      if (at >= 0) IO.write(readme, text.substring(0, at) + text.substring(at + heading.length))
+    },
     mainModuleName                             := (coreJVM / name).value,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(coreJVM, slf4j, slf4jBridge, jpl),
     projectStage                               := ProjectStage.ProductionReady,
