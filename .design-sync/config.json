@@ -1,0 +1,12 @@
+{
+  "shape": "package",
+  "pkg": "@zio.dev/zio-logging-brand",
+  "globalName": "ZioLoggingBrand",
+  "entry": "brand/design-system/dist/index.js",
+  "cssEntry": "styles.css",
+  "guidelinesGlob": "../final/README.md",
+  "runtimeFontPrefixes": [
+    "Geist"
+  ],
+  "readmeHeader": ".design-sync/conventions.md"
+}
