@@ -2,7 +2,7 @@ package zio.logging.jul.bridge
 
 import zio.logging.LogFilter
 import zio.test.{ Spec, _ }
-import zio.{ Cause, Chunk, ConfigProvider, LogLevel, Runtime, ZIO, ZIOAspect }
+import zio.{ Cause, Chunk, ConfigProvider, FiberRef, LogLevel, Runtime, ZIO, ZIOAspect }
 
 import java.util.logging.Level._
 import java.util.logging.Logger
@@ -29,6 +29,48 @@ object JULBridgeSpec extends ZIOSpecDefault {
             }
         } yield assertCompletes
       },
+      test("does not run FiberRef.join on log calls") {
+        val joins = new java.util.concurrent.atomic.AtomicInteger(0)
+        ZIO.scoped[Any] {
+          for {
+            ref    <- FiberRef.make[Option[String]](
+                        initial = None,
+                        fork = _ => None,
+                        join = (parent, _) => { joins.incrementAndGet(); parent }
+                      )
+            logger <- ZIO.attempt(Logger.getLogger("test.join"))
+            _      <- ref.locally(Some("resource")) {
+                        for {
+                          _ <- ZIO.attempt(logger.warning("logging inside resource scope 1"))
+                          _ <- ZIO.attempt(logger.warning("logging inside resource scope 2"))
+                          _ <- ZIO.attempt(logger.warning("logging inside resource scope 3"))
+                        } yield ()
+                      }
+            count  <- ZIO.succeed(joins.get())
+          } yield assertTrue(count == 0)
+        }
+      }.provide(JULBridge.initialize),
+      test("parallel fibers propagate distinct annotations and spans") {
+        for {
+          logger <- ZIO.attempt(Logger.getLogger("test.concurrent"))
+          _      <- ZIO.foreachParDiscard(1 to 50) { i =>
+                      ZIO.logAnnotate("fiber_id", i.toString) {
+                        ZIO.logSpan(s"span_$i") {
+                          ZIO.attempt(logger.warning(s"message from fiber $i"))
+                        }
+                      }
+                    }
+          output <- ZTestLogger.logOutput
+          msgs    = output.filter(_.annotations.get("logger_name").contains("test.concurrent"))
+        } yield assertTrue(
+          msgs.length == 50,
+          msgs.forall { entry =>
+            val id = entry.annotations("fiber_id")
+            entry.message() == s"message from fiber $id" &&
+            entry.spans.exists(_.label == s"span_$id")
+          }
+        )
+      }.provide(JULBridge.initialize),
       test("logs through slf4j") {
         val testFailure = new RuntimeException("test error")
         for {
