@@ -2,7 +2,7 @@ package zio.logging.slf4j.bridge
 
 import zio.logging.LogFilter
 import zio.test.{ Spec, _ }
-import zio.{ Cause, Chunk, ConfigProvider, LogLevel, Runtime, ZIO, ZIOAspect }
+import zio.{ Cause, Chunk, ConfigProvider, FiberRef, LogLevel, Runtime, ZIO, ZIOAspect }
 
 object Slf4jBridgeSpec extends ZIOSpecDefault {
 
@@ -26,6 +26,23 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
             }
         } yield assertCompletes
       },
+      test("does not run FiberRef.join on log calls") {
+        val joins = new java.util.concurrent.atomic.AtomicInteger(0)
+        ZIO.scoped[Any] {
+          for {
+            ref    <- FiberRef.make[Option[String]](
+                        initial = None,
+                        fork = _ => None,
+                        join = (parent, _) => { joins.incrementAndGet(); parent }
+                      )
+            logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.join"))
+            _      <- ref.locally(Some("resource")) {
+                        ZIO.attempt(logger.info("logging inside resource scope"))
+                      }
+            count  <- ZIO.succeed(joins.get())
+          } yield assertTrue(count == 0)
+        }
+      }.provide(Slf4jBridge.initialize),
       test("logs through slf4j") {
         val testFailure = new RuntimeException("test error")
         for {
