@@ -39,11 +39,36 @@ object Slf4jBridgeSpec extends ZIOSpecDefault {
                       )
             logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.join"))
             _      <- ref.locally(Some("resource")) {
-                        ZIO.attempt(logger.info("logging inside resource scope"))
+                        for {
+                          _ <- ZIO.attempt(logger.info("logging inside resource scope 1"))
+                          _ <- ZIO.attempt(logger.info("logging inside resource scope 2"))
+                          _ <- ZIO.attempt(logger.info("logging inside resource scope 3"))
+                        } yield ()
                       }
             count  <- ZIO.succeed(joins.get())
           } yield assertTrue(count == 0)
         }
+      }.provide(Slf4jBridge.initialize),
+      test("parallel fibers propagate distinct annotations and spans") {
+        for {
+          logger <- ZIO.attempt(org.slf4j.LoggerFactory.getLogger("test.concurrent"))
+          _      <- ZIO.foreachParDiscard(1 to 50) { i =>
+                      ZIO.logAnnotate("fiber_id", i.toString) {
+                        ZIO.logSpan(s"span_$i") {
+                          ZIO.attempt(logger.info(s"message from fiber $i"))
+                        }
+                      }
+                    }
+          output <- ZTestLogger.logOutput
+          msgs    = output.filter(_.annotations.get("logger_name").contains("test.concurrent"))
+        } yield assertTrue(
+          msgs.length == 50,
+          msgs.forall { entry =>
+            val id = entry.annotations("fiber_id")
+            entry.message() == s"message from fiber $id" &&
+            entry.spans.exists(_.label == s"span_$id")
+          }
+        )
       }.provide(Slf4jBridge.initialize),
       test("Implements Logger#getName") {
         for {

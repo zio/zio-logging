@@ -40,11 +40,36 @@ object JULBridgeSpec extends ZIOSpecDefault {
                       )
             logger <- ZIO.attempt(Logger.getLogger("test.join"))
             _      <- ref.locally(Some("resource")) {
-                        ZIO.attempt(logger.warning("logging inside resource scope"))
+                        for {
+                          _ <- ZIO.attempt(logger.warning("logging inside resource scope 1"))
+                          _ <- ZIO.attempt(logger.warning("logging inside resource scope 2"))
+                          _ <- ZIO.attempt(logger.warning("logging inside resource scope 3"))
+                        } yield ()
                       }
             count  <- ZIO.succeed(joins.get())
           } yield assertTrue(count == 0)
         }
+      }.provide(JULBridge.initialize),
+      test("parallel fibers propagate distinct annotations and spans") {
+        for {
+          logger <- ZIO.attempt(Logger.getLogger("test.concurrent"))
+          _      <- ZIO.foreachParDiscard(1 to 50) { i =>
+                      ZIO.logAnnotate("fiber_id", i.toString) {
+                        ZIO.logSpan(s"span_$i") {
+                          ZIO.attempt(logger.warning(s"message from fiber $i"))
+                        }
+                      }
+                    }
+          output <- ZTestLogger.logOutput
+          msgs    = output.filter(_.annotations.get("logger_name").contains("test.concurrent"))
+        } yield assertTrue(
+          msgs.length == 50,
+          msgs.forall { entry =>
+            val id = entry.annotations("fiber_id")
+            entry.message() == s"message from fiber $id" &&
+            entry.spans.exists(_.label == s"span_$id")
+          }
+        )
       }.provide(JULBridge.initialize),
       test("logs through slf4j") {
         val testFailure = new RuntimeException("test error")
