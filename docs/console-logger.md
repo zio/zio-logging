@@ -172,7 +172,7 @@ import java.util.UUID
 
 object ConsoleJsonApp extends ZIOAppDefault {
 
-  final case class User(firstName: String, lastName: String) {
+  case class User(firstName: String, lastName: String) {
     def toJson: String = s"""{"first_name":"$firstName","last_name":"$lastName"}""".stripMargin
   }
 

@@ -54,8 +54,8 @@ import java.util.UUID
 import zio._
 import zio.logging.{ ConsoleLoggerConfig, LogAnnotation, LogFilter, LogFormat, consoleJsonLogger, consoleLogger }
 
-final case class Request(path: String, headers: Map[String, String])
-final case class Response(status: Int)
+case class Request(path: String, headers: Map[String, String])
+case class Response(status: Int)
 
 def checkStock(item: String): UIO[Unit] =
   ZIO.logInfo(s"Checking stock for $item")
@@ -137,7 +137,7 @@ The handler checks its two items with `ZIO.foreachParDiscard`, which runs each c
 The copy happens when the fiber starts. A fiber that was started before the request, such as a background worker that reads jobs from a `Queue`, does not see the request's ID. Pass the ID along with the job and apply the annotation again in the worker:
 
 ```scala mdoc:silent
-final case class AuditJob(requestId: String, message: String)
+case class AuditJob(requestId: String, message: String)
 
 def auditWorker(jobs: Queue[AuditJob]): UIO[Nothing] =
   jobs.take.flatMap(job => ZIO.logInfo(job.message) @@ RequestId(job.requestId)).forever
