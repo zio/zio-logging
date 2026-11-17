@@ -9,9 +9,9 @@ const sidebars = {
     },
     {
       type: "category",
-      label: "Tutorial",
+      label: "Tutorials",
       collapsed: false,
-      items: ["tutorial"]
+      items: ["tutorial", "tutorial-service-logging"]
     },
     {
       type: "category",
@@ -45,14 +45,26 @@ const sidebars = {
         "how-to-json-logs",
         "how-to-log-levels-from-config",
         "how-to-file-logging-rotation",
-        "how-to-bridge-java-logs"
+        "how-to-bridge-java-logs",
+        "how-to-test-log-output",
+        "how-to-correlation-id",
+        "how-to-logback-log4j2",
+        "how-to-change-levels-at-runtime",
+        "how-to-custom-log-format"
       ]
     },
     {
       type: "category",
       label: "Reference",
       collapsed: false,
-      items: ["reference-log-format", "reference-log-filter", "reference-configuration"]
+      items: [
+        "reference-logger-layers",
+        "reference-log-format",
+        "reference-log-filter",
+        "reference-log-annotations",
+        "reference-configuration",
+        "reference-integrations"
+      ]
     }
   ]
 };
