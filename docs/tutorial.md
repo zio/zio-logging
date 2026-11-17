@@ -1,7 +1,7 @@
 ---
 id: tutorial
-title: "Tutorial"
-sidebar_label: "Tutorial"
+title: "Tutorial: ZIO Logging Basics"
+sidebar_label: "Logging Basics"
 ---
 
 Welcome to the ZIO Logging tutorial! This tutorial is for developers who are new to ZIO Logging. You should know the basics of ZIO, such as effects (values of type `ZIO` that describe work to run), `for` comprehensions, and `ZIOAppDefault`. You don't need any experience with logging libraries.

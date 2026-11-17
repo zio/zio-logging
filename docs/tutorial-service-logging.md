@@ -4,7 +4,7 @@ title: "Tutorial: Logging for a Small Service"
 sidebar_label: "Logging for a Service"
 ---
 
-Welcome to the second ZIO Logging tutorial! In this tutorial, we add logging to a small order service, one step at a time, the way you would in a real application. This tutorial continues from the first [Tutorial](tutorial.md). You should already know how to install a console logger in the `bootstrap` layer, how log levels work, how to attach an annotation with `@@`, and how to switch to `consoleJsonLogger`. If any of that is new, start with the first tutorial.
+Welcome to the second ZIO Logging tutorial! In this tutorial, we add logging to a small order service, one step at a time, the way you would in a real application. This tutorial continues from the first one, [ZIO Logging Basics](tutorial.md). You should already know how to install a console logger in the `bootstrap` layer, how log levels work, how to attach an annotation with `@@`, and how to switch to `consoleJsonLogger`. If any of that is new, start with the first tutorial.
 
 ## Learning Objectives
 
