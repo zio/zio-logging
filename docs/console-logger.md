@@ -39,9 +39,12 @@ The module also provides other console logger layers:
 
 The configuration for the console logger (`zio.logging.ConsoleLoggerConfig`) has the following structure. The default config path is `logger`:
 
-```
+```hocon
 logger {
   # log format, default value: LogFormat.default
+  # The pattern below is approximately LogFormat.default. The default also puts the
+  # message in double quotes, and it writes the cause, with the space before it,
+  # only when the cause is not empty.
   format = "%label{timestamp}{%fixed{32}{%timestamp}} %label{level}{%level} %label{thread}{%fiberId} %label{message}{%message} %label{cause}{%cause}"
 
   # log filter
