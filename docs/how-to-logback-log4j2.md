@@ -117,7 +117,7 @@ The SLF4J 2.x backend passes annotations as SLF4J key-value pairs. Logback 1.3 a
 </configuration>
 ```
 
-`%kvp` writes each pair as `key="value"`, separated by spaces. A line from `OrderApp` therefore has this shape (time and thread name vary):
+`%kvp` writes each pair as `key="value"`, separated by spaces, in no fixed order. A line from `OrderApp` therefore has this shape (time, thread name and pair order vary):
 
 ```
 10:41:07.215 [ZScheduler-Worker-3] [order_id="A-17" user_id="alice"] INFO  com.example.orders Order received
