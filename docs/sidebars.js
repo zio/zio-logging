@@ -9,12 +9,6 @@ const sidebars = {
     },
     {
       type: "category",
-      label: "Tutorials",
-      collapsed: false,
-      items: ["tutorial", "tutorial-service-logging"]
-    },
-    {
-      type: "category",
       label: "Loggers",
       collapsed: false,
       items: ["console-logger", "file-logger", "reconfigurable-logger"]
@@ -36,6 +30,12 @@ const sidebars = {
       label: "Operations",
       collapsed: false,
       items: ["metrics", "testing"]
+    },
+    {
+      type: "category",
+      label: "Tutorials",
+      collapsed: false,
+      items: ["tutorial", "tutorial-service-logging"]
     },
     {
       type: "category",
