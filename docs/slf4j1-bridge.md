@@ -44,8 +44,6 @@ object BridgeApp extends zio.ZIOAppDefault {
 
 The default config path is also available as the value `Slf4jBridge.logFilterConfigPath`. When the config has no `rootLevel`, the root level is `INFO`. For the full API of every backend and bridge, see [Backends and Bridges](reference-integrations.md).
 
-### Build the Logger Before the Bridge
-
 When the bridge's layer is built, it captures the current ZIO runtime, including the loggers installed at that moment. Every line that a Java library logs later goes to the loggers in that captured runtime, in particular lines from threads that do not run a ZIO fiber. The logger layer must therefore be built before the bridge layer. The `>>>` and `>+>` operators build their left side first, so put the logger on the left and the bridge on the right:
 
 ```scala mdoc:silent
