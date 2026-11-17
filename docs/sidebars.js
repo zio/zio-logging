@@ -15,13 +15,13 @@ const sidebars = {
             {
               type: "category",
               label: "Loggers",
-              collapsed: false,
+              collapsed: true,
               items: ["console-logger", "file-logger", "reconfigurable-logger", "reference-logger-layers"]
             },
             {
               type: "category",
               label: "Formatting and Context",
-              collapsed: false,
+              collapsed: true,
               items: [
                 "formatting-log-records",
                 "reference-log-format",
@@ -34,7 +34,7 @@ const sidebars = {
             {
               type: "category",
               label: "Operations",
-              collapsed: false,
+              collapsed: true,
               items: ["metrics", "testing"]
             },
             "reference-configuration"
@@ -43,7 +43,7 @@ const sidebars = {
         {
           type: "category",
           label: "Integrations",
-          collapsed: false,
+          collapsed: true,
           items: ["reference-integrations", "slf4j2", "slf4j1", "slf4j2-bridge", "slf4j1-bridge", "jul-bridge", "jpl"]
         },
         {
