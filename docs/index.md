@@ -27,8 +27,15 @@ Key features of ZIO Logging:
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-// ZIO Logging backends
+// ZIO Logging core module (JVM)
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
+```
+
+The core module is also published for Scala.js and Scala Native. In a Scala.js or Scala Native project, or in a cross-built project, use `%%%` instead of `%%`:
+
+```scala
+// ZIO Logging core module (JVM, Scala.js or Scala Native)
+libraryDependencies += "dev.zio" %%% "zio-logging" % "@VERSION@"
 ```
 
 The main module contains the following features: 
@@ -39,7 +46,7 @@ The main module contains the following features:
 
 Other modules:
 
-* SLF4J backend - if you like to use [`SLF4J`](https://www.slf4j.org/) logging backends (e.g. java.util.logging, logback, log4j), add the one of following lines to your `build.sbt` file:
+* SLF4J backend - if you like to use [`SLF4J`](https://www.slf4j.org/) logging backends (e.g. java.util.logging, logback, log4j), add one of the following lines to your `build.sbt` file:
 
     ```scala
     // SLF4j v1 integration
@@ -52,7 +59,7 @@ Other modules:
    See SLF4J [v2](slf4j2.md) or [v1](slf4j1.md) section for more details.
 
 
-* SLF4J bridge - with this logging bridge, it is possible to use `zio-logging` for SLF4J loggers (usually third-party non-ZIO libraries), add the one of following lines to your `build.sbt` file: 
+* SLF4J bridge - with this logging bridge, it is possible to use `zio-logging` for SLF4J loggers (usually third-party non-ZIO libraries), add one of the following lines to your `build.sbt` file: 
 
     ```scala
     // Using ZIO Logging for SLF4j v1 loggers, usually third-party non-ZIO libraries
@@ -77,14 +84,14 @@ Other modules:
     See [Java Platform/System Logger](jpl.md) section for more details.
 
 
-* java.util.logging bridge - with this logging bridge, it is possible to use `zio-logging` for JUL loggers (usually third-party non-ZIO libraries), add the one of following lines to your `build.sbt` file:
+* java.util.logging bridge - this is a bridge, not a backend: it sends the log records that Java libraries write with `java.util.logging` (JUL) into ZIO Logging, so they reach the same ZIO loggers as the rest of your application. To use it, add the following line to your `build.sbt` file:
 
     ```scala
     // JUL bridge
     libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "@VERSION@"
     ```
 
-    When to use this module: you are already using JUL logger in some other project, and you like to have same log outputs.
+    When to use this module: a library you depend on logs through `java.util.logging`, and you want its log lines to be formatted, filtered and written by your ZIO Logging loggers.
     See [java.util.logging bridge](jul-bridge.md) section for more details.
 
 
@@ -92,19 +99,19 @@ Other modules:
 
 ZIO Logging is published for JVM, JS and Native. Which parts work on each platform depends on where the code lives in the source tree:
 
-| Feature | JVM | JS | Native | Why |
-| --- | --- | --- | --- | --- |
-| Console loggers (`consoleLogger`, `consoleJsonLogger`, `consoleErrLogger`) | yes | yes | yes | shared code, writes to `System.out` / `System.err` |
-| File loggers (`fileLogger`, `fileJsonLogger`) | yes | no | yes | JVM and Native code only |
-| Log metrics (`logMetrics`), reconfigurable logger | yes | yes | yes | shared code |
-| `LogFormat`, `LogFilter`, `LogAnnotation` | yes | yes | yes | shared code |
-| SLF4J, SLF4J bridges, java.util.logging bridge, JPL | yes | no | no | separate JVM-only modules |
+| Feature                                                                                            | JVM | JS  | Native | Why                                                |
+| -------------------------------------------------------------------------------------------------- | --- | --- | ------ | -------------------------------------------------- |
+| Console loggers (`consoleLogger`, `consoleJsonLogger`, `consoleErrLogger`, `consoleErrJsonLogger`) | yes | yes | yes    | shared code, writes to `System.out` / `System.err` |
+| File loggers (`fileLogger`, `fileJsonLogger`, `fileAsyncLogger`, `fileAsyncJsonLogger`)            | yes | no  | yes    | JVM and Native code only                           |
+| Log metrics (`logMetrics`), reconfigurable logger                                                  | yes | yes | yes    | shared code                                        |
+| `LogFormat`, `LogFilter`, `LogAnnotation`                                                          | yes | yes | yes    | shared code                                        |
+| SLF4J, SLF4J bridges, java.util.logging bridge, JPL                                                | yes | no  | no     | separate JVM-only modules                          |
 
 ## Example
 
 Let's try an example of ZIO Logging which demonstrates a simple application of ZIO logging.
 
-The recommended place for setting the logger is application boostrap. In this case, custom logger will be set for whole application runtime (also application failures will be logged with specified logger).
+The recommended place for setting the logger is the application bootstrap. The logger is then set for the whole application runtime, so application failures are also logged with it. The following application installs the console logger in its bootstrap:
 
 ```scala mdoc
 import zio.logging.consoleLogger
