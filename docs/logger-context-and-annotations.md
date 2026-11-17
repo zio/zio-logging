@@ -9,7 +9,7 @@ Annotations solve this. You attach a value to an effect once, and every log line
 
 ## Typed Annotations
 
-ZIO Logging's annotations are typed. A `LogAnnotation[A]` is a key with a name, a value type `A`, a `combine` rule for nested values, and a `render` rule that turns the value into text. The values for the current fiber live in a `LogContext`, which the fiber reference `zio.logging.logContext` holds. You define an annotation once and apply it to an effect with `@@`:
+ZIO Logging's annotations are typed. A `LogAnnotation[A]` is a key with a name, a value type `A`, a `LogAnnotation#combine` rule for nested values, and a `LogAnnotation#render` rule that turns the value into text. The values for the current fiber live in a `LogContext`, which the fiber reference `zio.logging.logContext` holds. You define an annotation once and apply it to an effect with `@@`:
 
 ```scala mdoc:compile-only
 import zio.ZIO
@@ -24,7 +24,7 @@ def handle(requestId: UUID): ZIO[Any, Nothing, Unit] =
   ZIO.logInfo("Handling request") @@ LogAnnotation.TraceId(requestId) @@ Tenant("acme")
 ```
 
-Compared with a plain string key, the typed form gives you three things. The compiler checks the value: `LogAnnotation.TraceId` accepts a `UUID`, so a user id cannot end up in the trace id field. The annotation decides what happens when an inner effect sets it again, through `combine`. And the name and rendering live in one `val` that the whole code base shares, so every module writes `trace_id` the same way.
+Compared with a plain string key, the typed form gives you three things. The compiler checks the value: `LogAnnotation.TraceId` accepts a `UUID`, so a user id cannot end up in the trace id field. The annotation decides what happens when an inner effect sets it again, through `LogAnnotation#combine`. And the name and rendering live in one `val` that the whole code base shares, so every module writes `trace_id` the same way.
 
 ZIO Logging predefines three annotations: `LogAnnotation.TraceId` for a `UUID` named `trace_id`, `LogAnnotation.UserId` for a `String` named `user_id`, and `LogAnnotation.TraceSpans` for a `List[String]` named `trace_spans`.
 
@@ -144,7 +144,7 @@ val session: ZIO[Any, Nothing, Unit] =
   newCheckout @@ FeatureFlags(Set("dark-mode"))
 ```
 
-With `LogFormat.logAnnotation(FeatureFlags)` in the format, the line logged when `session` runs carries `feature_flags=dark-mode,new-checkout`. Had `combine` returned the inner value, it would carry only `new-checkout`.
+With `LogFormat.logAnnotation(FeatureFlags)` in the format, the line logged when `session` runs carries `feature_flags=dark-mode,new-checkout`. Had `LogAnnotation#combine` returned the inner value, it would carry only `new-checkout`.
 
 Annotations also follow fibers. A fiber forked inside an annotated effect, for example by `ZIO.foreachPar`, starts with the annotations of its parent, so parallel work keeps the trace id without any extra code.
 
