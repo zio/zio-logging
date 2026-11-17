@@ -220,7 +220,7 @@ Each line then looks like `{"timestamp":"...","level":"INFO","message":"Handling
 When ZIO Logging writes through SLF4J, you do not change the ZIO format. The default format of `SLF4J.slf4j` already passes every annotation except the logger name and the SLF4J marker to SLF4J:
 
 ```scala mdoc:compile-only
-import zio.logging.slf4j.SLF4J
+import zio.logging.backend.SLF4J
 
 val slf4jLayer: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 ```
