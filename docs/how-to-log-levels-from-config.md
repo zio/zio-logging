@@ -17,12 +17,12 @@ The steps are:
 
 ## Prerequisites
 
-Add the core module and the Typesafe config module to your build:
+Add the core module and the Typesafe config module to your build. The Typesafe config module belongs to ZIO Config, which has its own version numbers, so it does not take the ZIO Logging version:
 
 ```scala
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio-logging"            % "@VERSION@",
-  "dev.zio" %% "zio-config-typesafe"    % "@VERSION@"
+  "dev.zio" %% "zio-config-typesafe"    % "4.1.2"
 )
 ```
 
