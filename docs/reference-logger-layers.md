@@ -10,7 +10,7 @@ keywords:
   - "zio.logging"
 ---
 
-The `zio.logging` package object is where ZIO Logging's ready-made loggers live. It gives you three kinds of members: **layers** such as `zio.logging.consoleLogger`, which you put in your application's `bootstrap`; **constructors** such as `zio.logging.makeConsoleLogger`, which are ZIO effects that build a `ZLogger` without installing it; and **syntax** such as `ZLoggerZIOLayerOps#install`, which turns a constructor into a layer. Two small logger classes, `FilteredLogger` and `MetricLogger`, are what most constructors return.
+The `zio.logging` package object is where ZIO Logging's ready-made loggers live. It gives you three kinds of members: **layers** such as `zio.logging.consoleLogger`, which you put in your application's `bootstrap`; **constructors** such as `zio.logging.makeConsoleLogger`, which are ZIO effects that build a `ZLogger` without installing it; and **syntax** such as `ZLoggerZIOLayerOps#install`, which turns a constructor into a layer. Two small logger classes, `FilteredLogger` and `MetricLogger`, are what the config forms of the file constructors and `zio.logging.makeMetricLogger` return.
 
 All members below are public as `zio.logging.<name>`. In the source, the `private[logging]` traits `LoggerLayers`, `FileLoggerLayers` and `LoggingPackageAllPlatforms` define them and the package object mixes those traits in, so you never refer to those trait names in your code. The shape of the package object is:
 
