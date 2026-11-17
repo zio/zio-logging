@@ -1,7 +1,7 @@
 ---
 id: tutorial
-title: "Tutorial"
-sidebar_label: "Tutorial"
+title: "Tutorial: ZIO Logging Basics"
+sidebar_label: "Logging Basics"
 ---
 
 Welcome to the ZIO Logging tutorial! This tutorial is for developers who are new to ZIO Logging. You should know the basics of ZIO, such as effects (values of type `ZIO` that describe work to run), `for` comprehensions, and `ZIOAppDefault`. You don't need any experience with logging libraries.
@@ -32,11 +32,17 @@ Some terms come up often in this tutorial. A **logger** is the part of your prog
 
 We start by adding the ZIO Logging library to an sbt project. Add this line to your `build.sbt`:
 
-```
+```scala
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 
-The line tells sbt to download the `zio-logging` library. It is built on ZIO, so you also need ZIO itself in your project. If you already use ZIO, you have it.
+The line tells sbt to download the `zio-logging` library. The library depends on ZIO, so the same line also brings ZIO into your project.
+
+This tutorial runs on the JVM. The core module is also published for Scala.js and Scala Native; in such a project, write `%%%` instead of `%%`:
+
+```scala
+libraryDependencies += "dev.zio" %%% "zio-logging" % "@VERSION@"
+```
 
 ## 2. Print Your First Log Message
 
