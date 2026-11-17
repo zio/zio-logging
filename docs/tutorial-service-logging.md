@@ -41,7 +41,7 @@ We define the order model and the two components:
 import zio._
 import zio.logging.loggerName
 
-final case class Order(id: String, userId: String, amount: BigDecimal)
+case class Order(id: String, userId: String, amount: BigDecimal)
 
 object Payments {
   def charge(order: Order): UIO[Unit] =

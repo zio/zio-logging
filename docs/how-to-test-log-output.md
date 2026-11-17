@@ -66,7 +66,7 @@ The specs in this guide test a small order service. `Orders.processOrder` logs a
 import zio._
 import zio.logging.loggerName
 
-final case class Order(id: String, userId: String, amount: BigDecimal)
+case class Order(id: String, userId: String, amount: BigDecimal)
 
 object Orders {
   def processOrder(order: Order): UIO[Unit] =

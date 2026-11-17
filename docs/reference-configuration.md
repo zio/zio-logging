@@ -75,7 +75,7 @@ To read the console logger settings as one field of an application config, nest 
 import zio.{ Config, ZIO }
 import zio.logging.ConsoleLoggerConfig
 
-final case class AppConfig(port: Int, logging: ConsoleLoggerConfig)
+case class AppConfig(port: Int, logging: ConsoleLoggerConfig)
 
 val appConfig: Config[AppConfig] =
   (Config.int("port") ++ ConsoleLoggerConfig.config.nested("logging")).map { case (port, logging) =>

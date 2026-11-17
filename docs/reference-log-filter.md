@@ -49,7 +49,7 @@ val quietWarnings: LogFilter[Any] = LogFilter.logLevel(LogLevel.Warning) && !Log
 ```scala mdoc:compile-only
 import zio.logging.{ LogFilter, LogGroup }
 
-final case class AuditEvent(action: String, user: String)
+case class AuditEvent(action: String, user: String)
 
 val messageText: LogGroup[String, String] =
   LogGroup[String, String]((_, _, _, message, _, _, _, _) => message())
