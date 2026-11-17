@@ -244,7 +244,7 @@ object ConsoleOutputSpec extends ZIOSpecDefault {
 
         for {
           _    <- Orders.processOrder(Order("o-1", "u-42", BigDecimal(750))).provideLayer(captureLogger)
-          lines = buffer.toString(StandardCharsets.UTF_8.name).split(System.lineSeparator()).toList
+          lines = buffer.toString(StandardCharsets.UTF_8.name).split(java.lang.System.lineSeparator()).toList
         } yield assertTrue(lines == List("INFO Processing order o-1", "WARN Large order o-1: 750"))
       }
     )
