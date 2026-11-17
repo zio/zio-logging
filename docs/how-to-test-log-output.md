@@ -52,7 +52,7 @@ This keeps only the text you chose to keep, so a later test that needs the annot
 
 Add ZIO Test to your build, at the same version as your ZIO dependency. Use `%%%` instead of `%%` for Scala.js and Scala Native projects:
 
-```
+```scala
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio-logging"  % "@VERSION@",
   "dev.zio" %% "zio-test"     % "2.1.27" % Test,

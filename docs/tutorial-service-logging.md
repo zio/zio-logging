@@ -168,7 +168,7 @@ So far, the format and the levels are Scala values. To change them, we have to r
 
 We add the module to `build.sbt`:
 
-```
+```scala
 libraryDependencies += "dev.zio" %% "zio-config-typesafe" % "4.1.2"
 ```
 
@@ -330,7 +330,7 @@ The warning for a large order is part of the service's behaviour: an alert depen
 
 ZIO Test records every log call of a test in a test logger, `ZTestLogger`, and `ZTestLogger.logOutput` returns the recorded entries. We add ZIO Test to `build.sbt`, at the same version as your ZIO dependency:
 
-```
+```scala
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio-test"     % "2.1.27" % Test,
   "dev.zio" %% "zio-test-sbt" % "2.1.27" % Test
