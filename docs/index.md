@@ -49,16 +49,14 @@ These modules are optional. Each one connects ZIO Logging to a Java logging libr
 A backend sends the log lines of your ZIO code to a Java logging library, which formats and writes them. All backend modules are JVM only.
 
 ```scala
-libraryDependencies ++= Seq(
-  // SLF4J 2 backend (JVM)
-  "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@",
+// SLF4J 2 backend (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
 
-  // SLF4J 1.x backend (JVM)
-  "dev.zio" %% "zio-logging-slf4j" % "@VERSION@",
+// SLF4J 1.x backend (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 
-  // Java Platform/System Logger backend (JVM)
-  "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
-)
+// Java Platform/System Logger backend (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 ```
 
 [SLF4J v2](slf4j2.md), [SLF4J v1](slf4j1.md), and [Java Platform/System Logger](jpl.md) describe these modules.
@@ -68,16 +66,14 @@ libraryDependencies ++= Seq(
 A bridge does the opposite: it sends the log lines that Java libraries write to your ZIO Logging loggers. All bridge modules are JVM only.
 
 ```scala
-libraryDependencies ++= Seq(
-  // SLF4J 2 bridge (JVM)
-  "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@",
+// SLF4J 2 bridge (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
 
-  // SLF4J 1.x bridge (JVM)
-  "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@",
+// SLF4J 1.x bridge (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 
-  // java.util.logging bridge (JVM)
-  "dev.zio" %% "zio-logging-jul-bridge" % "@VERSION@"
-)
+// java.util.logging bridge (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "@VERSION@"
 ```
 
 [SLF4J v2 bridge](slf4j2-bridge.md), [SLF4J v1 bridge](slf4j1-bridge.md), and [java.util.logging bridge](jul-bridge.md) describe these modules. Do not combine a backend and a bridge for the same logging system in one application. See [How They Work Together](reference-integrations.md#how-they-work-together).
