@@ -35,3 +35,4 @@ website/yarn.lock
 website/package-lock.json
 website/static/api
 .bsp/
+website/i18n
