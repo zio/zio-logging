@@ -27,10 +27,56 @@ Key features of ZIO Logging:
 Add the core module to your `build.sbt`:
 
 ```scala
+// ZIO Logging core module (JVM)
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 
-[Getting Started](getting-started.md) covers Scala.js and Scala Native, the SLF4J, JPL and java.util.logging modules, and when to use each one.
+The core module is also published for Scala.js and Scala Native. In a Scala.js or Scala Native project, or in a cross-built project, use `%%%` instead of `%%`:
+
+```scala
+// ZIO Logging core module (JVM, Scala.js or Scala Native)
+libraryDependencies += "dev.zio" %%% "zio-logging" % "@VERSION@"
+```
+
+[Getting Started](getting-started.md) explains the core module and when to add the modules below.
+
+## Modules
+
+These modules are optional. Each one connects ZIO Logging to a Java logging library. Add only the ones you need.
+
+### Backends
+
+A backend sends the log lines of your ZIO code to a Java logging library, which formats and writes them. All backend modules are JVM only.
+
+```scala
+// SLF4J 2 backend (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
+
+// SLF4J 1.x backend (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
+
+// Java Platform/System Logger backend (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
+```
+
+[SLF4J v2](slf4j2.md), [SLF4J v1](slf4j1.md), and [Java Platform/System Logger](jpl.md) describe these modules.
+
+### Bridges
+
+A bridge does the opposite: it sends the log lines that Java libraries write to your ZIO Logging loggers. All bridge modules are JVM only.
+
+```scala
+// SLF4J 2 bridge (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
+
+// SLF4J 1.x bridge (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
+
+// java.util.logging bridge (JVM)
+libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "@VERSION@"
+```
+
+[SLF4J v2 bridge](slf4j2-bridge.md), [SLF4J v1 bridge](slf4j1-bridge.md), and [java.util.logging bridge](jul-bridge.md) describe these modules. Do not combine a backend and a bridge for the same logging system in one application. See [How They Work Together](reference-integrations.md#how-they-work-together).
 
 ## Platforms
 
