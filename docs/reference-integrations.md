@@ -314,6 +314,7 @@ Each SLF4J call becomes one ZIO record. The table lists what survives:
 The `zio-logging-jul-bridge` module installs a `java.util.logging.Handler` on the JUL root logger and turns each `LogRecord` into a ZIO log record. The entry point is `JULBridge` in package `zio.logging.jul.bridge`. Add the dependency:
 
 ```scala
+// Routes java.util.logging logs through ZIO Logging
 libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "@VERSION@"
 ```
 
@@ -390,6 +391,7 @@ The bridge copies the message, the level, the logger name and the thrown excepti
 The `zio-logging-jpl` module writes ZIO log records to `java.lang.System.Logger`, the logging API built into the JDK (Java Platform Logging). The entry point is `JPL` in package `zio.logging.backend`. Add the dependency:
 
 ```scala
+// Sends ZIO logs to the Java Platform System Logger
 libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 ```
 

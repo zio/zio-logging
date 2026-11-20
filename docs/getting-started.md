@@ -44,14 +44,20 @@ Add the line for each module you need:
 
 ```scala
 // Backends: send ZIO log lines to a Java logging library
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@" // SLF4J v2
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j"  % "@VERSION@" // SLF4J v1
-libraryDependencies += "dev.zio" %% "zio-logging-jpl"    % "@VERSION@" // Java Platform/System Logger
+// SLF4J v2
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2" % "@VERSION@"
+// SLF4J v1
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j"  % "@VERSION@"
+// Java Platform/System Logger
+libraryDependencies += "dev.zio" %% "zio-logging-jpl"    % "@VERSION@"
 
 // Bridges: send Java library log lines to ZIO Logging
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@" // SLF4J v2
-libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge"  % "@VERSION@" // SLF4J v1
-libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge"    % "@VERSION@" // java.util.logging
+// SLF4J v2
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
+// SLF4J v1
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge"  % "@VERSION@"
+// java.util.logging
+libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge"    % "@VERSION@"
 ```
 
 :::caution

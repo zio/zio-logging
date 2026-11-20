@@ -53,11 +53,14 @@ This keeps only the text you chose to keep, so a later test that needs the annot
 Add ZIO Test to your build, at the same version as your ZIO dependency. Use `%%%` instead of `%%` for Scala.js and Scala Native projects:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio" %% "zio-logging"  % "@VERSION@",
-  "dev.zio" %% "zio-test"     % "2.1.27" % Test,
-  "dev.zio" %% "zio-test-sbt" % "2.1.27" % Test
-)
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
+libraryDependencies += "dev.zio" %% "zio-logging"  % "@VERSION@"
+
+// ZIO Test: the test library (test scope)
+libraryDependencies += "dev.zio" %% "zio-test"     % "2.1.27" % Test
+
+// ZIO Test sbt integration (test scope)
+libraryDependencies += "dev.zio" %% "zio-test-sbt" % "2.1.27" % Test
 ```
 
 The specs in this guide test a small order service. `Orders.processOrder` logs an `Info` line, a `Warning` line for orders over 500, and a `Debug` line. It sets its logger name with `loggerName` and adds an `order_id` annotation with ZIO's `ZIOAspect.annotated`:

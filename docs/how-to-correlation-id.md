@@ -43,6 +43,7 @@ The ID is also baked into the message text, so a log tool cannot filter on it as
 Add the core module to your build. Use `%%%` instead of `%%` for Scala.js or Scala Native:
 
 ```scala
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 

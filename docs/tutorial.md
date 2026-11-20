@@ -33,6 +33,7 @@ Some terms come up often in this tutorial. A **logger** is the part of your prog
 We start by adding the ZIO Logging library to an sbt project. Add this line to your `build.sbt`:
 
 ```scala
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 
@@ -41,6 +42,7 @@ The line tells sbt to download the `zio-logging` library. The library depends on
 This tutorial runs on the JVM. The core module is also published for Scala.js and Scala Native; in such a project, write `%%%` instead of `%%`:
 
 ```scala
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
 libraryDependencies += "dev.zio" %%% "zio-logging" % "@VERSION@"
 ```
 

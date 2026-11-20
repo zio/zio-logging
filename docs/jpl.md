@@ -8,6 +8,7 @@ The [Java Platform Logging API](https://openjdk.org/jeps/264) (JPL), introduced 
 In order to use this logging backend, we need to add the following line to our build.sbt file:
 
 ```scala
+// Sends ZIO logs to the Java Platform System Logger
 libraryDependencies += "dev.zio" %% "zio-logging-jpl" % "@VERSION@"
 ```
 

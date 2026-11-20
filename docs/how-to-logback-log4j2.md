@@ -40,29 +40,34 @@ Each setup needs the ZIO Logging module and the provider. The versions below are
 For Logback 1.3 or later:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio"        %% "zio-logging-slf4j2" % "@VERSION@",
-  "ch.qos.logback"  % "logback-classic"    % "1.6.7"
-)
+// Sends ZIO logs to SLF4J 2.x
+libraryDependencies += "dev.zio"        %% "zio-logging-slf4j2" % "@VERSION@"
+
+// Logback backend for SLF4J
+libraryDependencies += "ch.qos.logback"  % "logback-classic"    % "1.6.7"
 ```
 
 For Log4j 2, the `log4j-slf4j2-impl` adapter is the SLF4J 2 provider and `log4j-core` does the logging:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio"                 %% "zio-logging-slf4j2" % "@VERSION@",
-  "org.apache.logging.log4j" % "log4j-slf4j2-impl"  % "2.26.1",
-  "org.apache.logging.log4j" % "log4j-core"         % "2.26.1"
-)
+// Sends ZIO logs to SLF4J 2.x
+libraryDependencies += "dev.zio"                 %% "zio-logging-slf4j2" % "@VERSION@"
+
+// Log4j 2 binding for SLF4J 2.x
+libraryDependencies += "org.apache.logging.log4j" % "log4j-slf4j2-impl"  % "2.26.1"
+
+// Log4j 2 core implementation
+libraryDependencies += "org.apache.logging.log4j" % "log4j-core"         % "2.26.1"
 ```
 
 For Logback 1.2:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio"        %% "zio-logging-slf4j" % "@VERSION@",
-  "ch.qos.logback"  % "logback-classic"   % "1.2.13"
-)
+// Sends ZIO logs to SLF4J 1.x
+libraryDependencies += "dev.zio"        %% "zio-logging-slf4j" % "@VERSION@"
+
+// Logback backend for SLF4J
+libraryDependencies += "ch.qos.logback"  % "logback-classic"   % "1.2.13"
 ```
 
 All ZIO Logging integration modules require Java 17 or later.

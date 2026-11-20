@@ -10,10 +10,11 @@ Log lines are often part of what a program promises: an audit line for every pay
 The test logger is part of ZIO Test. Add `zio-test` and its sbt runner to the test scope of your build, with the same version as your ZIO dependency (`%%%` in a Scala.js or Scala Native project):
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio" %% "zio-test"     % "2.1.27" % Test,
-  "dev.zio" %% "zio-test-sbt" % "2.1.27" % Test
-)
+// ZIO Test: the test library (test scope)
+libraryDependencies += "dev.zio" %% "zio-test"     % "2.1.27" % Test
+
+// ZIO Test sbt integration (test scope)
+libraryDependencies += "dev.zio" %% "zio-test-sbt" % "2.1.27" % Test
 ```
 
 ## Reading the Recorded Log Entries

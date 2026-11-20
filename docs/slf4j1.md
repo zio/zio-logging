@@ -8,6 +8,7 @@ title: "SLF4J v1"
 In order to use this logging backend, we need to add the following line to our build.sbt file:
 
 ```scala
+// Sends ZIO logs to SLF4J 1.x
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j" % "@VERSION@"
 ```
 

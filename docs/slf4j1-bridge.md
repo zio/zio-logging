@@ -8,6 +8,7 @@ Many third-party Java libraries log through [SLF4J](https://www.slf4j.org/). The
 To use the bridge, add the module to your build:
 
 ```scala
+// Routes SLF4J 1.x logs through ZIO Logging
 libraryDependencies += "dev.zio" %% "zio-logging-slf4j-bridge" % "@VERSION@"
 ```
 
