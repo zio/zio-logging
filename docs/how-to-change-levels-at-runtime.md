@@ -27,10 +27,11 @@ What you want is to edit the level, see `DEBUG` lines within seconds, and edit i
 Add the core module, and `zio-config-typesafe` to read HOCON files. The examples read a file from disk, so they target the JVM:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio" %% "zio-logging"         % "@VERSION@",
-  "dev.zio" %% "zio-config-typesafe" % "4.1.2"
-)
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
+libraryDependencies += "dev.zio" %% "zio-logging"         % "@VERSION@"
+
+// HOCON and JSON config sources
+libraryDependencies += "dev.zio" %% "zio-config-typesafe" % "4.1.2"
 ```
 
 The examples use these imports:

@@ -20,6 +20,7 @@ The steps are:
 Add the core module to your build:
 
 ```scala
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
 libraryDependencies += "dev.zio" %% "zio-logging" % "@VERSION@"
 ```
 

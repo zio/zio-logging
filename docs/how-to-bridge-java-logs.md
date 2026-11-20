@@ -19,10 +19,11 @@ The steps are:
 Add the bridge modules. The `slf4j2-bridge` module is for SLF4J v2 (`slf4j-api` 2.x) only. For libraries on `slf4j-api` 1.7.x, use the [SLF4J v1 bridge](./slf4j1-bridge.md) module, `zio-logging-slf4j-bridge`, instead; its `Slf4jBridge` object has the same layers, so the steps below apply to it unchanged. All bridge modules require Java 17 or later. Add both bridge modules to your build:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@",
-  "dev.zio" %% "zio-logging-jul-bridge"    % "@VERSION@"
-)
+// Routes SLF4J 2.x logs through ZIO Logging
+libraryDependencies += "dev.zio" %% "zio-logging-slf4j2-bridge" % "@VERSION@"
+
+// Routes java.util.logging logs through ZIO Logging
+libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge"    % "@VERSION@"
 ```
 
 :::warning

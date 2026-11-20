@@ -38,6 +38,7 @@ Prefer the layers. Reach for a `make*` constructor when you need something a lay
 The console, metric and syntax members are in the core module, published for JVM, Scala.js and Scala Native:
 
 ```scala
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
 libraryDependencies += "dev.zio" %%% "zio-logging" % "@VERSION@"
 ```
 

@@ -8,6 +8,7 @@ title: "java.util.logging bridge"
 To use the bridge, add the module to your build:
 
 ```scala
+// Routes java.util.logging logs through ZIO Logging
 libraryDependencies += "dev.zio" %% "zio-logging-jul-bridge" % "@VERSION@"
 ```
 

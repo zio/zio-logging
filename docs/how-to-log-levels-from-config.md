@@ -20,10 +20,11 @@ The steps are:
 Add the core module and the Typesafe config module to your build. The Typesafe config module belongs to ZIO Config, which has its own version numbers, so it does not take the ZIO Logging version:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio" %% "zio-logging"            % "@VERSION@",
-  "dev.zio" %% "zio-config-typesafe"    % "4.1.2"
-)
+// ZIO Logging core: loggers, layers and log formats (JVM, Scala.js)
+libraryDependencies += "dev.zio" %% "zio-logging"            % "@VERSION@"
+
+// HOCON and JSON config sources
+libraryDependencies += "dev.zio" %% "zio-config-typesafe"    % "4.1.2"
 ```
 
 The examples use these imports:

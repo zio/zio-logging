@@ -121,6 +121,7 @@ The `info` call increments a different series, the one with `level="info"`, so i
 ZIO metrics stay inside the application until a connector publishes them. To expose the counter to Prometheus, add the ZIO Metrics Connectors Prometheus module, which has its own version numbers:
 
 ```scala
+// Prometheus connector for ZIO Metrics
 libraryDependencies += "dev.zio" %% "zio-metrics-connectors-prometheus" % "2.6.0"
 ```
 
