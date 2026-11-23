@@ -17,8 +17,24 @@ package zio.logging
 
 import zio.{ FiberRefs, Trace }
 
+/**
+ * A `LoggerNameExtractor` finds the logger name of a log event, from its `Trace`, its string annotations or its
+ * fiber refs. It returns `None` when it finds no name, so extractors can be chained with `||`. `toLogFormat`
+ * and `toLogGroup` turn an extractor into a log format or a log group.
+ *
+ * {{{
+ * import zio.logging.{ LogFormat, LoggerNameExtractor }
+ *
+ * // the "component" annotation, or the name from the trace when the annotation is not set
+ * val name: LoggerNameExtractor = LoggerNameExtractor.annotation("component") || LoggerNameExtractor.trace
+ * val format: LogFormat         = name.toLogFormat() |-| LogFormat.line
+ * }}}
+ *
+ * @see [[https://zio.dev/zio-logging/reference-log-filter/ LogFilter and LogGroup Reference]]
+ */
 sealed trait LoggerNameExtractor { self =>
 
+  /** Returns the logger name of the log event with these parts, or `None` when this extractor finds none. */
   def apply(
     trace: Trace,
     context: FiberRefs,
@@ -50,6 +66,9 @@ sealed trait LoggerNameExtractor { self =>
 
 }
 
+/**
+ * Constructors for logger name extractors.
+ */
 object LoggerNameExtractor {
 
   private[logging] final case class FnExtractor(fn: (Trace, FiberRefs, Map[String, String]) => Option[String])
@@ -70,10 +89,11 @@ object LoggerNameExtractor {
       first(trace, context, annotations).orElse(second(trace, context, annotations))
   }
 
+  /** Creates an extractor from a function of the trace, the fiber refs and the string annotations of an event. */
   def make(fn: (Trace, FiberRefs, Map[String, String]) => Option[String]): LoggerNameExtractor = FnExtractor(fn)
 
   /**
-   * Extractor which take logger name from [[Trace]]
+   * Extractor which take logger name from `Trace`
    *
    * trace with value ''example.LivePingService.ping(PingService.scala:22)''
    * will have ''example.LivePingService'' as logger name
@@ -100,7 +120,7 @@ object LoggerNameExtractor {
   def annotation(name: String): LoggerNameExtractor = AnnotationExtractor(name)
 
   /**
-   * Extractor which take logger name from annotation or [[Trace]] if specified annotation is not present
+   * Extractor which take logger name from annotation or `Trace` if specified annotation is not present
    *
    * @param name name of annotation
    */
@@ -108,7 +128,8 @@ object LoggerNameExtractor {
     annotation(name) || LoggerNameExtractor.trace
 
   /**
-   * Extractor which take logger name from annotation with key [[zio.logging.loggerNameAnnotationKey]] or [[Trace]] if specified annotation is not present
+   * Extractor which take logger name from annotation with key [[zio.logging.loggerNameAnnotationKey]] or `Trace`
+   * if specified annotation is not present
    */
   val loggerNameAnnotationOrTrace: LoggerNameExtractor =
     annotationOrTrace(loggerNameAnnotationKey)

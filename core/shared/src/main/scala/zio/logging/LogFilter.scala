@@ -21,16 +21,40 @@ import zio.{ Cause, Config, FiberId, FiberRefs, LogLevel, LogSpan, NonEmptyChunk
 import scala.annotation.tailrec
 
 /**
- * A `LogFilter` represents function/conditions for log filtering
+ * A `LogFilter` decides whether a log event is written. It has two parts: a `LogGroup` that extracts one
+ * value from the event, such as its level or logger name, and a predicate that tests that value. Combine
+ * filters with `&&`, `||` and `!`, and put a filter in front of a logger with `filter`.
+ *
+ * {{{
+ * import zio.LogLevel
+ * import zio.logging.LogFilter
+ *
+ * // WARN and above, plus DEBUG and above for loggers under com.example
+ * val filter: LogFilter[String] =
+ *   LogFilter.logLevelByName[String](LogLevel.Warning, "com.example" -> LogLevel.Debug)
+ *
+ * // only events that carry a cause
+ * val failures: LogFilter[Any] = LogFilter.causeNonEmpty
+ * val both: LogFilter[String]  = filter && failures
+ * }}}
+ *
+ * @see [[https://zio.dev/zio-logging/log-filter/ Log Filter]]
+ * @see [[https://zio.dev/zio-logging/reference-log-filter/ LogFilter and LogGroup Reference]]
  */
 sealed trait LogFilter[-Message] { self =>
 
+  /** The type of the value that `group` extracts and `predicate` tests. */
   type Value
 
+  /** Extracts the value that this filter tests from a log event. */
   def group: LogGroup[Message, Value]
 
+  /** Returns `true` when an event with this group value passes the filter. */
   def predicate(value: Value): Boolean
 
+  /**
+   * Runs `group` on the log event, then `predicate` on the result. Returns `true` when the event passes.
+   */
   final def apply(
     trace: Trace,
     fiberId: FiberId,
@@ -47,12 +71,12 @@ sealed trait LogFilter[-Message] { self =>
   }
 
   /**
-   * Returns a new log filter which satisfy result of this and given log filter
+   * Returns a new log filter which accepts an event only when both this and the given log filter accept it.
    */
   final def &&[M <: Message](other: LogFilter[M]): LogFilter[M] = and(other)
 
   /**
-   * Returns a new log filter which satisfy result of this or given log filter
+   * Returns a new log filter which accepts an event when this or the given log filter accepts it.
    */
   final def ||[M <: Message](other: LogFilter[M]): LogFilter[M] = or(other)
 
@@ -63,7 +87,8 @@ sealed trait LogFilter[-Message] { self =>
     LogFilter.AndFilter(self, other)
 
   /**
-   * Returns a new log filter with cached results
+   * Returns a new log filter with cached results: the predicate runs once for each distinct group value, and
+   * later events with the same value reuse the result. The group itself still runs for every event.
    */
   final def cached: LogFilter[Message] =
     self match {
@@ -71,6 +96,10 @@ sealed trait LogFilter[-Message] { self =>
       case _                              => LogFilter.CachedFilter(self)
     }
 
+  /**
+   * Returns a filter for messages of type `M`, which converts each message with `f` before this filter's
+   * group reads it.
+   */
   final def contramap[M](f: M => Message): LogFilter[M] = LogFilter[M, self.Value](
     group.contramap(f),
     self.predicate
@@ -100,8 +129,20 @@ sealed trait LogFilter[-Message] { self =>
 
 }
 
+/**
+ * Constructors for log filters: from a `LogGroup` and a predicate, by log level, and by log level per logger
+ * name.
+ *
+ * @see [[https://zio.dev/zio-logging/log-filter/ Log Filter]]
+ */
 object LogFilter {
 
+  /**
+   * Compares filters by structure: filters combined with `and`, `or`, `not` or `cached` are equal when their
+   * parts are equal, and filters built from a `LogLevelByNameConfig` are equal when their configs
+   * are equal. Other filters are compared with `==`, so two filters built from separate function values,
+   * such as two calls of `LogFilter.logLevel(LogLevel.Info)`, are not equal.
+   */
   implicit val equal: Equal[LogFilter[_]] = Equal.make { (l, r) =>
     (l, r) match {
       case (l: GroupPredicateFilter[_, _], r: GroupPredicateFilter[_, _]) => GroupPredicateFilter.equal.equal(l, r)
@@ -227,47 +268,68 @@ object LogFilter {
   }
 
   /**
-   * Defines a filter from a list of log-levels specified per tree node
+   * The minimum log levels of a filter, per logger name: a root level, and a level for each logger name
+   * prefix, nesting defined by dot-separated names. `toFilter` turns it into a filter.
    *
    * Example:
    *
    * {{{
-   *   val filter =
-   *     logLevelByName(
-   *      LogLevel.Debug,
-   *      "io.netty"                                       -> LogLevel.Info,
-   *      "io.grpc.netty"                                  -> LogLevel.Info
-   * )
+   * import zio.LogLevel
+   * import zio.logging.LogFilter
+   *
+   * val config =
+   *   LogFilter.LogLevelByNameConfig(
+   *     LogLevel.Debug,
+   *     "io.netty"      -> LogLevel.Info,
+   *     "io.grpc.netty" -> LogLevel.Info
+   *   )
+   * val filter: LogFilter[String] = config.toFilter[String]
    * }}}
    *
    * will use the `Debug` log level for everything except for log events with the logger name
    * prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
-   * Logger name is extracted from [[Trace]].
+   * Logger name is extracted from the logger name annotation, or from the `Trace` of the log call when the
+   * annotation is not set; see [[LogGroup.loggerName]].
    *
    * @param rootLevel Minimum log level for the root node
    * @param mappings  List of mappings, nesting defined by dot-separated strings
+   * @see [[https://zio.dev/zio-logging/log-filter/ Log Filter]]
    */
   final case class LogLevelByNameConfig(rootLevel: LogLevel, mappings: Map[String, LogLevel]) {
 
+    /** Returns a copy with `rootLevel` as the root level. */
     def withRootLevel(rootLevel: LogLevel): LogLevelByNameConfig =
       LogLevelByNameConfig(rootLevel, mappings)
 
+    /** Returns a copy with the mapping `name -> level` added, replacing any mapping for the same `name`. */
     def withMapping(name: String, level: LogLevel): LogLevelByNameConfig =
       LogLevelByNameConfig(rootLevel, mappings + (name -> level))
 
+    /** Returns a copy whose mappings are `mappings`, replacing all current mappings. */
     def withMappings(mappings: Map[String, LogLevel]): LogLevelByNameConfig =
       LogLevelByNameConfig(rootLevel, mappings)
 
+    /** Builds the filter for this config, the same as `LogFilter.logLevelByName(this)`. */
     def toFilter[M]: LogFilter[M] = LogFilter.logLevelByName(this)
   }
 
+  /**
+   * Constructors and the config reader for `LogLevelByNameConfig`.
+   */
   object LogLevelByNameConfig {
 
+    /** Creates a config from a root level and `name -> level` pairs. */
     def apply(rootLevel: LogLevel, mappings: (String, LogLevel)*): LogLevelByNameConfig =
       LogLevelByNameConfig(rootLevel, mappings.toMap)
 
+    /** Root level INFO, with no mappings. */
     val default: LogLevelByNameConfig = LogLevelByNameConfig(LogLevel.Info, Map.empty[String, LogLevel])
 
+    /**
+     * Reads `rootLevel` (default `INFO`) and the `mappings` table of logger names to levels (default empty).
+     *
+     * @see [[https://zio.dev/zio-logging/reference-configuration/ Configuration Keys Reference]]
+     */
     val config: Config[LogLevelByNameConfig] = {
       val rootLevelConfig = Config.logLevel.nested("rootLevel").withDefault(LogLevel.Info)
       val mappingsConfig  = Config.table("mappings", Config.logLevel).withDefault(Map.empty)
@@ -277,17 +339,31 @@ object LogFilter {
       }
     }
 
+    /** Compares configs by their root level and mappings. */
     implicit val equal: Equal[LogLevelByNameConfig] = Equal.default
 
+    /** Reads the config at `configPath` from the `ConfigProvider` of the running effect. */
     def load(configPath: NonEmptyChunk[String]): ZIO[Any, Config.Error, LogLevelByNameConfig] =
       ZIO.config(LogLevelByNameConfig.config.nested(configPath.head, configPath.tail: _*))
   }
 
+  /**
+   * Creates a filter that accepts an event when `predicate0` returns `true` for the value that `group0`
+   * extracts.
+   *
+   * {{{
+   * import zio.LogLevel
+   * import zio.logging.{ LogFilter, LogGroup }
+   *
+   * val errorsOnly: LogFilter[Any] = LogFilter(LogGroup.logLevel, (level: LogLevel) => level >= LogLevel.Error)
+   * }}}
+   */
   def apply[M, V](
     group0: LogGroup[M, V],
     predicate0: V => Boolean
   ): LogFilter[M] = GroupPredicateFilter(group0, predicate0)
 
+  /** Creates a filter that accepts an event when `group0` returns `true` for it. */
   def apply[M](
     group0: LogGroup[M, Boolean]
   ): LogFilter[M] = apply[M, Boolean](group0, identity)
@@ -311,7 +387,7 @@ object LogFilter {
   )
 
   /**
-   * Returns a filter which accept logs when the log level priority is higher then given one
+   * Returns a filter which accepts logs whose level is `rootLevel` or higher.
    */
   def logLevel(rootLevel: LogLevel): LogFilter[Any] =
     logLevel(_ >= rootLevel)
@@ -323,7 +399,7 @@ object LogFilter {
    *
    * @param rootLevel Default log level
    * @param group Log group
-   * @param matcher Mather for log group and groupings
+   * @param matcher Matcher for log group and groupings, called as `matcher(groupValue, grouping)`
    * @param groupings Log levels definitions
    * @return A filter for log filtering based on given groups
    */
@@ -351,12 +427,16 @@ object LogFilter {
    * Example:
    *
    * {{{
-   *   val filter =
-   *     logLevelByGroup(
-   *      LogLevel.Debug,
-   *      "io.netty"                                       -> LogLevel.Info,
-   *      "io.grpc.netty"                                  -> LogLevel.Info
-   * )
+   * import zio.LogLevel
+   * import zio.logging.{ LogFilter, LogGroup }
+   *
+   * val filter: LogFilter[Any] =
+   *   LogFilter.logLevelByGroup[Any](
+   *     LogLevel.Debug,
+   *     LogGroup.loggerName,
+   *     "io.netty"      -> LogLevel.Info,
+   *     "io.grpc.netty" -> LogLevel.Info
+   *   )
    * }}}
    *
    * will use the `Debug` log level for everything except for log events with the logger name
@@ -389,17 +469,20 @@ object LogFilter {
    * Example:
    *
    * {{{
-   *   val filter =
-   *     logLevelByName(
-   *      LogLevel.Debug,
-   *      "io.netty"                                       -> LogLevel.Info,
-   *      "io.grpc.netty"                                  -> LogLevel.Info
-   * )
+   * import zio.LogLevel
+   * import zio.logging.LogFilter
+   *
+   * val filter: LogFilter[Any] =
+   *   LogFilter.logLevelByName[Any](
+   *     LogLevel.Debug,
+   *     "io.netty"      -> LogLevel.Info,
+   *     "io.grpc.netty" -> LogLevel.Info
+   *   )
    * }}}
    *
    * will use the `Debug` log level for everything except for log events with the logger name
    * prefixed by either `List("io", "netty")` or `List("io", "grpc", "netty")`.
-   * Logger name is extracted from log annotation or [[Trace]], see: [[LogGroup.loggerName]]
+   * Logger name is extracted from log annotation or `Trace`, see: [[LogGroup.loggerName]]
    *
    * @param rootLevel Minimum log level for the root node
    * @param mappings  List of mappings, nesting defined by dot-separated strings
@@ -408,12 +491,20 @@ object LogFilter {
   def logLevelByName[M](rootLevel: LogLevel, mappings: (String, LogLevel)*): LogFilter[M] =
     logLevelByGroup[M](rootLevel, LogGroup.loggerName, mappings: _*)
 
+  /**
+   * Same as the `logLevelByGroup` overload that takes `(String, LogLevel)` mappings, with the root level and
+   * the mappings read from `config`. Filters built this way compare equal when their configs are equal.
+   */
   def logLevelByGroup[M](group: LogGroup[M, String], config: LogLevelByNameConfig): LogFilter[M] =
     ConfiguredFilter[M, LogLevelByNameConfig](
       config,
       config => logLevelByGroup[M](config.rootLevel, group, config.mappings.toList: _*)
     )
 
+  /**
+   * Same as the `logLevelByName` overload that takes `(String, LogLevel)` mappings, with the root level and
+   * the mappings read from `config`.
+   */
   def logLevelByName[M](config: LogLevelByNameConfig): LogFilter[M] =
     logLevelByGroup[M](LogGroup.loggerName, config)
 
@@ -469,6 +560,8 @@ object LogFilter {
    *
    * for example, input:
    * {{{
+   *  import zio.LogLevel
+   *
    *  Seq(
    *    "a"              -> LogLevel.Warning,
    *    "a"              -> LogLevel.Info,
@@ -482,6 +575,8 @@ object LogFilter {
    * will be sorted as:
    *
    * {{{
+   *  import zio.LogLevel
+   *
    *  Seq(
    *    "e.f"            -> LogLevel.Error,
    *    "a.b.d"          -> LogLevel.Debug,
