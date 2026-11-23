@@ -23,6 +23,40 @@ import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.{ Path, Paths }
 import scala.util.{ Failure, Success, Try }
 
+/**
+ * The settings of a file logger. Pass one to `fileLogger`, `fileJsonLogger` or their async versions, or let
+ * those layers read it from configuration with `FileLoggerConfig.load`.
+ *
+ * {{{
+ * import zio._
+ * import zio.logging.{ FileLoggerConfig, LogFilter, LogFormat, fileLogger }
+ * import java.nio.file.Paths
+ *
+ * val config: FileLoggerConfig =
+ *   FileLoggerConfig(
+ *     destination = Paths.get("/var/log/my-app/app.log"),
+ *     format = LogFormat.default,
+ *     filter = LogFilter.LogLevelByNameConfig(LogLevel.Info),
+ *     autoFlushBatchSize = 100,
+ *     bufferedIOSize = Some(8192),
+ *     rollingPolicy = Some(FileLoggerConfig.FileRollingPolicy.TimeBasedRollingPolicy)
+ *   )
+ *
+ * val bootstrap: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers >>> fileLogger(config)
+ * }}}
+ *
+ * @param destination the file to append to
+ * @param format the format of each line
+ * @param filter the minimum log level, per logger name
+ * @param charset the character encoding of the file
+ * @param autoFlushBatchSize the writer is flushed after every `autoFlushBatchSize` lines; `1` flushes after
+ *   each line
+ * @param bufferedIOSize when set, the file is written through a `java.io.BufferedWriter` with a buffer of
+ *   this many characters
+ * @param rollingPolicy when set, how the file rolls over to a new file
+ * @see [[https://zio.dev/zio-logging/file-logger/ File Logger]]
+ * @see [[https://zio.dev/zio-logging/reference-configuration/ Configuration Keys Reference]]
+ */
 final case class FileLoggerConfig(
   destination: Path,
   format: LogFormat,
@@ -32,17 +66,32 @@ final case class FileLoggerConfig(
   bufferedIOSize: Option[Int] = None,
   rollingPolicy: Option[FileLoggerConfig.FileRollingPolicy] = None
 ) {
+
+  /** Builds the log filter of `filter`. */
   def toFilter[M]: LogFilter[M] = filter.toFilter
 }
 
+/**
+ * The rolling policies, and the readers that load a file logger config from configuration.
+ */
 object FileLoggerConfig {
 
+  /** How a file logger moves to a new file. */
   sealed trait FileRollingPolicy
 
+  /** The supported rolling policies, and their config reader. */
   object FileRollingPolicy {
 
+    /**
+     * Writes to one file per day. The date, as `yyyy-MM-dd`, is inserted before the file extension of the
+     * destination, so `app.log` is written as `app-2026-11-23.log`. The writer switches to the next file at
+     * the first line written on a new day, in the system default time zone.
+     */
     final case object TimeBasedRollingPolicy extends FileRollingPolicy
 
+    /**
+     * Reads the key `type`. The only supported value is `TimeBasedRollingPolicy`; any other value fails.
+     */
     val config: Config[FileRollingPolicy] = {
       val tpe       = Config.string("type")
       val timeBased = Config.succeed(TimeBasedRollingPolicy)
@@ -65,6 +114,13 @@ object FileLoggerConfig {
         Left(Config.Error.InvalidData(Chunk.empty, s"Expected a Path, but found ${value}"))
     }
 
+  /**
+   * Reads the keys `path` (required, a URI such as `file:///var/log/app.log`), `format` (a pattern string,
+   * default `LogFormat.default`), `filter` (`rootLevel`, default `INFO`, and `mappings`), `charset` (default
+   * `UTF-8`), `autoFlushBatchSize` (default `1`), `bufferedIOSize` (optional) and `rollingPolicy` (optional).
+   * A plain path such as `/var/log/app.log` is not a valid `path`: it fails with
+   * `Expected a Path, but found /var/log/app.log`.
+   */
   val config: Config[FileLoggerConfig] = {
     val autoFlushBatchSizeConfig = Config.int.nested("autoFlushBatchSize").withDefault(1)
     val bufferedIOSizeConfig     = Config.int.nested("bufferedIOSize").optional
@@ -89,6 +145,10 @@ object FileLoggerConfig {
     }
   }
 
+  /**
+   * Compares two configs by every field: the format with `==`, the filter settings, and the other fields
+   * with `==`.
+   */
   implicit val equal: Equal[FileLoggerConfig] = Equal.make { (l, r) =>
     l.destination == r.destination &&
     l.charset == r.charset &&
@@ -99,9 +159,14 @@ object FileLoggerConfig {
     l.filter === r.filter
   }
 
+  /**
+   * Reads the config under `configPath`, by default `logger`, from the `ConfigProvider` of the running
+   * effect. Fails with `Config.Error` when `path` is missing or a value is invalid.
+   */
   def load(configPath: NonEmptyChunk[String] = loggerConfigPath): ZIO[Any, Config.Error, FileLoggerConfig] =
     ZIO.config(FileLoggerConfig.config.nested(configPath.head, configPath.tail: _*))
 
+  /** A layer that provides the config read by `load` from `configPath`. */
   def make(
     configPath: NonEmptyChunk[String] = loggerConfigPath
   ): ZLayer[Any, Config.Error, FileLoggerConfig] =
