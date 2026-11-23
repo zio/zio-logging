@@ -39,8 +39,9 @@ private[logging] trait FileLoggerLayers {
 
   /**
    * Installs a logger that appends text lines, formatted with `config.format`, to the file
-   * `config.destination`, for the events that `config.filter` accepts. The logging fiber only queues each
-   * line; a background fiber, forked when the layer is built, writes the lines to the file in order.
+   * `config.destination`, for the events that `config.filter` accepts. The logging fiber puts each line in a
+   * queue that holds 1000 lines, and a background fiber, forked when the layer is built, writes the lines to
+   * the file in order. Logging blocks while the queue is full.
    *
    * {{{
    * import zio._
