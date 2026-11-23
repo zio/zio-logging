@@ -17,14 +17,10 @@ package zio.logging.internal
 
 import scala.annotation.switch
 
-/** Escapes text for use inside a JSON string literal. */
+/** Helper for writing JSON text. */
 object JsonEscape {
 
-  /**
-   * Returns `s` with `"` and backslash escaped, backspace, form feed, newline, carriage return and tab written
-   * as two-character escapes, and other control characters below a space written as six-character unicode
-   * escapes.
-   */
+  /** Returns the JSON form of `s`. */
   def apply(s: CharSequence): CharSequence = {
     val sb  = new java.lang.StringBuilder
     var i   = 0
