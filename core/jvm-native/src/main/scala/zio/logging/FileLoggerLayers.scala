@@ -22,30 +22,107 @@ import java.nio.file.Path
 
 private[logging] trait FileLoggerLayers {
 
+  /**
+   * Same as `fileAsyncLogger`, with each line formatted as JSON by `config.format.toJsonLogger`.
+   *
+   * @see [[https://zio.dev/zio-logging/file-logger/ File Logger]]
+   */
   def fileAsyncJsonLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileAsyncJsonLogger(config).installUnscoped
 
+  /**
+   * Same as the `fileAsyncJsonLogger` overload that takes a config, with the `FileLoggerConfig` read from
+   * `configPath` by `FileLoggerConfig.load`. Fails with `Config.Error` when the config is missing or invalid.
+   */
   def fileAsyncJsonLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileAsyncJsonLogger).installUnscoped
 
+  /**
+   * Installs a logger that appends text lines, formatted with `config.format`, to the file
+   * `config.destination`, for the events that `config.filter` accepts. The logging fiber only queues each
+   * line; a background fiber, forked when the layer is built, writes the lines to the file in order.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.{ FileLoggerConfig, LogFilter, LogFormat, fileAsyncLogger }
+   * import java.nio.file.Paths
+   *
+   * val config: FileLoggerConfig =
+   *   FileLoggerConfig(Paths.get("/var/log/my-app/app.log"), LogFormat.default, LogFilter.LogLevelByNameConfig.default)
+   *
+   * val bootstrap: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers >>> fileAsyncLogger(config)
+   * }}}
+   *
+   * @see [[https://zio.dev/zio-logging/file-logger/ File Logger]]
+   */
   def fileAsyncLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileAsyncLogger(config).installUnscoped
 
+  /**
+   * Same as the `fileAsyncLogger` overload that takes a config, with the `FileLoggerConfig` read from
+   * `configPath` by `FileLoggerConfig.load`. Fails with `Config.Error` when the config is missing or invalid.
+   */
   def fileAsyncLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileAsyncLogger).installUnscoped
 
+  /**
+   * Same as `fileLogger`, with each line formatted as JSON by `config.format.toJsonLogger`.
+   *
+   * @see [[https://zio.dev/zio-logging/file-logger/ File Logger]]
+   * @see [[https://zio.dev/zio-logging/how-to-json-logs/ JSON Logs]]
+   */
   def fileJsonLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileJsonLogger(config).install
 
+  /**
+   * Same as the `fileJsonLogger` overload that takes a config, with the `FileLoggerConfig` read from
+   * `configPath` by `FileLoggerConfig.load`. Fails with `Config.Error` when the config is missing or invalid.
+   */
   def fileJsonLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileJsonLogger).install
 
+  /**
+   * Installs a logger that appends text lines, formatted with `config.format`, to the file
+   * `config.destination`, for the events that `config.filter` accepts. Each line is written by the fiber that
+   * logs, during the log call. The file is opened when the layer is built; when it cannot be opened, for
+   * example because its directory does not exist, building the layer dies with a
+   * `java.io.FileNotFoundException`.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.{ FileLoggerConfig, LogFilter, LogFormat, fileLogger }
+   * import java.nio.file.Paths
+   *
+   * val config: FileLoggerConfig =
+   *   FileLoggerConfig(
+   *     destination = Paths.get("/var/log/my-app/app.log"),
+   *     format = LogFormat.default,
+   *     filter = LogFilter.LogLevelByNameConfig(LogLevel.Debug)
+   *   )
+   *
+   * val bootstrap: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers >>> fileLogger(config)
+   * }}}
+   *
+   * @see [[https://zio.dev/zio-logging/file-logger/ File Logger]]
+   */
   def fileLogger(config: FileLoggerConfig): ZLayer[Any, Nothing, Unit] =
     makeFileLogger(config).install
 
+  /**
+   * Same as the `fileLogger` overload that takes a config, with the `FileLoggerConfig` read from
+   * `configPath`, by default `logger`, through `FileLoggerConfig.load`. Fails with `Config.Error` when the
+   * config is missing or invalid, for example when `path` is not set.
+   *
+   * @see [[https://zio.dev/zio-logging/file-logger/ File Logger]]
+   * @see [[https://zio.dev/zio-logging/reference-configuration/ Configuration Keys Reference]]
+   */
   def fileLogger(configPath: NonEmptyChunk[String] = loggerConfigPath): ZLayer[Any, Config.Error, Unit] =
     FileLoggerConfig.load(configPath).flatMap(makeFileLogger).install
 
+  /**
+   * Builds, without installing, the logger of `fileAsyncJsonLogger`, filtered by `config.filter`. The
+   * background writer fiber is forked into the given `Scope`.
+   */
   def makeFileAsyncJsonLogger(config: FileLoggerConfig): ZIO[Scope, Nothing, FilteredLogger[String, Any]] =
     makeFileAsyncLogger(
       config.destination,
@@ -56,6 +133,10 @@ private[logging] trait FileLoggerLayers {
       config.rollingPolicy
     ).filter(config.toFilter)
 
+  /**
+   * Builds, without installing, the logger of `fileAsyncLogger`, filtered by `config.filter`. The background
+   * writer fiber is forked into the given `Scope`.
+   */
   def makeFileAsyncLogger(config: FileLoggerConfig): ZIO[Scope, Nothing, FilteredLogger[String, Any]] =
     makeFileAsyncLogger(
       config.destination,
@@ -66,6 +147,12 @@ private[logging] trait FileLoggerLayers {
       config.rollingPolicy
     ).filter(config.toFilter)
 
+  /**
+   * Builds, without installing, an asynchronous file logger that formats each event with `logger`, usually
+   * `LogFormat#toLogger` or `LogFormat#toJsonLogger`, and has a background fiber, forked into the given
+   * `Scope`, append the lines to `destination`. No filter is applied. The other arguments mean the same as
+   * the `FileLoggerConfig` fields of the same names.
+   */
   def makeFileAsyncLogger(
     destination: Path,
     logger: ZLogger[String, String],
@@ -113,6 +200,7 @@ private[logging] trait FileLoggerLayers {
     stringLogger
   }
 
+  /** Builds, without installing, the logger of `fileJsonLogger`, filtered by `config.filter`. */
   def makeFileJsonLogger(config: FileLoggerConfig): ZIO[Any, Nothing, FilteredLogger[String, Any]] =
     makeFileLogger(
       config.destination,
@@ -123,6 +211,7 @@ private[logging] trait FileLoggerLayers {
       config.rollingPolicy
     ).filter(config.toFilter)
 
+  /** Builds, without installing, the logger of `fileLogger`, filtered by `config.filter`. */
   def makeFileLogger(config: FileLoggerConfig): ZIO[Any, Nothing, FilteredLogger[String, Any]] =
     makeFileLogger(
       config.destination,
@@ -133,6 +222,12 @@ private[logging] trait FileLoggerLayers {
       config.rollingPolicy
     ).filter(config.toFilter)
 
+  /**
+   * Builds, without installing, a file logger that formats each event with `logger`, usually
+   * `LogFormat#toLogger` or `LogFormat#toJsonLogger`, and appends the line to `destination` from the fiber
+   * that logs. The file is opened when this effect runs. No filter is applied. The other arguments mean the
+   * same as the `FileLoggerConfig` fields of the same names.
+   */
   def makeFileLogger(
     destination: Path,
     logger: ZLogger[String, String],

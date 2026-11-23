@@ -18,6 +18,13 @@ package zio.logging
 import zio.metrics.{ Metric, MetricLabel }
 import zio.{ Cause, FiberId, FiberRef, FiberRefs, LogLevel, LogSpan, Trace, Unsafe, ZLogger }
 
+/**
+ * A logger that writes nothing and increments `counter` by one for every log event. Each increment is tagged
+ * with the metric tags of the logging fiber and with the label `logLevelLabel`, whose value is the
+ * lower-case level label, such as `info` or `warn`. `logMetrics` and `logMetricsWith` install one.
+ *
+ * @see [[https://zio.dev/zio-logging/metrics/ Log Metrics]]
+ */
 final case class MetricLogger(counter: Metric.Counter[Long], logLevelLabel: String) extends ZLogger[String, Unit] {
 
   override def apply(
