@@ -17,8 +17,13 @@ package zio.logging.internal
 
 import scala.annotation.tailrec
 
+/** Recognizes strings that hold a JSON object or array. */
 object JsonValidator {
 
+  /**
+   * Returns `true` when `string`, apart from surrounding whitespace, is a JSON object or array, such as
+   * `{"a":1}` or `[1,2]`. A bare JSON string, number, boolean or `null` returns `false`.
+   */
   def isJson(string: String): Boolean = {
     val startIdx = stringCouldBeJson(string)
     if (startIdx == NOT_A_JSON) false

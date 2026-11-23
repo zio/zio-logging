@@ -22,7 +22,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+/** Supplies the `Writer` that a file logger writes to. */
 private[logging] sealed trait WriterProvider {
+
+  /** Returns the writer to use for the next line. */
   def writer: Writer
 }
 
