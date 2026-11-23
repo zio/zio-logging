@@ -20,8 +20,8 @@ import zio.{ Chunk, Config }
 import scala.io.AnsiColor
 
 /**
- * An ANSI terminal color, used by `LogFormat#color` and `LogFormat#highlight`. The values are the constants
- * in the `LogColor` companion object, such as `LogColor.RED`.
+ * An ANSI terminal color, used by `LogFormat#color` and `LogFormat#highlight`. Use the constants in the
+ * `LogColor` companion object, such as `LogColor.RED`.
  */
 final case class LogColor private (private[logging] val ansi: String) extends AnyVal
 
