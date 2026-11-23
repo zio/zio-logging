@@ -77,8 +77,8 @@ object ReconfigurableLogger {
    * newly loaded config is not equal to the current one, according to the `Equal` instance, it calls
    * `makeLogger(newConfig, Some(currentLogger))` and switches to the new logger. A failure of `loadConfig` or
    * `makeLogger` in a reload ends the reloads; the current logger stays in use. A `ConsoleLoggerConfig` or
-   * `FileLoggerConfig` whose format has a `%timestamp{pattern}` is never equal to the previous one, so the
-   * logger is rebuilt on every reload.
+   * `FileLoggerConfig` read from a config provider, whose format has a `%timestamp{pattern}`, is never
+   * equal to the previous one, so the logger is rebuilt on every reload.
    *
    * {{{
    * import zio._
