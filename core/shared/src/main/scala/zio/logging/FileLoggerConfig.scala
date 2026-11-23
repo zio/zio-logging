@@ -150,8 +150,8 @@ object FileLoggerConfig {
    * Compares two configs by every field: the format with `==`, the filter settings, and the other fields
    * with `==`. Formats read from the same pattern string are equal, except when the pattern has a
    * `%timestamp{...}` element with its own date-time pattern: each read builds a new `DateTimeFormatter`, and
-   * two such formats are not equal. Configs with a `%timestamp{pattern}` are never equal, so
-   * `ReconfigurableLogger.make` rebuilds the logger on every reload.
+   * two such formats are not equal. Two reads of a config with a `%timestamp{pattern}` are never
+   * equal, so `ReconfigurableLogger.make` rebuilds the logger on every reload.
    */
   implicit val equal: Equal[FileLoggerConfig] = Equal.make { (l, r) =>
     l.destination == r.destination &&
