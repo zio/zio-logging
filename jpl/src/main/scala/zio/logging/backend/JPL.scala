@@ -62,8 +62,8 @@ object JPL {
     var throwable: Throwable   = null
 
     /**
-     * Stores the `Throwable` of a non-empty cause: its first `Throwable` failure or defect, or a `FiberFailure` that
-     * wraps the whole cause when it holds none.
+     * Stores the `Throwable` of a non-empty cause: its first `Throwable` failure, else its first defect, else a
+     * `FiberFailure` that wraps the whole cause.
      */
     override def appendCause(cause: Cause[Any]): Unit = {
       if (!cause.isEmpty) {
