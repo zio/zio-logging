@@ -223,8 +223,9 @@ object SLF4J {
 
   /**
    * Returns a layer that adds an SLF4J logger, built by [[slf4jLogger]], to the loggers of the ZIO runtime. Combine it
-   * with `Runtime.removeDefaultLoggers` to replace the default console logger. Each built SLF4J layer adds its own
-   * logger, so build only one in an application: with two, every line is logged twice.
+   * with `Runtime.removeDefaultLoggers` to replace the default console logger. Build only one SLF4J layer in an
+   * application: a second layer adds a second logger, and then every line is logged twice, unless it is built from the
+   * same `format`, `loggerName` and `causeToThrowable` values as the first.
    *
    * {{{
    * import zio._
@@ -284,8 +285,8 @@ object SLF4J {
 
   /**
    * Returns the SLF4J backend as a `ZLogger`, without installing it, so that it can be wrapped, for example with a
-   * `LogFilter`, before `Runtime.addLogger` installs it. It also looks up one SLF4J logger at once, which makes SLF4J
-   * initialize its provider now rather than at the first log line.
+   * `LogFilter`, before `Runtime.addLogger` installs it. When called, it also looks up the SLF4J logger
+   * `zio-slf4j-logger`, which makes SLF4J initialize its provider then rather than at the first log line.
    *
    * {{{
    * import zio._
