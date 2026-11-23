@@ -21,6 +21,10 @@ import org.slf4j.{ ILoggerFactory, Logger }
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters._
 
+/**
+ * The SLF4J logger factory of the bridge. It keeps one `ZioLogger` per name and forwards their calls to the attached
+ * `LoggerRuntime`; until one is attached, its loggers report every level as disabled and drop every call.
+ */
 final class ZioLoggerFactory extends ILoggerFactory {
   private var runtime: LoggerRuntime = null
   private val loggers                = new ConcurrentHashMap[String, Logger]().asScala
@@ -45,8 +49,15 @@ final class ZioLoggerFactory extends ILoggerFactory {
     loggers.getOrElseUpdate(name, new ZioLogger(name, this))
 }
 
+/**
+ * Connects the bridge's logger factory to a `LoggerRuntime`.
+ */
 object ZioLoggerFactory {
 
+  /**
+   * Attaches `runtime` to the `ZioLoggerFactory` that SLF4J uses, so that its loggers, including those created before
+   * this call, forward their calls to `runtime`.
+   */
   def initialize(runtime: LoggerRuntime): Unit = {
     val factory = org.slf4j.LoggerFactory
       .getILoggerFactory()
