@@ -534,6 +534,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.timestamp(formatter)
     }
 
+    /** The name of the `%timestamp` element. */
     object Timestamp {
 
       /** The element name, `timestamp`. */
@@ -564,6 +565,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.anyAnnotation(annotationKey)
     }
 
+    /** The name of the `%kv` element. */
     object KeyValue {
 
       /** The element name, `kv`. */
@@ -606,6 +608,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.span(spanName)
     }
 
+    /** The name of the `%span` element. */
     object Span {
 
       /** The element name, `span`. */
@@ -627,6 +630,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = pattern.toLogFormat.highlight
     }
 
+    /** The name of the `%highlight` element. */
     object Highlight {
 
       /** The element name, `highlight`. */
@@ -649,6 +653,7 @@ object LogFormat {
         }
     }
 
+    /** The name of the `%label` element. */
     object Label {
 
       /** The element name, `label`. */
@@ -663,6 +668,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = pattern.toLogFormat.fixed(size)
     }
 
+    /** The name of the `%fixed` element. */
     object Fixed {
 
       /** The element name, `fixed`. */
@@ -680,6 +686,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = pattern.toLogFormat.color(color)
     }
 
+    /** The name of the `%color` element. */
     object Color {
 
       /** The element name, `color`. */
@@ -691,6 +698,7 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.text(text)
     }
 
+    /** Constants for literal text patterns. */
     object Text {
 
       /** Text with no characters. */
