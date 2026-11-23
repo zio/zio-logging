@@ -22,7 +22,9 @@ import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime
 /**
  * A logging backend that sends each ZIO log line to a `java.lang.System.Logger`, the Java Platform Logging API. With
  * no `System.LoggerFinder` installed, the JDK sends these lines to `java.util.logging`. `System.Logger` has no MDC or
- * key-value pairs, so the annotations of a line are written as `key=value` text in the message.
+ * key-value pairs, so the annotations of a line are written as `key=value` text in the message. Annotation keys and
+ * values are appended to the message text as they are, so a value that contains a line break splits the message over
+ * several lines.
  *
  * The backend applies no ZIO `LogFilter` of its own: it calls `System.Logger#isLoggable` with the mapped level, so the
  * `System.Logger` implementation decides which lines are written. `Fatal` is passed as `ERROR`, `All` as `ALL`, and
