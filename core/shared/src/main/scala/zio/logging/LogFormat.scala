@@ -442,10 +442,10 @@ object LogFormat {
     def toLogFormat: LogFormat
 
     /**
-     * Returns a filter that accepts a log event only when this pattern has a value to write for it, or `None`
-     * when the pattern always has one. `%cause` returns `LogFilter.causeNonEmpty`, and a sequence of patterns
-     * returns the `or` of its parts' filters. A `%label{...}{...}` element uses it to write nothing, not even
-     * its label, when the inner pattern has no value.
+     * Returns the filter that a `%label{...}{...}` element around this pattern uses to decide whether to write
+     * anything, or `None` for no filter. `%cause` returns `LogFilter.causeNonEmpty`, a sequence of patterns
+     * returns the `or` of its parts' filters, and the other elements return `None`, also when they wrap
+     * `%cause`, as `%highlight{%cause}` does.
      */
     def isDefinedFilter: Option[LogFilter[Any]] = None
   }
@@ -886,8 +886,9 @@ object LogFormat {
      * Parses a pattern string, such as `%timestamp{HH:mm:ss} %level %message`.
      *
      * Returns `Left` when the string does not start with text or a known element, for example `%unknown` or an
-     * empty string. Parsing stops at the first character that cannot start an element or text, such as a lone
-     * `}`, and the rest of the string is ignored: `%level}xyz` parses as `%level`.
+     * empty string. Parsing stops at the first point where no element or text matches, such as a lone `}` or an
+     * unknown element after some text, and the rest of the string is ignored: `%level}xyz` parses as `%level`,
+     * and `abc %unknown` as the text `abc `.
      *
      * {{{
      * import zio.logging.LogFormat.Pattern
