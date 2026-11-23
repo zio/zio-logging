@@ -72,10 +72,10 @@ object ReconfigurableLogger {
 
   /**
    * Loads the config with `loadConfig` and builds the first logger with `makeLogger(config, None)`. It then
-   * forks a fiber into the `Scope` that runs `loadConfig` again, at once and then on the `updateLogger`
-   * schedule (every 10 seconds by default). When a newly loaded config is not equal to the current one,
-   * according to the `Equal` instance, it calls `makeLogger(newConfig, Some(currentLogger))` and switches to
-   * the new logger. A failure of `loadConfig` or `makeLogger` in a reload ends the reloads; the current logger
+   * forks a fiber into the `Scope` that runs `loadConfig` again on the `updateLogger` schedule (every 10
+   * seconds by default; with `Schedule.fixed`, the first reload comes one interval after the start). When a
+   * newly loaded config is not equal to the current one, according to the `Equal` instance, it calls
+   * `makeLogger(newConfig, Some(currentLogger))` and switches to the new logger. A failure of `loadConfig` or `makeLogger` in a reload ends the reloads; the current logger
    * stays in use.
    *
    * {{{

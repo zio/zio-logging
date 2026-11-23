@@ -74,7 +74,8 @@ object ConsoleLoggerConfig {
 
   /**
    * Compares two configs by their format, with `==`, and their filter settings. Formats read from the same
-   * pattern string are equal.
+   * pattern string are equal, except when the pattern has a `%timestamp{...}` element with its own date-time
+   * pattern: each read builds a new `DateTimeFormatter`, and two such formats are not equal.
    */
   implicit val equal: Equal[ConsoleLoggerConfig] = Equal.make { (l, r) =>
     l.format == r.format && l.filter === r.filter

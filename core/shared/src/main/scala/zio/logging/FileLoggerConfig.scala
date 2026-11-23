@@ -45,7 +45,8 @@ import scala.util.{ Failure, Success, Try }
  * val bootstrap: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers >>> fileLogger(config)
  * }}}
  *
- * @param destination the file to append to
+ * @param destination the file to append to; with a `rollingPolicy`, the name that the dated file names are
+ *   made from
  * @param format the format of each line
  * @param filter the minimum log level, per logger name
  * @param charset the character encoding of the file
@@ -147,7 +148,9 @@ object FileLoggerConfig {
 
   /**
    * Compares two configs by every field: the format with `==`, the filter settings, and the other fields
-   * with `==`.
+   * with `==`. Formats read from the same pattern string are equal, except when the pattern has a
+   * `%timestamp{...}` element with its own date-time pattern: each read builds a new `DateTimeFormatter`, and
+   * two such formats are not equal.
    */
   implicit val equal: Equal[FileLoggerConfig] = Equal.make { (l, r) =>
     l.destination == r.destination &&
