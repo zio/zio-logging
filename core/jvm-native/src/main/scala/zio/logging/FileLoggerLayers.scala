@@ -84,7 +84,9 @@ private[logging] trait FileLoggerLayers {
   /**
    * Installs a logger that appends text lines, formatted with `config.format`, to the file
    * `config.destination`, for the events that `config.filter` accepts. Each line is written by the fiber that
-   * logs, during the log call. The file is opened when the layer is built; when it cannot be opened, for
+   * logs, during the log call; each line and its line separator are written separately, so lines that
+   * several fibers log at the same time can be mixed together in the file, while `fileAsyncLogger` writes
+   * from a single fiber. The file is opened when the layer is built; when it cannot be opened, for
    * example because its directory does not exist, building the layer dies with a
    * `java.io.FileNotFoundException`.
    *
