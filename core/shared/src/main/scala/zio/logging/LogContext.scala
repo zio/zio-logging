@@ -16,7 +16,9 @@
 package zio.logging
 
 /**
- * A `LogContext` stores context associated with logging operations.
+ * A `LogContext` stores context associated with logging operations: a value for each typed
+ * `LogAnnotation` that is in effect. The fiber reference [[zio.logging.logContext]] holds the current
+ * context, and applying an annotation with `@@` adds to it.
  */
 final case class LogContext private (private val map: Map[LogAnnotation[_], Any]) { self =>
 
@@ -27,7 +29,8 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
 
   /**
    * Annotates the context with the specified annotation and value, returning
-   * the new context.
+   * the new context. When the context already has a value for the annotation,
+   * the new value is merged into it with the annotation's `combine` function.
    */
   def annotate[A](annotation: LogAnnotation[A], newA: A): LogContext =
     get(annotation) match {
@@ -57,7 +60,8 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
     }
 
   /**
-   * Merges this context with the specified context.
+   * Merges this context with the specified context. For an annotation present in both, the values are
+   * merged with the annotation's `combine` function, this context's value first.
    */
   def merge(that: LogContext): LogContext = {
     val allKeys = self.map.keySet ++ that.map.keySet
@@ -85,6 +89,9 @@ final case class LogContext private (private val map: Map[LogAnnotation[_], Any]
     }
 }
 
+/**
+ * Constructors for `LogContext`.
+ */
 object LogContext {
 
   /**
