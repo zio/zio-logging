@@ -24,8 +24,8 @@ import java.util.logging.LogManager
 /**
  * A bridge that forwards `java.util.logging` (JUL) records to the ZIO loggers, so that Java libraries that log through
  * JUL get the same format, filter and destination as ZIO log lines. Installing the bridge resets the global JUL
- * configuration with the single setting `.level= ALL`, which removes every JUL handler installed before, and then adds
- * one handler to the root JUL logger.
+ * configuration with the single setting `.level= ALL`, which removes the handlers installed before on the root JUL
+ * logger and on named JUL loggers, and then adds one handler to the root JUL logger.
  *
  * The bridge captures the ZIO runtime, with the loggers it has at that moment, when it is installed, so build the
  * logger layer first. Each forwarded JUL record becomes one ZIO log line with the JUL logger name in the `logger_name`
@@ -41,9 +41,9 @@ object JULBridge {
   val logFilterConfigPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath :+ "filter"
 
   /**
-   * A layer that installs the bridge with no filter, so that JUL records of every level are forwarded, and turns on
-   * fiber-ref propagation. Fiber-ref propagation, which `Runtime.enableCurrentFiber` turns on, lets a JUL record
-   * logged on the thread of a fiber carry that fiber's log annotations and log spans.
+   * A layer that installs the bridge with no filter, so that JUL records at every standard JUL level are forwarded,
+   * and turns on fiber-ref propagation. Fiber-ref propagation, which `Runtime.enableCurrentFiber` turns on, lets a JUL
+   * record logged on the thread of a fiber carry that fiber's log annotations and log spans.
    */
   def initialize: ZLayer[Any, Nothing, Unit] = init(LogFilter.acceptAll)
 
@@ -86,10 +86,12 @@ object JULBridge {
    * }
    * }}}
    *
-   * With the default path, the following HOCON keeps `INFO` and above, and only `WARNING` and above for the JUL
-   * loggers under `io.opentelemetry`:
+   * With the default path and a HOCON `ConfigProvider`, such as `TypesafeConfigProvider` from `zio-config-typesafe`,
+   * the following config keeps `INFO` and above, and only `WARNING` and above for the JUL loggers under
+   * `io.opentelemetry`:
    *
-   * ```hocon
+   * {{{
+   * // no-check: HOCON config input
    * logger {
    *   filter {
    *     rootLevel = INFO
@@ -98,7 +100,7 @@ object JULBridge {
    *     }
    *   }
    * }
-   * ```
+   * }}}
    *
    * @param configPath the config path of the filter, [[logFilterConfigPath]] by default
    * @see [[https://zio.dev/zio-logging/jul-bridge/ java.util.logging bridge]]
@@ -107,9 +109,9 @@ object JULBridge {
     Runtime.enableCurrentFiber ++ layer(configPath)
 
   /**
-   * A layer that installs the bridge with no filter, so that JUL records of every level are forwarded, without turning
-   * on fiber-ref propagation: forwarded lines do not carry the log annotations and log spans of the fiber that logged
-   * them.
+   * A layer that installs the bridge with no filter, so that JUL records at every standard JUL level are forwarded,
+   * without turning on fiber-ref propagation: forwarded lines do not carry the log annotations and log spans of the
+   * fiber that logged them.
    */
   def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initWithoutFiberRefPropagation(
     LogFilter.acceptAll
