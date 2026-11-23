@@ -21,39 +21,105 @@ import zio.{ Config, NonEmptyChunk, Runtime, Semaphore, Unsafe, ZIO, ZLayer }
 import java.io.ByteArrayInputStream
 import java.util.logging.LogManager
 
+/**
+ * A bridge that forwards `java.util.logging` (JUL) records to the ZIO loggers, so that Java libraries that log through
+ * JUL get the same format, filter and destination as ZIO log lines. Installing the bridge resets the global JUL
+ * configuration with the single setting `.level= ALL`, which removes every JUL handler installed before, and then adds
+ * one handler to the root JUL logger.
+ *
+ * The bridge captures the ZIO runtime, with the loggers it has at that moment, when it is installed, so build the
+ * logger layer first. Each forwarded JUL record becomes one ZIO log line with the JUL logger name in the `logger_name`
+ * annotation; the JUL message is used as it is, without filling in its parameters.
+ *
+ * @see [[https://zio.dev/zio-logging/jul-bridge/ java.util.logging bridge]]
+ */
 object JULBridge {
 
+  /**
+   * The default config path of the bridge's filter, `logger.filter`.
+   */
   val logFilterConfigPath: NonEmptyChunk[String] = zio.logging.loggerConfigPath :+ "filter"
 
   /**
-   * initialize java.util.Logging bridge
+   * A layer that installs the bridge with no filter, so that JUL records of every level are forwarded, and turns on
+   * fiber-ref propagation. Fiber-ref propagation, which `Runtime.enableCurrentFiber` turns on, lets a JUL record
+   * logged on the thread of a fiber carry that fiber's log annotations and log spans.
    */
   def initialize: ZLayer[Any, Nothing, Unit] = init(LogFilter.acceptAll)
 
   /**
-   * initialize java.util.Logging bridge with `LogFilter`
+   * A layer that installs the bridge with `filter` and turns on fiber-ref propagation. The filter sees the level and
+   * the `logger_name` annotation of each record, which holds the JUL logger name.
    *
-   * @param filter Log filter
+   * {{{
+   * import zio._
+   * import zio.logging.{ LogFilter, consoleLogger }
+   * import zio.logging.jul.bridge.JULBridge
+   *
+   * val logger: ZLayer[Any, Config.Error, Unit] =
+   *   Runtime.removeDefaultLoggers >>> consoleLogger() >+> JULBridge.init(
+   *     LogFilter.logLevelByName(LogLevel.Info, "io.opentelemetry" -> LogLevel.Warning)
+   *   )
+   * }}}
+   *
+   * @param filter the filter that decides which JUL records are forwarded
    */
   def init(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = Runtime.enableCurrentFiber ++ layer(filter)
 
   /**
-   * initialize java.util.Logging bridge with `LogFilter` from configuration
-   * @param configPath configuration path
+   * A layer that installs the bridge with a filter read from config, and turns on fiber-ref propagation. It reads a
+   * `LogFilter.LogLevelByNameConfig` at `configPath` from the `ConfigProvider` of the runtime: the `rootLevel` key
+   * (`INFO` when missing) and the `mappings` table from JUL logger name prefix to level. It fails with a
+   * `Config.Error` when the config cannot be read.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.consoleLogger
+   * import zio.logging.jul.bridge.JULBridge
+   *
+   * object LegacyApp extends ZIOAppDefault {
+   *   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+   *     Runtime.removeDefaultLoggers >>> consoleLogger() >+> JULBridge.init()
+   *
+   *   override def run: ZIO[Any, Any, Unit] =
+   *     ZIO.succeed(java.util.logging.Logger.getLogger("com.example.Legacy").info("Legacy info"))
+   * }
+   * }}}
+   *
+   * With the default path, the following HOCON keeps `INFO` and above, and only `WARNING` and above for the JUL
+   * loggers under `io.opentelemetry`:
+   *
+   * ```hocon
+   * logger {
+   *   filter {
+   *     rootLevel = INFO
+   *     mappings {
+   *       "io.opentelemetry" = WARN
+   *     }
+   *   }
+   * }
+   * ```
+   *
+   * @param configPath the config path of the filter, [[logFilterConfigPath]] by default
+   * @see [[https://zio.dev/zio-logging/jul-bridge/ java.util.logging bridge]]
    */
   def init(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZLayer[Any, Config.Error, Unit] =
     Runtime.enableCurrentFiber ++ layer(configPath)
 
   /**
-   * initialize java.util.Logging bridge without `FiberRef` propagation
+   * A layer that installs the bridge with no filter, so that JUL records of every level are forwarded, without turning
+   * on fiber-ref propagation: forwarded lines do not carry the log annotations and log spans of the fiber that logged
+   * them.
    */
   def initializeWithoutFiberRefPropagation: ZLayer[Any, Nothing, Unit] = initWithoutFiberRefPropagation(
     LogFilter.acceptAll
   )
 
   /**
-   * initialize java.util.Logging bridge with `LogFilter`, without `FiberRef` propagation
-   * @param filter Log filter
+   * A layer that installs the bridge with `filter`, without turning on fiber-ref propagation: forwarded lines do not
+   * carry the log annotations and log spans of the fiber that logged them.
+   *
+   * @param filter the filter that decides which JUL records are forwarded
    */
   def initWithoutFiberRefPropagation(filter: LogFilter[Any]): ZLayer[Any, Nothing, Unit] = layer(filter)
 
@@ -65,6 +131,13 @@ object JULBridge {
   private def layer(configPath: NonEmptyChunk[String]): ZLayer[Any, Config.Error, Unit] =
     ZLayer(make(configPath))
 
+  /**
+   * Installs the bridge with `filter`, using the runtime of the fiber that runs this effect, without turning on
+   * fiber-ref propagation. Each run resets the global JUL configuration, which removes the handler of an earlier run,
+   * and adds a new handler.
+   *
+   * @param filter the filter that decides which JUL records are forwarded
+   */
   def make(filter: LogFilter[Any]): ZIO[Any, Nothing, Unit] =
     for {
       runtime <- ZIO.runtime[Any]
@@ -80,6 +153,13 @@ object JULBridge {
                  }
     } yield ()
 
+  /**
+   * Installs the bridge with a `LogFilter.LogLevelByNameConfig` filter read from config at `configPath`, using the
+   * runtime of the fiber that runs this effect, without turning on fiber-ref propagation. It fails with a
+   * `Config.Error` when the config cannot be read.
+   *
+   * @param configPath the config path of the filter, [[logFilterConfigPath]] by default
+   */
   def make(configPath: NonEmptyChunk[String] = logFilterConfigPath): ZIO[Any, Config.Error, Unit] =
     LogFilter.LogLevelByNameConfig.load(configPath).flatMap(c => make(c.toFilter))
 
