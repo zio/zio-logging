@@ -20,7 +20,7 @@ import scala.annotation.switch
 /** Helper for writing JSON text. */
 object JsonEscape {
 
-  /** Returns the JSON form of `s`. */
+  /** Returns `s` as JSON text content. */
   def apply(s: CharSequence): CharSequence = {
     val sb  = new java.lang.StringBuilder
     var i   = 0

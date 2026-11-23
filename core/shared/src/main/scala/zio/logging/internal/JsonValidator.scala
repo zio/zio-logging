@@ -20,7 +20,6 @@ import scala.annotation.tailrec
 /** Helper for checking JSON text. */
 object JsonValidator {
 
-  /** Returns `true` when `string` is a JSON object or array. */
   def isJson(string: String): Boolean = {
     val startIdx = stringCouldBeJson(string)
     if (startIdx == NOT_A_JSON) false
