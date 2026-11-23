@@ -19,8 +19,14 @@ import org.slf4j.Marker
 import org.slf4j.event.Level
 import zio.logging.slf4j.bridge.LoggerData
 
+/**
+ * The interface through which the bridge's loggers hand SLF4J calls to the ZIO runtime.
+ */
 trait LoggerRuntime {
 
+  /**
+   * Logs one SLF4J call of `logger` at `level`.
+   */
   def log(
     logger: LoggerData,
     level: Level,
@@ -30,5 +36,8 @@ trait LoggerRuntime {
     throwable: Throwable
   ): Unit
 
+  /**
+   * Returns whether `logger` logs at `level`.
+   */
   def isEnabled(logger: LoggerData, level: Level): Boolean
 }
