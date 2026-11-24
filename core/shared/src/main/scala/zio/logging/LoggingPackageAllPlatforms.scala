@@ -29,11 +29,23 @@ private[logging] trait LoggingPackageAllPlatforms extends LoggerLayers {
    * For example:
    *
    * {{{
-   * myResponseHandler(request) @@ UserId(request.userId)
+   * import zio._
+   * import zio.logging.LogAnnotation
+   *
+   * final case class Request(userId: String, path: String)
+   *
+   * def myResponseHandler(request: Request): UIO[Unit] =
+   *   ZIO.logInfo(s"Handling \${request.path}")
+   *
+   * val request = Request("jdoe", "/orders")
+   * val handled: UIO[Unit] =
+   *   myResponseHandler(request) @@ LogAnnotation.UserId(request.userId)
    * }}}
    *
    * This code would add the structured log annotation [[LogAnnotation.UserId]]
    * to all log messages emitted by the `myResponseHandler(request)` effect.
+   *
+   * @see [[https://zio.dev/zio-logging/logger-context-and-annotations/ Logger Context and Annotations]]
    */
   val logContext: FiberRef[LogContext] =
     zio.Unsafe.unsafe { implicit u =>
@@ -45,18 +57,34 @@ private[logging] trait LoggingPackageAllPlatforms extends LoggerLayers {
    */
   val loggerNameAnnotationKey = "logger_name"
 
+  /**
+   * The default config path of the logger layers and configs, `logger`: the config overloads of
+   * `consoleLogger`, `fileLogger` and the other layers, and `ConsoleLoggerConfig.load` and
+   * `FileLoggerConfig.load`, read their keys under it unless given another path.
+   *
+   * @see [[https://zio.dev/zio-logging/reference-configuration/ Configuration Keys Reference]]
+   */
   val loggerConfigPath: NonEmptyChunk[String] = NonEmptyChunk("logger")
 
   /**
-   * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted from [[Trace]])
+   * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted
+   * from `Trace`)
    *
    * annotation key: [[zio.logging.loggerNameAnnotationKey]]
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.loggerName
+   *
+   * val program: UIO[Unit] = ZIO.logInfo("Payment accepted") @@ loggerName("billing")
+   * }}}
    */
   def loggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(loggerNameAnnotationKey, value)
 
   /**
-   * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted from [[Trace]])
+   * Logger name aspect, by this aspect is possible to set logger name (in general, logger name is extracted
+   * from `Trace`). The new name is `fn` applied to the current logger name annotation, or to `None` when it is not set.
    *
    * annotation key: [[zio.logging.loggerNameAnnotationKey]]
    */
@@ -80,15 +108,20 @@ private[logging] trait LoggingPackageAllPlatforms extends LoggerLayers {
   def appendLoggerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     loggerName(currentLoggerName => currentLoggerName.fold(value)(currentLoggerName => s"$currentLoggerName.$value"))
 
+  /** Adds `logAnnotate` to every ZIO effect. */
   implicit final class LogAnnotationZIOSyntax[R, E, A](private val self: ZIO[R, E, A]) {
+
+    /** Runs this effect with `value` added for the annotation `key` to the log context, as `self @@ key(value)`. */
     def logAnnotate[V: Tag](key: LogAnnotation[V], value: V): ZIO[R, E, A] =
       self @@ key(value)
   }
 
+  /** Adds `filter` to every `ZLogger`. */
   implicit final class ZLoggerOps[-Message, +Output](private val self: ZLogger[Message, Output]) {
 
     /**
-     * Returns a version of logger that only logs messages when this filter is satisfied
+     * Returns a version of logger that only logs messages when this filter is satisfied. The result is a
+     * `FilteredLogger`, whose output is `None` for the events that the filter rejects.
      */
     def filter[M <: Message](filter: LogFilter[M]): ZLogger[M, Option[Output]] = FilteredLogger(self, filter)
   }

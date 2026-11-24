@@ -17,6 +17,12 @@ package zio.logging
 
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, ZLogger }
 
+/**
+ * A logger that passes a log event on to `logger` only when `filter` accepts it. Its output is
+ * `Some(output)` of `logger` for an accepted event, and `None` for a rejected one. `LogFilter#filter`, the
+ * `filter` syntax on a `ZLogger` or on an effect that builds one, and the logger constructors that take a
+ * config create it.
+ */
 final case class FilteredLogger[Message, Output](logger: zio.ZLogger[Message, Output], filter: LogFilter[Message])
     extends ZLogger[Message, Option[Output]] {
 
@@ -34,5 +40,6 @@ final case class FilteredLogger[Message, Output](logger: zio.ZLogger[Message, Ou
       Some(logger(trace, fiberId, logLevel, message, cause, context, spans, annotations))
     } else None
 
+  /** Returns a copy of this logger that uses `newFilter` in place of the current filter. */
   def withFilter(newFilter: LogFilter[Message]): FilteredLogger[Message, Output] = FilteredLogger(logger, newFilter)
 }

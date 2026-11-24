@@ -17,6 +17,7 @@ package zio.logging.internal
 
 import scala.annotation.tailrec
 
+/** Helper for checking JSON text. */
 object JsonValidator {
 
   def isJson(string: String): Boolean = {

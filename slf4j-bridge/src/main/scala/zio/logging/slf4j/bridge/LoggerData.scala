@@ -15,8 +15,14 @@
  */
 package zio.logging.slf4j.bridge
 
+/**
+ * The name of an SLF4J logger that the bridge created.
+ */
 final case class LoggerData(name: String) {
 
+  /**
+   * The log annotations that the bridge adds to every line of this logger: `logger_name` set to `name`.
+   */
   lazy val annotations: Map[String, String] = Map(zio.logging.loggerNameAnnotationKey -> name)
 
 }

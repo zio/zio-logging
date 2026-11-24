@@ -7,6 +7,10 @@ import org.slf4j.spi.LoggingEventAware
 
 import java.util.Collections;
 
+/**
+ * The SLF4J logger of the bridge. It hands each call to its `ZioLoggerFactory`, which drops it until a `LoggerRuntime`
+ * is attached.
+ */
 final class ZioLogger private[bridge] (name: String, factory: ZioLoggerFactory)
     extends AbstractLogger
     with LoggingEventAware {

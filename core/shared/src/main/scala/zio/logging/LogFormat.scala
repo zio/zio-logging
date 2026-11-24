@@ -24,12 +24,21 @@ import java.time.format.DateTimeFormatter
 import scala.util.Try
 
 /**
- * A [[LogFormat]] represents a DSL to describe the format of text log messages.
+ * A [[LogFormat]] describes how one log event is turned into a line of output. Build a format from the values
+ * and functions in the `LogFormat` companion object, such as `level`, `line` and `label`, join formats with `+`
+ * or `|-|`, and turn the result into a logger with `toLogger` (plain text) or `toJsonLogger` (one JSON object
+ * per event). The console and file logger configs take a `LogFormat` as their `format` field.
  *
  * {{{
  * import zio.logging.LogFormat._
- * timestamp.fixed(32) |-| level |-| label("message", quoted(line))
+ *
+ * val format: LogFormat = timestamp.fixed(32) |-| level |-| label("message", quoted(line))
+ * // ZIO.logInfo("hello") is written as:
+ * // 2026-11-23T20:33:41.765655705+03 INFO message="hello"
  * }}}
+ *
+ * @see [[https://zio.dev/zio-logging/formatting-log-records/ Formatting Log Records]]
+ * @see [[https://zio.dev/zio-logging/reference-log-format/ LogFormat Reference]]
  */
 sealed trait LogFormat { self =>
   import zio.logging.LogFormat.text
@@ -70,27 +79,32 @@ sealed trait LogFormat { self =>
     this + other
 
   /**
-   * Returns a new log format that produces the same as this one, if filter is satisfied
+   * Returns a new log format that produces the same output as this one when `filter` accepts the log event,
+   * and writes nothing when it rejects it.
    */
   final def filter[M >: String](filter: LogFilter[M]): LogFormat =
     LogFormat.FilteredFormat(self, filter)
 
   /**
    * Returns a new log format that produces the same as this one, but with a
-   * space-padded, fixed-width output. Be careful using this operator, as it
-   * destroys all structure, resulting in purely textual log output.
+   * fixed-width output: shorter output is padded with spaces up to `size`
+   * characters, and longer output is cut to `size` characters. Be careful
+   * using this operator, as it destroys all structure, resulting in purely
+   * textual log output.
    */
   final def fixed(size: Int): LogFormat = LogFormat.FixedFormat(self, size)
 
   /**
    * Returns a new log format that produces the same as this one, except that
-   * log levels are colored according to the specified mapping.
+   * its whole output is colored with the color that `fn` returns for the log
+   * level of the event.
    */
   final def highlight(fn: LogLevel => LogColor): LogFormat = LogFormat.HighlightFormat(self, fn)
 
   /**
    * Returns a new log format that produces the same as this one, except that
-   * the log output is highlighted.
+   * its output is colored by log level: ERROR red, WARN yellow, INFO cyan,
+   * DEBUG green, and every other level white.
    */
   final def highlight: LogFormat =
     highlight(LogFormat.defaultHighlighter)
@@ -103,7 +117,9 @@ sealed trait LogFormat { self =>
 
   /**
    * Converts this log format into a json logger, which accepts text input, and
-   * produces json output.
+   * produces json output. Each `LogFormat.label` becomes a JSON key, and text
+   * written outside any label is collected under the `text_content` key, so
+   * `(level |-| line).toJsonLogger` writes `{"text_content":"INFO hello"}`.
    */
   final def toJsonLogger: ZLogger[String, String] = (
     trace: Trace,
@@ -166,6 +182,25 @@ sealed trait LogFormat { self =>
   }
 }
 
+/**
+ * The building blocks of log formats: parts that write fixed text, such as `text`, `space` and `quoted`; parts
+ * that read the log event, such as `level`, `line`, `cause` and `annotation`; ready-made formats (`default`,
+ * `colored`); and `config`, which reads a format from its string form.
+ *
+ * {{{
+ * import zio._
+ * import zio.logging.LogFormat
+ *
+ * val format: LogFormat =
+ *   LogFormat.bracketed(LogFormat.level) |-| LogFormat.annotation("user") |-| LogFormat.quoted(LogFormat.line)
+ *
+ * // ZIO.logAnnotate("user", "alice")(ZIO.logInfo("Order placed")) is written as:
+ * // [INFO] user=alice "Order placed"
+ * val logger: ZLogger[String, String] = format.toLogger
+ * }}}
+ *
+ * @see [[https://zio.dev/zio-logging/reference-log-format/ LogFormat Reference]]
+ */
 object LogFormat {
 
   private val defaultHighlighter: LogLevel => LogColor = {
@@ -394,7 +429,10 @@ object LogFormat {
   }
 
   /**
-   * A `Pattern` is string representation of `LogFormat`
+   * A `Pattern` is string representation of `LogFormat`, such as `%timestamp %level %message`. Parse one with
+   * `Pattern.parse`, and convert it with `toLogFormat`. `LogFormat.config` reads formats in this string form.
+   *
+   * @see [[https://zio.dev/zio-logging/formatting-log-records/ Formatting Log Records]]
    */
   sealed trait Pattern {
 
@@ -403,15 +441,34 @@ object LogFormat {
      */
     def toLogFormat: LogFormat
 
+    /**
+     * Returns the filter that a `%label{...}{...}` element around this pattern uses to decide whether to write
+     * anything, or `None` for no filter. `%cause` returns `LogFilter.causeNonEmpty`, a sequence of patterns
+     * returns the `or` of its parts' filters, and the other elements return `None`, also when they wrap
+     * `%cause`, as `%highlight{%cause}` does.
+     */
     def isDefinedFilter: Option[LogFilter[Any]] = None
   }
 
+  /**
+   * The elements of the pattern syntax, and the parser that reads a pattern string.
+   */
   object Pattern {
 
+    /**
+     * A pattern element that starts with `%`, such as `%level` or `%label{name}{...}`.
+     */
     sealed trait Arg extends Pattern {
+
+      /**
+       * The name of this element in the pattern string, without the `%` prefix.
+       */
       def name: String
     }
 
+    /**
+     * A sequence of patterns, written one after another with no separator.
+     */
     final case class Patterns(patterns: Chunk[Pattern]) extends Pattern {
 
       override def toLogFormat: LogFormat = {
@@ -426,6 +483,7 @@ object LogFormat {
 
     }
 
+    /** The `%cause` element: the cause of the log event, written only when it is not empty. */
     final case object Cause extends Arg {
       override val name = "cause"
 
@@ -434,30 +492,41 @@ object LogFormat {
       override val isDefinedFilter: Option[LogFilter[Any]] = Some(LogFilter.causeNonEmpty)
     }
 
+    /** The `%level` element: the log level label, such as `INFO`. */
     final case object LogLevel extends Arg {
       override val name = "level"
 
       override val toLogFormat: LogFormat = LogFormat.level
     }
 
+    /**
+     * The `%name` element: the logger name, from the `logger_name` annotation, or from the `Trace` of the log
+     * call when the annotation is not set.
+     */
     final case object LoggerName extends Arg {
       override val name = "name"
 
       override val toLogFormat: LogFormat = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogFormat()
     }
 
+    /** The `%message` element: the log message. */
     final case object LogMessage extends Arg {
       override val name = "message"
 
       override val toLogFormat: LogFormat = LogFormat.line
     }
 
+    /** The `%fiberId` element: the thread name of the fiber that logged the event, such as `zio-fiber-7`. */
     final case object FiberId extends Arg {
       override val name = "fiberId"
 
       override val toLogFormat: LogFormat = LogFormat.fiberId
     }
 
+    /**
+     * The `%timestamp{pattern}` element: the current time, formatted with a `DateTimeFormatter` built from
+     * `pattern`. `%timestamp` without braces uses `DateTimeFormatter.ISO_OFFSET_DATE_TIME`.
+     */
     final case class Timestamp(formatter: DateTimeFormatter) extends Arg {
 
       override val name = Timestamp.name
@@ -465,18 +534,30 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.timestamp(formatter)
     }
 
+    /** The name of the `%timestamp` element. */
     object Timestamp {
+
+      /** The element name, `timestamp`. */
       val name = "timestamp"
 
+      /** The `%timestamp` element without a pattern, which uses `DateTimeFormatter.ISO_OFFSET_DATE_TIME`. */
       val default: Timestamp = Timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
     }
 
+    /**
+     * The `%kvs` element: every string annotation of the event and every entry of the log context, except the
+     * logger name annotation, as `key=value` pairs.
+     */
     final case object KeyValues extends Arg {
       override val name = "kvs"
 
       override val toLogFormat: LogFormat = LogFormat.allAnnotations(Set(zio.logging.loggerNameAnnotationKey))
     }
 
+    /**
+     * The `%kv{key}` element: the annotation `key` as `key=value`, taken from the string annotations of the
+     * event, or from the log context when the event has no such string annotation.
+     */
     final case class KeyValue(annotationKey: String) extends Arg {
 
       override val name = KeyValue.name
@@ -484,34 +565,42 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.anyAnnotation(annotationKey)
     }
 
+    /** The name of the `%kv` element. */
     object KeyValue {
+
+      /** The element name, `kv`. */
       val name: String = "kv"
     }
 
+    /** The `%%` element: a literal `%` character. */
     final case object EscapedArgPrefix extends Arg {
       override val name = "%"
 
       override val toLogFormat: LogFormat = LogFormat.text(name)
     }
 
+    /** The `%{` element: a literal `{` character. */
     final case object EscapedOpenBracket extends Arg {
       override val name = "{"
 
       override val toLogFormat: LogFormat = LogFormat.text(name)
     }
 
+    /** The `%}` element: a literal `}` character. */
     final case object EscapedCloseBracket extends Arg {
       override val name = "}"
 
       override val toLogFormat: LogFormat = LogFormat.text(name)
     }
 
+    /** The `%spans` element: every log span of the event, with its elapsed time, such as `db=12ms`. */
     final case object Spans extends Arg {
       override val name = "spans"
 
       override val toLogFormat: LogFormat = LogFormat.spans
     }
 
+    /** The `%span{name}` element: the log span `name` with its elapsed time, such as `db=12ms`, if the event has it. */
     final case class Span(spanName: String) extends Arg {
 
       override val name = Span.name
@@ -519,16 +608,21 @@ object LogFormat {
       override val toLogFormat: LogFormat = LogFormat.span(spanName)
     }
 
+    /** The name of the `%span` element. */
     object Span {
+
+      /** The element name, `span`. */
       val name: String = "span"
     }
 
+    /** The `%line` element: the source line number of the log call, from its `Trace`. */
     final case object TraceLine extends Arg {
       override val name = "line"
 
       override val toLogFormat: LogFormat = LogFormat.traceLine
     }
 
+    /** The `%highlight{...}` element: the inner pattern, colored by log level as `LogFormat#highlight` does. */
     final case class Highlight(pattern: Pattern) extends Arg {
 
       override val name = Highlight.name
@@ -536,10 +630,18 @@ object LogFormat {
       override val toLogFormat: LogFormat = pattern.toLogFormat.highlight
     }
 
+    /** The name of the `%highlight` element. */
     object Highlight {
+
+      /** The element name, `highlight`. */
       val name: String = "highlight"
     }
 
+    /**
+     * The `%label{name}{...}` element: the inner pattern as the value of the key `name`, as `LogFormat.label`
+     * does. When the inner pattern has an `isDefinedFilter`, such as `%cause`, the label is written only for
+     * the events that the filter accepts.
+     */
     final case class Label(labelName: String, pattern: Pattern) extends Arg {
 
       override val name = Label.name
@@ -551,10 +653,14 @@ object LogFormat {
         }
     }
 
+    /** The name of the `%label` element. */
     object Label {
+
+      /** The element name, `label`. */
       val name: String = "label"
     }
 
+    /** The `%fixed{size}{...}` element: the inner pattern, padded or cut to `size` characters. */
     final case class Fixed(size: Int, pattern: Pattern) extends Arg {
 
       override val name = Fixed.name
@@ -562,10 +668,17 @@ object LogFormat {
       override val toLogFormat: LogFormat = pattern.toLogFormat.fixed(size)
     }
 
+    /** The name of the `%fixed` element. */
     object Fixed {
+
+      /** The element name, `fixed`. */
       val name: String = "fixed"
     }
 
+    /**
+     * The `%color{COLOR}{...}` element: the inner pattern in the given color. `COLOR` is one of `RED`, `BLUE`,
+     * `YELLOW`, `CYAN`, `GREEN`, `MAGENTA`, `WHITE` or `RESET`, in upper case: `%color{red}{...}` does not parse.
+     */
     final case class Color(color: LogColor, pattern: Pattern) extends Arg {
 
       override val name = Color.name
@@ -573,15 +686,22 @@ object LogFormat {
       override val toLogFormat: LogFormat = pattern.toLogFormat.color(color)
     }
 
+    /** The name of the `%color` element. */
     object Color {
+
+      /** The element name, `color`. */
       val name: String = "color"
     }
 
+    /** Literal text, written as it is. */
     final case class Text(text: String) extends Pattern {
       override val toLogFormat: LogFormat = LogFormat.text(text)
     }
 
+    /** Constants for literal text patterns. */
     object Text {
+
+      /** Text with no characters. */
       val empty: Text = Text("")
     }
 
@@ -762,9 +882,29 @@ object LogFormat {
         )
         .widen[Pattern]
 
+    /**
+     * Parses a pattern string, such as `%timestamp{HH:mm:ss} %level %message`.
+     *
+     * Returns `Left` when the string does not start with text or a known element, for example `%unknown` or an
+     * empty string. Parsing stops at the first point where no element or text matches, such as a lone `}` or an
+     * unknown element after some text, and the rest of the string is ignored: `%level}xyz` parses as `%level`,
+     * and `abc %unknown` as the text `abc `.
+     *
+     * {{{
+     * import zio.logging.LogFormat.Pattern
+     *
+     * val parsed = Pattern.parse("%level %message")
+     * // Right(Patterns(Chunk(LogLevel,Text( ),LogMessage)))
+     * val format: Option[LogFormat] = parsed.toOption.map(_.toLogFormat)
+     * }}}
+     */
     def parse(pattern: String): Either[Parser.ParserError[String], Pattern] =
       syntax.parseString(pattern).left.map(_.error)
 
+    /**
+     * Reads a `Pattern` from a string. A string that `Pattern.parse` rejects fails with the message
+     * `Expected a Pattern, but found ` followed by the string.
+     */
     val config: Config[Pattern] = Config.string.mapOrFail { value =>
       Pattern.parse(value) match {
         case Right(p) => Right(p)
@@ -775,6 +915,22 @@ object LogFormat {
 
   private val NL = System.lineSeparator()
 
+  /**
+   * Reads a log format from a pattern string, such as `%label{level}{%level} %label{message}{%message}`; see
+   * `LogFormat.Pattern` for the elements. A string that `Pattern.parse` rejects fails with the message
+   * `Expected a LogFormat, but found ` followed by the string.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.LogFormat
+   *
+   * val provider = ConfigProvider.fromMap(Map("format" -> "%level [%name] %message"))
+   * val format: IO[Config.Error, LogFormat] =
+   *   provider.load(LogFormat.config.nested("format"))
+   * }}}
+   *
+   * @see [[https://zio.dev/zio-logging/formatting-log-records/ Formatting Log Records]]
+   */
   val config: Config[LogFormat] = Config.string.mapOrFail { value =>
     Pattern.parse(value) match {
       case Right(p) => Right(p.toLogFormat)
@@ -782,6 +938,22 @@ object LogFormat {
     }
   }
 
+  /**
+   * Creates a log format from a function. The function receives an appender, which collects the output, and
+   * the parts of the log event: trace, fiber id, level, message, cause, fiber refs, spans and string
+   * annotations. Write output with the appender's `appendText`, `appendNumeric`, `appendCause` and
+   * `appendKeyValue` methods; the function's result is ignored.
+   *
+   * {{{
+   * import zio.logging.LogFormat
+   *
+   * val lowerCaseLevel: LogFormat =
+   *   LogFormat.make { (builder, _, _, level, message, _, _, _, _) =>
+   *     builder.appendText(level.label.toLowerCase + ": " + message())
+   *   }
+   * // ZIO.logInfo("hello") is written as: info: hello
+   * }}}
+   */
   def make(
     format: (
       LogAppender,
@@ -796,49 +968,106 @@ object LogFormat {
     ) => Any
   ): LogFormat = FnFormat(format)
 
+  /**
+   * Writes the logger name that `loggerNameExtractor` finds, or `loggerNameDefault` when it finds none.
+   */
   def loggerName(loggerNameExtractor: LoggerNameExtractor, loggerNameDefault: String = "zio-logger"): LogFormat =
     LoggerNameFormat(loggerNameExtractor, loggerNameDefault)
 
+  /**
+   * Writes the string annotation `name` of the log event, as `name=value`, such as one set with
+   * `ZIO.logAnnotate(name, value)`. Writes nothing when the event has no such annotation.
+   */
   def annotation(name: String): LogFormat =
     AnnotationFormat(name)
 
+  /**
+   * Writes the value of the typed annotation `ann` from the log context, rendered with its `render` function,
+   * as `name=value`. Writes nothing when the log context has no value for it.
+   *
+   * {{{
+   * import zio.logging.{ LogAnnotation, LogFormat }
+   *
+   * val format: LogFormat = LogFormat.line |-| LogFormat.logAnnotation(LogAnnotation.UserId)
+   *
+   * // ZIO.logInfo("Signed in") @@ LogAnnotation.UserId("u-42") is written as:
+   * // Signed in user_id=u-42
+   * }}}
+   */
   def logAnnotation[A](ann: LogAnnotation[A]): LogFormat =
     LogAnnotationFormat(ann)
 
+  /**
+   * Same as `logAnnotation`: writes the value of the typed annotation `ann` from the log context, as
+   * `name=value`.
+   */
   def annotation[A](ann: LogAnnotation[A]): LogFormat = logAnnotation(ann)
 
+  /**
+   * Writes the annotation `name`, as `name=value`. It looks first in the string annotations of the log event,
+   * then in the log context. Writes nothing when neither has it.
+   */
   def anyAnnotation(name: String): LogFormat =
     AnyAnnotationFormat(name)
 
   /**
-   * Returns a new log format that appends all annotations to the log output.
+   * Returns a new log format that appends all string annotations of the log event to the log output, as
+   * `key=value` pairs. Typed annotations from the log context are not included; see `allAnnotations`.
    */
   val annotations: LogFormat = annotations(Set.empty)
 
+  /**
+   * Writes the string annotations of the log event, as `key=value` pairs, except those whose key is in
+   * `excludeKeys`.
+   */
   def annotations(excludeKeys: Set[String]): LogFormat =
     AnnotationsFormat(excludeKeys)
 
+  /**
+   * Writes every typed annotation in the log context, as `name=value` pairs.
+   */
   val logAnnotations: LogFormat = logAnnotations(Set.empty)
 
+  /**
+   * Writes every typed annotation in the log context, as `name=value` pairs, except those whose name is in
+   * `excludeKeys`.
+   */
   def logAnnotations(excludeKeys: Set[String]): LogFormat =
     LogAnnotationsFormat(excludeKeys)
 
+  /**
+   * Writes the string annotations of the log event, then the typed annotations in the log context, as
+   * `key=value` pairs. A key present in both is written twice.
+   */
   val allAnnotations: LogFormat = allAnnotations(Set.empty)
 
+  /**
+   * Same as `allAnnotations`, except that keys in `excludeKeys` are skipped in both sources.
+   */
   def allAnnotations(excludeKeys: Set[String]): LogFormat =
     AllAnnotationsFormat(excludeKeys)
 
+  /**
+   * Wraps the output of `inner` in square brackets, as in `[INFO]`.
+   */
   def bracketed(inner: LogFormat): LogFormat =
     bracketStart + inner + bracketEnd
 
+  /** Writes `[`. */
   val bracketStart: LogFormat = text("[")
 
+  /** Writes `]`. */
   val bracketEnd: LogFormat = text("]")
 
+  /** Writes nothing. */
   val empty: LogFormat = LogFormat.make { (_, _, _, _, _, _, _, _, _) =>
     ()
   }
 
+  /**
+   * Writes the source file name of the log call, such as `Main.scala`, taken from its `Trace`, or
+   * `not-available` when the trace cannot be parsed.
+   */
   val enclosingClass: LogFormat =
     LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
       val parsed = Trace.parseOrNull(trace)
@@ -849,26 +1078,37 @@ object LogFormat {
       }
     }
 
+  /** Writes the thread name of the fiber that logged the event, such as `zio-fiber-7`. */
   val fiberId: LogFormat =
     LogFormat.make { (builder, _, fiberId, _, _, _, _, _, _) =>
       builder.appendText(fiberId.threadName)
     }
 
+  /** Writes the label of the log level, such as `INFO` or `WARN`. */
   val level: LogFormat =
     LogFormat.make { (builder, _, _, level, _, _, _, _, _) =>
       builder.appendText(level.label)
     }
 
+  /**
+   * Writes the syslog severity number of the log level: `2` for FATAL, `3` for ERROR, `4` for WARN, `6` for
+   * INFO, and `7` for DEBUG and TRACE.
+   */
   val levelSyslog: LogFormat =
     LogFormat.make { (builder, _, _, level, _, _, _, _, _) =>
       builder.appendText(level.syslog.toString)
     }
 
+  /** Writes the log message. */
   val line: LogFormat =
     LogFormat.make { (builder, _, _, _, line, _, _, _, _) =>
       builder.appendText(line())
     }
 
+  /**
+   * Writes the source line number of the log call, taken from its `Trace`, or nothing when the trace cannot
+   * be parsed.
+   */
   val traceLine: LogFormat = LogFormat.make { (builder, trace, _, _, _, _, _, _, _) =>
     val parsed = Trace.parseOrNull(trace)
     if (parsed ne null) {
@@ -876,6 +1116,7 @@ object LogFormat {
     }
   }
 
+  /** Writes the cause of the log event, pretty-printed, or nothing when the cause is empty. */
   val cause: LogFormat =
     LogFormat.make { (builder, _, _, _, _, cause, _, _, _) =>
       if (!cause.isEmpty) {
@@ -883,14 +1124,30 @@ object LogFormat {
       }
     }
 
+  /**
+   * Writes the output of `value` under the key `label`: `label=value` in text output, and a `"label"` key in
+   * JSON output. `label` is evaluated once, when the format is built.
+   *
+   * {{{
+   * import zio.logging.LogFormat
+   *
+   * val format: LogFormat = LogFormat.label("level", LogFormat.level) |-| LogFormat.label("msg", LogFormat.line)
+   * // ZIO.logInfo("hello") with format.toLogger: level=INFO msg=hello
+   * // ZIO.logInfo("hello") with format.toJsonLogger: {"level":"INFO","msg":"hello"}
+   * }}}
+   */
   def label(label: => String, value: LogFormat): LogFormat = LabelFormat(label, value)
 
+  /** Writes the line separator of the platform. */
   val newLine: LogFormat = text(NL)
 
+  /** Writes one space. */
   val space: LogFormat = text(" ")
 
+  /** Writes one double quote character. */
   val quote: LogFormat = text("\"")
 
+  /** Wraps the output of `inner` in double quotes. */
   def quoted(inner: LogFormat): LogFormat = quote + inner + quote
 
   /**
@@ -910,12 +1167,36 @@ object LogFormat {
       })
     }
 
+  /**
+   * Writes `value`. `value` is evaluated once, when the format is built, not for each log event.
+   */
   def text(value: => String): LogFormat = TextFormat(value)
 
+  /**
+   * Writes the current time, read when the line is written, formatted with
+   * `DateTimeFormatter.ISO_OFFSET_DATE_TIME`, such as `2026-11-23T20:33:41.776529474+03:30`.
+   */
   val timestamp: LogFormat = timestamp(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
+  /**
+   * Writes the current time, read when the line is written, formatted with `formatter`. `formatter` is
+   * evaluated once, when the format is built.
+   */
   def timestamp(formatter: => DateTimeFormatter): LogFormat = TimestampFormat(formatter)
 
+  /**
+   * The default format of the console and file loggers: the labelled parts `timestamp` (cut or padded to 32
+   * characters), `level`, `thread` (the fiber name) and `message` (quoted), separated by spaces, followed by
+   * `cause` only when the cause is not empty.
+   *
+   * {{{
+   * import zio.logging.LogFormat
+   *
+   * val format: LogFormat = LogFormat.default
+   * // ZIO.logInfo("hello") is written as:
+   * // timestamp=2026-11-23T20:33:41.118883052+03 level=INFO thread=zio-fiber-334602018 message="hello"
+   * }}}
+   */
   val default: LogFormat =
     label("timestamp", timestamp.fixed(32)) |-|
       label("level", level) |-|
@@ -923,6 +1204,10 @@ object LogFormat {
       label("message", quoted(line)) +
       (space + label("cause", cause)).filter(LogFilter.causeNonEmpty)
 
+  /**
+   * The same parts as `default`, with ANSI colors: the timestamp blue, the thread white, and the level, the
+   * message and the cause colored by log level, as `LogFormat#highlight` does.
+   */
   val colored: LogFormat =
     label("timestamp", timestamp.fixed(32)).color(LogColor.BLUE) |-|
       label("level", level).highlight |-|

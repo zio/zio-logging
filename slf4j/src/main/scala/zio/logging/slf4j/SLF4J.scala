@@ -35,10 +35,25 @@ import zio.{
 
 import java.util
 
+/**
+ * A logging backend that sends each ZIO log line to an SLF4J logger, so that the SLF4J provider on the classpath,
+ * such as Logback, writes it. The `zio-logging-slf4j` module builds against `slf4j-api` 1.7.x and puts the
+ * annotations of a line into the MDC; the `zio-logging-slf4j2` module builds against `slf4j-api` 2.x and passes them
+ * as SLF4J key-value pairs. Both modules define this object with the same public members.
+ *
+ * The backend applies no ZIO `LogFilter` of its own: it asks the SLF4J logger whether the level is enabled, so the
+ * provider's configuration decides which lines are written. `Fatal` is written as `ERROR`, `All` as `TRACE`, and
+ * lines at `LogLevel.None` are not written.
+ *
+ * @see [[https://zio.dev/zio-logging/slf4j1/ SLF4J v1]]
+ * @see [[https://zio.dev/zio-logging/slf4j2/ SLF4J v2]]
+ */
 object SLF4J {
 
   /**
-   * convert [[zio.Cause]] to [[java.lang.Throwable]] using [[zio.FiberFailure]]
+   * The default conversion from the cause of a log line to the `Throwable` passed to SLF4J. It returns `None` for an
+   * empty cause, and otherwise a [[zio.FiberFailure]] that wraps the whole cause, also when the cause holds only an
+   * interruption or a failure that is not a `Throwable`.
    */
   val causeToThrowableDefault: Cause[Any] => Option[Throwable] = cause =>
     if (cause.isEmpty) {
@@ -48,12 +63,17 @@ object SLF4J {
     }
 
   /**
-   * log annotation key for slf4j marker name
+   * The annotation key, `"slf4j_log_marker_name"`, that holds the SLF4J marker name of a log line. [[logMarkerName]]
+   * sets it; the backend turns its value into a marker with `MarkerFactory.getMarker`, and [[logFormatDefault]] leaves
+   * it out of the annotations.
    */
   val logMarkerNameAnnotationKey = "slf4j_log_marker_name"
 
   /**
-   * default log format for slf4j logger
+   * The format the backend uses unless one is given: every annotation except the logger name and the marker name,
+   * followed by the message (`LogFormat.line`) and the cause (`LogFormat.cause`). The backend turns the annotations
+   * into MDC entries (`zio-logging-slf4j`) or key-value pairs (`zio-logging-slf4j2`), the text into the SLF4J
+   * message, and the cause into the `Throwable` of the call.
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys =
@@ -61,18 +81,24 @@ object SLF4J {
     ) + LogFormat.line + LogFormat.cause
 
   /**
-   * slf4j marker name aspect
+   * Returns an aspect that sets the SLF4J marker of every log line in the effect it wraps to the marker named `value`,
+   * by adding the annotation [[logMarkerNameAnnotationKey]]. Provider filters can then match the marker, such as
+   * Logback's `MarkerFilter`.
    *
-   * annotation key: [[SLF4J.logMarkerNameAnnotationKey]]
+   * {{{
+   * import zio._
+   * import zio.logging.backend.SLF4J
+   *
+   * val declined: UIO[Unit] = ZIO.logWarning("Card declined") @@ SLF4J.logMarkerName("PAYMENT")
+   * }}}
    */
   def logMarkerName(value: String): ZIOAspect[Nothing, Any, Nothing, Any, Nothing, Any] =
     ZIOAspect.annotated(logMarkerNameAnnotationKey, value)
 
   /**
-   * get logger name from [[Trace]]
-   *
-   * trace with value ''example.LivePingService.ping(PingService.scala:22)''
-   * will have ''example.LivePingService'' as logger name
+   * Returns a function that takes the SLF4J logger name from a `Trace`: the part of the trace location before the
+   * method name. For example, the trace `example.LivePingService.ping(PingService.scala:22)` gives
+   * `example.LivePingService`. A trace that cannot be parsed, such as `Trace.empty`, gives `default`.
    */
   def getLoggerName(default: String = "zio-slf4j-logger"): Trace => String =
     trace => LoggerNameExtractor.trace(trace, FiberRefs.empty, Map.empty).getOrElse(default)
@@ -101,7 +127,7 @@ object SLF4J {
       var throwable: Throwable                   = null
 
       /**
-       * cause as throwable
+       * Stores the cause, converted with `causeToThrowable`, as the `Throwable` of the SLF4J call.
        */
       override def appendCause(cause: Cause[Any]): Unit = {
         throwable = causeToThrowable(cause).orNull
@@ -119,7 +145,7 @@ object SLF4J {
         appendText("=")
 
       /**
-       * all key-value into mdc
+       * Puts the key-value pair into the MDC that is set while this line is logged.
        */
       override def appendKeyValue(key: String, value: String): Unit = {
         mdc.put(key, value)
@@ -127,7 +153,7 @@ object SLF4J {
       }
 
       /**
-       * all key-value into mdc
+       * Puts the key-value pair into the MDC that is set while this line is logged.
        */
       override def appendKeyValue(key: String, appendValue: LogAppender => Unit): Unit = {
         val builder = new StringBuilder()
@@ -196,8 +222,27 @@ object SLF4J {
     }
 
   /**
-   * Use this layer to register an use an Slf4j logger in your app.
-   * To avoid double logging, you should create this layer only once in your application
+   * Returns a layer that adds an SLF4J logger, built by [[slf4jLogger]], to the loggers of the ZIO runtime. Combine it
+   * with `Runtime.removeDefaultLoggers` to replace the default console logger. Build only one SLF4J layer in an
+   * application: a second layer adds a second logger, and then every line is logged twice, unless it is built from the
+   * same `format`, `loggerName` and `causeToThrowable` values as the first.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.LogFormat
+   * import zio.logging.backend.SLF4J
+   *
+   * val billingLogger: ZLayer[Any, Nothing, Unit] =
+   *   Runtime.removeDefaultLoggers >>> SLF4J.slf4j(
+   *     SLF4J.logFormatDefault + LogFormat.spans,
+   *     SLF4J.getLoggerName("billing-service"),
+   *     SLF4J.causeToThrowableDefault
+   *   )
+   * }}}
+   *
+   * @param format how each line is split into the message, the annotations and the cause
+   * @param loggerName the SLF4J logger name of a line that has no `logger_name` annotation
+   * @param causeToThrowable the conversion from the cause of a line to the `Throwable` passed to SLF4J
    */
   def slf4j(
     format: LogFormat,
@@ -207,8 +252,8 @@ object SLF4J {
     Runtime.addLogger(slf4jLogger(format, loggerName, causeToThrowable))
 
   /**
-   * Use this layer to register an use an Slf4j logger in your app.
-   * To avoid double logging, you should create this layer only once in your application
+   * Returns the SLF4J backend layer with the given format, the logger name from `getLoggerName()` and
+   * [[causeToThrowableDefault]]. Build only one SLF4J layer in an application: with two, every line is logged twice.
    */
   def slf4j(
     format: LogFormat
@@ -216,12 +261,45 @@ object SLF4J {
     slf4j(format, getLoggerName(), causeToThrowableDefault)
 
   /**
-   * Use this layer to register an use an Slf4j logger in your app.
-   * To avoid double logging, you should create this layer only once in your application
+   * The SLF4J backend layer with [[logFormatDefault]], the logger name from `getLoggerName()` and
+   * [[causeToThrowableDefault]]. Build only one SLF4J layer in an application: with two, every line is logged twice.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.backend.SLF4J
+   *
+   * object OrderApp extends ZIOAppDefault {
+   *   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+   *     Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+   *
+   *   override def run: ZIO[Any, Any, Unit] =
+   *     ZIO.logInfo("Order received") @@ ZIOAspect.annotated("order", "1042")
+   * }
+   * }}}
+   *
+   * @see [[https://zio.dev/zio-logging/slf4j1/ SLF4J v1]]
+   * @see [[https://zio.dev/zio-logging/slf4j2/ SLF4J v2]]
    */
   def slf4j: ZLayer[Any, Nothing, Unit] =
     slf4j(logFormatDefault)
 
+  /**
+   * Returns the SLF4J backend as a `ZLogger`, without installing it, so that it can be wrapped, for example with a
+   * `LogFilter`, before `Runtime.addLogger` installs it. When called, it also looks up the SLF4J logger
+   * `zio-slf4j-logger`, which makes SLF4J initialize its provider then rather than at the first log line.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.{ LogFilter, ZLoggerOps }
+   * import zio.logging.backend.SLF4J
+   *
+   * val slf4jLogger: ZLogger[String, Unit] =
+   *   SLF4J.slf4jLogger(SLF4J.logFormatDefault, SLF4J.getLoggerName(), SLF4J.causeToThrowableDefault)
+   *
+   * val infoAndAbove: ZLayer[Any, Nothing, Unit] =
+   *   Runtime.removeDefaultLoggers >>> Runtime.addLogger(slf4jLogger.filter(LogFilter.logLevel(LogLevel.Info)))
+   * }}}
+   */
   def slf4jLogger(
     format: LogFormat,
     loggerName: Trace => String,

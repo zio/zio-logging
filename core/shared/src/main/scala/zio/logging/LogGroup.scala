@@ -17,8 +17,30 @@ package zio.logging
 
 import zio.{ Cause, FiberId, FiberRefs, LogLevel, LogSpan, Trace, Zippable }
 
+/**
+ * A `LogGroup` extracts one value from a log event, such as its level or its logger name. It is the first half
+ * of a `LogFilter`: the filter tests the value that its group extracts. Combine groups with `++`, `zip` and
+ * `zipWith`, and change the output with `map`.
+ *
+ * {{{
+ * import zio.LogLevel
+ * import zio.logging.{ LogFilter, LogGroup }
+ *
+ * val tenant: LogGroup[Any, String] =
+ *   LogGroup[Any, String]((_, _, _, _, _, _, _, annotations) => annotations.getOrElse("tenant", ""))
+ *
+ * val tenantAndLevel: LogGroup[Any, (String, LogLevel)] = tenant ++ LogGroup.logLevel
+ *
+ * // every event of tenant "beta", and WARN and above for the others
+ * val filter: LogFilter[Any] =
+ *   LogFilter[Any, (String, LogLevel)](tenantAndLevel, v => v._1 == "beta" || v._2 >= LogLevel.Warning)
+ * }}}
+ *
+ * @see [[https://zio.dev/zio-logging/reference-log-filter/ LogFilter and LogGroup Reference]]
+ */
 sealed trait LogGroup[-Message, Out] { self =>
 
+  /** Extracts the value of this group from the parts of a log event. */
   def apply(
     trace: Trace,
     fiberId: FiberId,
@@ -39,6 +61,7 @@ sealed trait LogGroup[-Message, Out] { self =>
     other
   )
 
+  /** Returns a group for messages of type `M`, which converts each message with `f` before this group reads it. */
   final def contramap[M](f: M => Message): LogGroup[M, Out] = LogGroup.ContramapGroup(self, f)
 
   /**
@@ -62,6 +85,10 @@ sealed trait LogGroup[-Message, Out] { self =>
 
 }
 
+/**
+ * Constructors for log groups, and the ready-made groups `cause`, `logLevel`, `loggerName` and
+ * `loggerNameAndLevel`.
+ */
 object LogGroup {
 
   private[logging] final case class FnGroup[-Message, Out](
@@ -205,6 +232,10 @@ object LogGroup {
 
   }
 
+  /**
+   * Creates a group from a function of the parts of a log event: trace, fiber id, level, message, cause,
+   * fiber refs, spans and string annotations.
+   */
   def apply[M, O](
     fn: (Trace, FiberId, LogLevel, () => M, Cause[Any], FiberRefs, List[LogSpan], Map[String, String]) => O
   ): LogGroup[M, O] = FnGroup(fn)
@@ -219,6 +250,9 @@ object LogGroup {
    */
   def constant[O](value: O): LogGroup[Any, O] = ConstantGroup(value)
 
+  /**
+   * Log group by the logger name that `loggerNameExtractor` finds, or `loggerNameDefault` when it finds none.
+   */
   def fromLoggerNameExtractor(
     loggerNameExtractor: LoggerNameExtractor,
     loggerNameDefault: String = "zio-logger"
@@ -232,14 +266,14 @@ object LogGroup {
   /**
    * Log group by logger name
    *
-   * Logger name is extracted from annotation or [[Trace]], see: [[LoggerNameExtractor.loggerNameAnnotationOrTrace]]
+   * Logger name is extracted from annotation or `Trace`, see: [[LoggerNameExtractor.loggerNameAnnotationOrTrace]]
    */
   val loggerName: LogGroup[Any, String] = LoggerNameExtractor.loggerNameAnnotationOrTrace.toLogGroup()
 
   /**
    * Log group by logger name and log level
    *
-   * Logger name is extracted from annotation or [[Trace]]
+   * Logger name is extracted from annotation or `Trace`
    */
   val loggerNameAndLevel: LogGroup[Any, (String, LogLevel)] = loggerName ++ logLevel
 

@@ -20,6 +20,10 @@ import org.slf4j.event.Level
 import org.slf4j.helpers.ZioLoggerBase
 import zio.logging.slf4j.bridge.LoggerData
 
+/**
+ * The SLF4J logger of the bridge. It hands each call to its `ZioLoggerFactory`, which drops it until a `LoggerRuntime`
+ * is attached.
+ */
 final class ZioLogger(name: String, factory: ZioLoggerFactory) extends ZioLoggerBase(name) {
   private val data: LoggerData = LoggerData(name)
 

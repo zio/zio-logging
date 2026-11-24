@@ -59,8 +59,10 @@ private[logging] trait LogAppender { self =>
     finally closeValue()
   }
 
+  /** Marks the boundary between two key/value pairs; does nothing by default. */
   def appendKeyValueSeparator(): Unit = ()
 
+  /** Appends each key/value pair, with `appendKeyValueSeparator` between pairs. */
   def appendKeyValues(keyValues: Iterable[(String, String)]): Unit = {
     val iterator = keyValues.iterator
     while (iterator.hasNext) {
@@ -128,8 +130,9 @@ private[logging] object LogAppender {
   }
 
   /**
-   * A [[LogAppender]] for unstructured logging, which simply turns everything
-   * into text, and passes it to the given text appender function.
+   * A [[LogAppender]] for unstructured logging, which turns everything
+   * into text, and passes it to the given text appender function. Pairs are
+   * written as `key=value`, separated by a space.
    */
   def unstructured(textAppender: String => Any): LogAppender = new LogAppender { self =>
     override def appendCause(cause: Cause[Any]): Unit = appendText(cause.prettyPrint)
@@ -151,6 +154,10 @@ private[logging] object LogAppender {
     override def openLogEntry(): Unit = ()
   }
 
+  /**
+   * A [[LogAppender]] that builds one JSON object per log entry and passes it to the given text appender
+   * function when the entry is closed.
+   */
   def json(textAppender: String => Any): LogAppender = new LogAppender { self =>
     val AnsiColorRegex = """\033\[\d+m""".r
 

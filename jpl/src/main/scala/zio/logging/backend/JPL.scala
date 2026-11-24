@@ -19,6 +19,19 @@ import zio.logging.internal.LogAppender
 import zio.logging.{ LogFormat, LoggerNameExtractor }
 import zio.{ Cause, FiberFailure, FiberId, FiberRefs, LogLevel, LogSpan, Runtime, Trace, ZLayer, ZLogger, logging }
 
+/**
+ * A logging backend that sends each ZIO log line to a `java.lang.System.Logger`, the Java Platform Logging API. With
+ * no `System.LoggerFinder` installed, the JDK sends these lines to `java.util.logging`. `System.Logger` has no MDC or
+ * key-value pairs, so the annotations of a line are written as `key=value` text in the message. Annotation keys and
+ * values are appended to the message text as they are, so a value that contains a line break splits the message over
+ * several lines.
+ *
+ * The backend applies no ZIO `LogFilter` of its own: it calls `System.Logger#isLoggable` with the mapped level, so the
+ * `System.Logger` implementation decides which lines are written. `Fatal` is passed as `ERROR`, `All` as `ALL`, and
+ * `LogLevel.None` as `OFF`; the JDK's default `java.util.logging` setup writes `OFF` lines.
+ *
+ * @see [[https://zio.dev/zio-logging/jpl/ Java Platform/System Logger]]
+ */
 object JPL {
 
   private[backend] val logLevelMapping: Map[LogLevel, System.Logger.Level] = Map(
@@ -33,7 +46,9 @@ object JPL {
   )
 
   /**
-   * default log format for JPL logger
+   * The format the backend uses unless one is given: every annotation except the logger name, followed by the message
+   * (`LogFormat.line`) and the cause (`LogFormat.cause`). The backend writes everything except the cause into the
+   * message text, and passes the cause as the `Throwable` of the call.
    */
   val logFormatDefault: LogFormat =
     LogFormat.allAnnotations(excludeKeys = Set(logging.loggerNameAnnotationKey)) + LogFormat.line + LogFormat.cause
@@ -47,7 +62,8 @@ object JPL {
     var throwable: Throwable   = null
 
     /**
-     * cause as throwable
+     * Stores the `Throwable` of a non-empty cause: its first `Throwable` failure, else its first defect, else a
+     * `FiberFailure` that wraps the whole cause.
      */
     override def appendCause(cause: Cause[Any]): Unit = {
       if (!cause.isEmpty) {
@@ -92,20 +108,83 @@ object JPL {
   private def isLogLevelEnabled(systemLogger: System.Logger, logLevel: LogLevel): Boolean =
     logLevelMapping.get(logLevel).exists(systemLogger.isLoggable)
 
+  /**
+   * Returns a layer that adds a JPL logger, built by `jplLogger`, to the loggers of the ZIO runtime. Combine it with
+   * `Runtime.removeDefaultLoggers` to replace the default console logger.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.{ LogFormat, LoggerNameExtractor }
+   * import zio.logging.backend.JPL
+   *
+   * val loggerNameOrService: Trace => String =
+   *   trace => LoggerNameExtractor.trace(trace, FiberRefs.empty, Map.empty).getOrElse("billing-service")
+   *
+   * val billingLogger: ZLayer[Any, Nothing, Unit] =
+   *   Runtime.removeDefaultLoggers >>> JPL.jpl(
+   *     LogFormat.label("fiber", LogFormat.fiberId) + JPL.logFormatDefault,
+   *     loggerNameOrService
+   *   )
+   * }}}
+   *
+   * @param format how each line is split into the message text and the cause
+   * @param loggerName the `System.Logger` name of a line that has no `logger_name` annotation
+   */
   def jpl(
     format: LogFormat,
     loggerName: Trace => String
   ): ZLayer[Any, Nothing, Unit] =
     Runtime.addLogger(jplLogger(format, loggerName))
 
+  /**
+   * Returns the JPL backend layer with the given format. A line that has no `logger_name` annotation takes its logger
+   * name from the `Trace` of the log call, or `"zio-jpl-logger"` when the trace cannot be parsed.
+   */
   def jpl(
     format: LogFormat
   ): ZLayer[Any, Nothing, Unit] =
     jpl(format, getLoggerName())
 
+  /**
+   * The JPL backend layer with [[logFormatDefault]]. A line that has no `logger_name` annotation takes its logger name
+   * from the `Trace` of the log call, or `"zio-jpl-logger"` when the trace cannot be parsed.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.backend.JPL
+   *
+   * object OrderApp extends ZIOAppDefault {
+   *   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+   *     Runtime.removeDefaultLoggers >>> JPL.jpl
+   *
+   *   override def run: ZIO[Any, Any, Unit] =
+   *     ZIO.logInfo("Order received") @@ ZIOAspect.annotated("order", "1042")
+   * }
+   * }}}
+   *
+   * @see [[https://zio.dev/zio-logging/jpl/ Java Platform/System Logger]]
+   */
   val jpl: ZLayer[Any, Nothing, Unit] =
     jpl(logFormatDefault)
 
+  /**
+   * Returns the JPL backend as a `ZLogger`, without installing it, so that it can be wrapped, for example with a
+   * `LogFilter`, before `Runtime.addLogger` installs it. Each line goes to `System.getLogger` of its logger name.
+   *
+   * {{{
+   * import zio._
+   * import zio.logging.{ LogFilter, ZLoggerOps }
+   * import zio.logging.backend.JPL
+   *
+   * val infoAndAbove: ZLayer[Any, Nothing, Unit] =
+   *   Runtime.removeDefaultLoggers >>> Runtime.addLogger(
+   *     JPL.jplLogger(JPL.logFormatDefault).filter(LogFilter.logLevel(LogLevel.Info))
+   *   )
+   * }}}
+   *
+   * @param loggerName the `System.Logger` name of a line that has no `logger_name` annotation; by default the part of
+   *   the trace location before the method name, or `"zio-jpl-logger"` when the trace cannot be parsed
+   */
   def jplLogger(
     format: LogFormat,
     loggerName: Trace => String = getLoggerName()
